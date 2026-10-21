@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     The site's link-preview image (Open Graph, 1200 x 630), in the cassette card's look (web/site.css): rendered by
+     tools/gen_og.py into assets/site/og.png, which web/make_site.py puts at the site's root. Not a page of the site. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=block">
+<style>
+  @font-face { font-family: "FM-1 Terminus"; src: url(../assets/site/terminus16b.ttf) format("truetype"); }
+  :root { --card: #fafaf8; --ink: #121212; --gray: #5e5e59; --line: #d4d4cf;
+          --s1: #e2412d; --s2: #ef8a22; --s3: #f2c12e; --s4: #32a35a; --s5: #2d6cd0; --s6: #6c4ac0;
+          --ext: "Michroma", sans-serif; --sans: "Archivo", sans-serif; --pixel: "FM-1 Terminus", monospace; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: var(--card); color: var(--ink); }
+  .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 72px; border-right: 1px solid var(--line); }
+  .spine p { position: absolute; left: 50%; top: 50%; margin: 0; display: flex; align-items: center; gap: 32px; white-space: nowrap;
+             writing-mode: vertical-rl; transform: translate(-50%, -50%) rotate(180deg); }
+  .spine b { font: 16px/1 var(--pixel); font-weight: normal; }
+  .spine span { font: 400 11px/1 var(--ext); letter-spacing: .08em; text-transform: uppercase; color: var(--gray); }
+  .logo { position: absolute; left: 120px; top: 52px; display: flex; align-items: center; gap: 14px; }
+  .logo .mark { display: block; width: 40px; height: 40px; }
+  .logo .word { font: 32px/1 var(--pixel); text-transform: uppercase; }
+  .logo .word span { color: hsl(var(--o) 80% 45%); color: oklch(.6 .19 calc(var(--o) * 1)); }
+  h1 { position: absolute; left: 120px; top: 130px; margin: 0; font: 400 68px/1.04 var(--ext); text-transform: uppercase; letter-spacing: -.01em; }
+  .sub { position: absolute; left: 122px; top: 370px; font: 400 17px/1 var(--ext); letter-spacing: .08em; text-transform: uppercase; color: var(--gray); }
+  .stripes { position: absolute; left: 73px; right: 0; top: 410px; display: grid; gap: 6px; }
+  .stripes i { display: block; height: 14px; }
+  .stripes i:nth-child(1) { background: var(--s1); } .stripes i:nth-child(2) { background: var(--s2); } .stripes i:nth-child(3) { background: var(--s3); }
+  .stripes i:nth-child(4) { background: var(--s4); } .stripes i:nth-child(5) { background: var(--s5); } .stripes i:nth-child(6) { background: var(--s6); }
+  .window { position: absolute; right: 56px; top: 171px; width: 600px; padding: 18px; background: var(--ink); border-radius: 26px; box-sizing: border-box; }
+  .window .screen { position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000 center / cover no-repeat; }
+  .window .id { position: absolute; left: 16px; bottom: 14px; padding: 4px 6px; font: 16px/1 var(--pixel); color: #fff; background: rgb(0 0 0 / .55); }
+  .claim { position: absolute; left: 120px; top: 552px; margin: 0; font: 500 30px/1.2 var(--sans); }
+</style>
+</head>
+<body>
+<div class="spine"><p><b>SYNTHESTHETIC</b><span>USB video firmware for the M-VAVE FM-1</span></p></div>
+<div class="logo"><!--LOGO--></div>
+<h1>USB<br>video<br>out</h1>
+<div class="sub">For the M-VAVE FM-1</div>
+<div class="stripes"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="window"><div class="screen" style="background-image: url(../assets/site/modes/20.jpg)"><span class="id">20/31 KALEIDO</span></div></div>
+<p class="claim">The first FM-1 firmware that's also a webcam.</p>
+</body>
+</html>

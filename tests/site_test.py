@@ -113,7 +113,18 @@ try:
     check(f"handbook: its {len(rel)} links and images inside the site all there", not gone)
     check("handbook: repository files linked on GitHub, site pages relative",
           make_site.REPO + "/blob/main/docs/upstream-sloop/GUIDE.md" in hb and 'href="../webapp/installer/"' in hb
-          and make_site.ONLINE not in hb)
+          and make_site.ONLINE not in re.sub(r"<meta [^>]*>", "", hb))   # (only the link preview names the site in full)
+    # the link previews (iMessage, Facebook, Slack, X): every page names the 1200 x 630 image by its full URL
+    import struct
+    pages = {"root": tmp / "site" / "index.html", "installer": app / "installer" / "index.html", "play": play / "index.html",
+             "handbook": tmp / "site" / "handbook" / "index.html"}
+    og = (tmp / "site" / "og.png").read_bytes() if (tmp / "site" / "og.png").exists() else b""
+    check("previews: og.png at the root, 1200 x 630", og[:8] == b"\x89PNG\r\n\x1a\n" and struct.unpack(">II", og[16:24]) == (1200, 630))
+    for name, f in pages.items():
+        h = f.read_text(encoding="utf-8")
+        check(f"previews: {name} has its title, description, image and card",
+              f'<meta property="og:image" content="{make_site.ONLINE}og.png">' in h and 'property="og:title" content="' in h
+              and 'property="og:description" content="' in h and '<meta name="twitter:card" content="summary_large_image">' in h)
     stamp = sw.split('const STAMP = "')[1].split('"')[0]
     (tmp / "site2").mkdir()
     make_site.main(tmp / "p.fwsc", "9.9", tmp / "site2")

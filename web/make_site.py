@@ -50,6 +50,26 @@ BRAND = "Synthesthetic"
 FONTS = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=swap"
 
 
+OG_IMAGE = "og.png"                                          # tools/gen_og.py -> assets/site/og.png -> the site's root
+OG_ALT = ("The Synthesthetic logo, the words USB video out for the M-VAVE FM-1, and a visualizer playing in a black "
+          "window over rainbow stripes")
+
+
+def og_tags(title, description):
+    """the link preview (iMessage, Facebook, Slack, X...): Open Graph and the Twitter card, the image by its full URL"""
+    e = lambda t: t.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")   # noqa: E731
+    return (f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="Synthesthetic">\n'
+            f'<meta property="og:title" content="{e(title)}">\n<meta property="og:description" content="{e(description)}">\n'
+            f'<meta property="og:image" content="{ONLINE}{OG_IMAGE}">\n<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="{e(OG_ALT)}">\n'
+            f'<meta name="twitter:card" content="summary_large_image">')
+
+
+INSTALLER_OG = ("Synthesthetic turns your M-VAVE FM-1 into a USB webcam",
+                "The first FM-1 firmware with video over USB. 30 visualizers react to your music in OBS, Zoom, FaceTime "
+                "and more. Install it from Chrome or Edge.")
+
+
 def site_css():
     """web/site.css, as every page inlines it: the FM-1's font in it"""
     font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
@@ -251,6 +271,7 @@ def handbook(out, version):
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{md_esc(title)}</title>
 <meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into a USB webcam with audio-reactive visualizers.">
+{og_tags("Synthesthetic handbook", "How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into a USB webcam with audio-reactive visualizers.")}
 <meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -321,9 +342,11 @@ def play_page(out, version):
     if f"SYNTHESTHETIC {version}".upper().encode() not in wasm.read_bytes():
         print(f"site: build/web/synthesthetic.wasm is not {version}: python3 tools/build_web.py --release {version}")
     html = (HERE / "play.html").read_text(encoding="utf-8")
-    for mark in ("/*SITE-CSS*/", "<!--LOGO-->", "/*VJ-NAMES*/", "<!--VERSION-->"):
+    for mark in ("/*SITE-CSS*/", "<!--LOGO-->", "/*VJ-NAMES*/", "<!--VERSION-->", "<!--OG-->"):
         if html.count(mark) != 1:
             raise SystemExit(f"play.html must contain {mark} once; update make_site.py")
+    html = html.replace("<!--OG-->", og_tags("Synthesthetic virtual FM-1", "Play Synthesthetic's firmware in your browser on "
+                                             "a 3D FM-1, and see the webcam picture it sends."))
     html = (html.replace("/*SITE-CSS*/", site_css()).replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version))
             .replace("/*VJ-NAMES*/", json.dumps(vj_names())))
     # every file by its contents' stamp (play.js names the others with theirs), so a new page never runs a copy the
@@ -481,13 +504,14 @@ def main(pkg, version, out):
     name = f"synthesthetic-{re.sub(r'[^A-Za-z0-9.-]', '-', version)}.fwsc"
     meta = json.dumps({"version": version, "product": product, "pkg": "../../firmware/" + name,
                        "sha256": hashlib.sha256(raw).hexdigest()})   # the page checks the download against it
-    for mark in ("/*LIB*/", "/*META*/", "/*SITE-CSS*/", "<!--MONITOR-->", "/*MONITOR-CSS*/", "<!--MODES-->", "<!--LOGO-->", "<!--VERSION-->"):
+    for mark in ("/*LIB*/", "/*META*/", "/*SITE-CSS*/", "<!--MONITOR-->", "/*MONITOR-CSS*/", "<!--MODES-->", "<!--LOGO-->", "<!--VERSION-->",
+                 "<!--OG-->"):
         if html.count(mark) != 1:
             raise SystemExit(f"index_pkg.html must contain {mark} once; update make_site.py")
     mon_html, mon_css = monitor(json.loads((SITE / "channels.json").read_text(encoding="utf-8")))
     html = (html.replace("/*LIB*/", lib).replace("/*META*/", meta).replace("/*SITE-CSS*/", site_css())
             .replace("<!--MONITOR-->", mon_html).replace("/*MONITOR-CSS*/", mon_css).replace("<!--MODES-->", modes_wall())
-            .replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version)))
+            .replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version)).replace("<!--OG-->", og_tags(*INSTALLER_OG)))
     inst, ed, fw = out / "webapp" / "installer", out / "webapp" / "editor", out / "firmware"
     for d in (inst, ed, fw):
         d.mkdir(parents=True, exist_ok=True)
@@ -531,8 +555,14 @@ def main(pkg, version, out):
     app_files(out, version, name)
     hb = handbook(out, version)
     pl = play_page(out, version)
-    (out / "index.html").write_text(
-        '<!doctype html><meta charset="utf-8"><title>Synthesthetic</title>'
+    og = SITE / OG_IMAGE
+    if og.exists():
+        shutil.copy(og, out / OG_IMAGE)
+    else:
+        print(f"site: no {og} for the link previews: python3 tools/gen_og.py")
+    (out / "index.html").write_text(                  # (the tags here too: some previewers don't follow the refresh)
+        '<!doctype html><meta charset="utf-8"><title>Synthesthetic</title>\n'
+        f'<meta name="description" content="{md_esc(INSTALLER_OG[1])}">\n{og_tags(*INSTALLER_OG)}\n'
         '<meta http-equiv="refresh" content="0; url=webapp/installer/">'
         '<a href="webapp/installer/">Synthesthetic installer</a>\n', encoding="utf-8")
     print(f"site: {out}: webapp/installer ({len(html)} B), webapp/editor, handbook ({hb} B), play ({pl} B), "
