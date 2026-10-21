@@ -1,0 +1,50 @@
+[
+ {
+  "n": 17,
+  "name": "WARP"
+ },
+ {
+  "n": 20,
+  "name": "KALEIDO"
+ },
+ {
+  "n": 25,
+  "name": "FIRE"
+ },
+ {
+  "n": 31,
+  "name": "SCREEN"
+ },
+ {
+  "n": 27,
+  "name": "LAVA"
+ },
+ {
+  "n": 7,
+  "name": "SPIRAL"
+ },
+ {
+  "n": 30,
+  "name": "FRESNEL"
+ },
+ {
+  "n": 29,
+  "name": "WIREFRAME"
+ },
+ {
+  "n": 24,
+  "name": "PLASMA"
+ },
+ {
+  "n": 9,
+  "name": "KIT"
+ },
+ {
+  "n": 10,
+  "name": "TUNNEL"
+ },
+ {
+  "n": 2,
+  "name": "BARS"
+ }
+]

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 240" width="1180" height="240">
+<rect width="1180" height="240" fill="#000"/>
+<g transform="translate(20,20)">
+<path d="M100.0,100.0 L100.0,4.0 A96.0,96.0 0 0 1 148.0,16.9 Z" fill="#FF1414"/>
+<path d="M100.0,100.0 L148.0,16.9 A96.0,96.0 0 0 1 183.1,52.0 Z" fill="#FF8A14"/>
+<path d="M100.0,100.0 L183.1,52.0 A96.0,96.0 0 0 1 196.0,100.0 Z" fill="#FFFF14"/>
+<path d="M100.0,100.0 L196.0,100.0 A96.0,96.0 0 0 1 183.1,148.0 Z" fill="#8AFF14"/>
+<path d="M100.0,100.0 L183.1,148.0 A96.0,96.0 0 0 1 148.0,183.1 Z" fill="#14FF14"/>
+<path d="M100.0,100.0 L148.0,183.1 A96.0,96.0 0 0 1 100.0,196.0 Z" fill="#14FF8A"/>
+<path d="M100.0,100.0 L100.0,196.0 A96.0,96.0 0 0 1 52.0,183.1 Z" fill="#14FFFF"/>
+<path d="M100.0,100.0 L52.0,183.1 A96.0,96.0 0 0 1 16.9,148.0 Z" fill="#148AFF"/>
+<path d="M100.0,100.0 L16.9,148.0 A96.0,96.0 0 0 1 4.0,100.0 Z" fill="#1414FF"/>
+<path d="M100.0,100.0 L4.0,100.0 A96.0,96.0 0 0 1 16.9,52.0 Z" fill="#8A14FF"/>
+<path d="M100.0,100.0 L16.9,52.0 A96.0,96.0 0 0 1 52.0,16.9 Z" fill="#FF14FF"/>
+<path d="M100.0,100.0 L52.0,16.9 A96.0,96.0 0 0 1 100.0,4.0 Z" fill="#FF148A"/>
+<circle cx="100.0" cy="100.0" r="62.0" fill="#000"/>
+<polyline points="49.2,100.0 52.3,94.9 55.5,90.0 58.7,85.5 61.9,81.6 65.0,78.3 68.2,75.9 71.4,74.5 74.6,74.0 77.8,74.5 80.9,75.9 84.1,78.3 87.3,81.6 90.5,85.5 93.6,90.0 96.8,94.9 100.0,100.0 103.2,105.1 106.4,110.0 109.5,114.5 112.7,118.4 115.9,121.7 119.1,124.1 122.2,125.5 125.4,126.0 128.6,125.5 131.8,124.1 135.0,121.7 138.1,118.4 141.3,114.5 144.5,110.0 147.7,105.1 150.8,100.0" fill="none" stroke="#F2F2F2" stroke-width="7.1" stroke-linejoin="round" stroke-linecap="round"/>
+</g>
+<text x="250" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FF2020">S<animate attributeName="fill" values="#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020" dur="4s" repeatCount="indefinite"/></text>
+<text x="320" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FF2020">Y<animate attributeName="fill" values="#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020" dur="4s" repeatCount="indefinite"/></text>
+<text x="390" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FF8C14">N<animate attributeName="fill" values="#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14" dur="4s" repeatCount="indefinite"/></text>
+<text x="460" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FF8C14">T<animate attributeName="fill" values="#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14" dur="4s" repeatCount="indefinite"/></text>
+<text x="530" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FFEB14">H<animate attributeName="fill" values="#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14" dur="4s" repeatCount="indefinite"/></text>
+<text x="600" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#FFEB14">E<animate attributeName="fill" values="#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14" dur="4s" repeatCount="indefinite"/></text>
+<text x="670" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#28FF46">S<animate attributeName="fill" values="#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46" dur="4s" repeatCount="indefinite"/></text>
+<text x="740" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#28FF46">T<animate attributeName="fill" values="#28FF46;#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46" dur="4s" repeatCount="indefinite"/></text>
+<text x="810" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#148CFF">H<animate attributeName="fill" values="#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF" dur="4s" repeatCount="indefinite"/></text>
+<text x="880" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#148CFF">E<animate attributeName="fill" values="#148CFF;#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF" dur="4s" repeatCount="indefinite"/></text>
+<text x="950" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#4B0082">T<animate attributeName="fill" values="#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082" dur="4s" repeatCount="indefinite"/></text>
+<text x="1020" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#4B0082">I<animate attributeName="fill" values="#4B0082;#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082" dur="4s" repeatCount="indefinite"/></text>
+<text x="1090" y="160" font-family="Menlo, Consolas, monospace" font-size="92" font-weight="700" fill="#8F00FF">C<animate attributeName="fill" values="#8F00FF;#FF2020;#FF8C14;#FFEB14;#28FF46;#148CFF;#4B0082;#8F00FF" dur="4s" repeatCount="indefinite"/></text>
+</svg>
