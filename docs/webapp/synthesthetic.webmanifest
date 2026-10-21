@@ -7,7 +7,7 @@
  "display": "standalone",
  "background_color": "#000000",
  "theme_color": "#000000",
- "description": "Synthesthetic for the M-VAVE FM-1: the editor and the installer, also without internet",
+ "description": "The Synthesthetic editor and installer for the M-VAVE FM-1, available offline",
  "icons": [
   {
    "src": "icon-192.png",

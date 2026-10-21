@@ -3,7 +3,7 @@
 // without WebGL), its webcam picture beside it. The firmware runs in the audio thread; this side draws what it sends
 // (the screen's changes, the LEDs, the webcam's frames, its state), sends it the panel (the model, the computer
 // keyboard, a MIDI keyboard) and keeps its flash image in IndexedDB.
-import { createFM1, KPOS, BUTTONS, WHITE, BLACK, LCDC } from './fm1-3d.js';
+import { createFM1, KPOS, BUTTONS, WHITE, BLACK, LCDC } from './fm1-3d.js?v=9993183aff';
 
 const $ = (id) => document.getElementById(id);
 const NAMES = JSON.parse($('vj-names').textContent);
@@ -86,7 +86,7 @@ addEventListener('blur', () => { for (const code of keysDown) { fm1.down(KEYS[co
 
 // ------------------------------------------------------------------ the audio thread
 let ctx = null, node = null, powered = false, starting = null;
-const wasmBytes = fetch(new URL('synthesthetic.wasm', import.meta.url)).then((r) => {
+const wasmBytes = fetch(new URL('synthesthetic.wasm?v=7f815955b0', import.meta.url)).then((r) => {
   if (!r.ok) throw new Error('the firmware did not load (' + r.status + ')');
   return r.arrayBuffer();
 });
@@ -97,8 +97,7 @@ function send(m) { if (node) node.port.postMessage(m); else queue.push(m); }
 
 async function powerOn() {
   if (powered || starting) return starting;
-  $('power').disabled = true;
-  say('power-note', 'Starting…');
+  $('stage-msg').textContent = 'Starting…';            // (the stage itself is the power button: click it, or play)
   starting = (async () => {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -107,22 +106,20 @@ async function powerOn() {
         try { ctx = new Ctx({ sampleRate: 44100, latencyHint: 'interactive' }); } catch (e) { ctx = new Ctx({ latencyHint: 'interactive' }); }
       }
       const resumed = ctx.resume();                    // (inside the click: the browser lets the sound start)
-      await ctx.audioWorklet.addModule(new URL('worklet.js', import.meta.url));
+      await ctx.audioWorklet.addModule(new URL('worklet.js?v=1307401125', import.meta.url));
       await start(await flashSaved);
       await resumed;
       powered = true;
       stage.classList.add('on');
       $('stage-msg').hidden = true;
-      $('tally').hidden = false;
-      $('power').textContent = 'Powered on';
-      say('power-note', ctx.sampleRate === 44100 ? 'Press PLAY, or a key.' : `Your audio runs at ${ctx.sampleRate / 1000} kHz: pitches will be off.`,
+      say('power-note', ctx.sampleRate === 44100 ? 'Ready. Press PLAY or play a key.' : `Your audio output runs at ${ctx.sampleRate / 1000} kHz, so the pitch will be off.`,
           ctx.sampleRate === 44100 ? '' : 'warn');
       for (const m of queue.splice(0)) send(m);
       send({ t: 'master', v: master });
       send({ t: 'cam', on: camWanted() });
     } catch (e) {
-      $('power').disabled = false;
-      say('power-note', 'It did not start: ' + (e && e.message || e), 'bad');
+      $('stage-msg').textContent = 'Click to power on';
+      say('power-note', 'It didn\'t start: ' + (e && e.message || e), 'bad');
     } finally { starting = null; }
   })();
   return starting;
@@ -136,7 +133,6 @@ async function start(flash) {
   node.onprocessorerror = () => say('power-note', 'The FM-1 stopped. Reload the page to start it again.', 'bad');
   node.connect(ctx.destination);
 }
-$('power').addEventListener('click', powerOn);
 stage.addEventListener('pointerdown', () => { if (!powered) powerOn(); });
 
 // ------------------------------------------------------------------ what the firmware sends
@@ -156,7 +152,7 @@ function receive(m) {
     case 'cam': drawCam(m); break;
     case 'state': showState(m); break;
     case 'flash': saveFlash(m.data); break;
-    case 'error': say('power-note', 'The firmware did not start: ' + m.message, 'bad'); break;
+    case 'error': say('power-note', 'The firmware didn\'t start: ' + m.message, 'bad'); break;
   }
 }
 
@@ -237,18 +233,18 @@ $('hints').addEventListener('change', (e) => fm1.hints(e.target.checked ? HINTS 
 // ------------------------------------------------------------------ MIDI: a keyboard plays the selected track (or by channel)
 let midiAccess = null;
 $('midi').addEventListener('click', async () => {
-  if (!navigator.requestMIDIAccess) { say('midi-note', 'This browser has no Web MIDI: try Chrome, Edge or Firefox.', 'warn'); return; }
+  if (!navigator.requestMIDIAccess) { say('midi-note', 'This browser doesn\'t support Web MIDI. Try Chrome, Edge or Firefox.', 'warn'); return; }
   try {
     midiAccess = await navigator.requestMIDIAccess();
     midiAccess.onstatechange = midiAttach;
     midiAttach();
     if (!powered) powerOn();
-  } catch (e) { say('midi-note', 'MIDI was not allowed.', 'warn'); }
+  } catch (e) { say('midi-note', 'MIDI access was blocked.', 'warn'); }
 });
 function midiAttach() {
   const ins = [...midiAccess.inputs.values()];
   for (const i of ins) i.onmidimessage = midiIn;
-  say('midi-note', ins.length ? 'MIDI from: ' + ins.map((i) => i.name).join(', ') : 'No MIDI keyboard found. Plug one in: it is picked up at once.');
+  say('midi-note', ins.length ? 'Listening to ' + ins.map((i) => i.name).join(', ') + '.' : 'No MIDI keyboard found. Plug one in and it will be picked up right away.');
   $('midi').textContent = ins.length ? 'MIDI on' : 'Connect MIDI';
 }
 function midiIn(e) {
@@ -260,7 +256,7 @@ function midiIn(e) {
 
 // ------------------------------------------------------------------ the flash image: kept in this browser (IndexedDB)
 // (v3: the demo song in song mode; an image saved before it, while the page was being made, is left unread)
-const IMAGE = 'image-v3';
+const IMAGE = 'image-v5';
 function db() {
   return new Promise((res, rej) => {
     const r = indexedDB.open('synthesthetic-play', 1);
@@ -299,8 +295,8 @@ $('reset-yes').addEventListener('click', async () => {
       await start(null);
       send({ t: 'master', v: master }); send({ t: 'cam', on: camWanted() });
     }
-    say('reset-note', 'Erased. The FM-1 started again with the demo.', 'good');
-  } catch (e) { say('reset-note', 'Could not erase: ' + (e && e.message || e), 'bad'); }
+    say('reset-note', 'Erased. The FM-1 restarted with the demo song.', 'good');
+  } catch (e) { say('reset-note', 'Couldn\'t erase: ' + (e && e.message || e), 'bad'); }
 });
 
 // ------------------------------------------------------------------ the computer keyboard, drawn
@@ -313,8 +309,7 @@ $('reset-yes').addEventListener('click', async () => {
   const LABEL = { Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Semicolon: ';', Quote: "'", Comma: ',', Period: '.',
     Slash: '/', ShiftLeft: 'Shift', ShiftRight: 'Shift', Escape: 'Esc', Space: 'Space', Enter: 'Enter', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' };
   const NOTE = (n) => ['F', 'F#', 'G', 'G#', 'A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E'][n % 12] + (3 + Math.floor((n + 5) / 12));
-  const FN = { [B.play]: ['Play', 'var(--c4)'], [B.rec]: ['Rec', 'var(--c1)'], [B.home]: ['Home', 'var(--c6)'], [B.seq]: ['Seq', 'var(--c5)'],
-    [B.arp]: ['Arp', 'var(--c3)'], [B.glo]: ['Glo', 'var(--c3)'], [B.octm]: ['Oct-', 'var(--c2)'], [B.octp]: ['Oct+', 'var(--c2)'] };
+  const FN = { [B.play]: 'Play', [B.rec]: 'Rec', [B.home]: 'Home', [B.seq]: 'Seq', [B.arp]: 'Arp', [B.glo]: 'Glo', [B.octm]: 'Oct-', [B.octp]: 'Oct+' };
   const kb = $('kb');
   for (const [cls, codes] of ROWS) {
     const row = document.createElement('div'); row.className = 'kb-row ' + cls;
@@ -322,8 +317,8 @@ $('reset-yes').addEventListener('click', async () => {
       const c = document.createElement('div'), id = KEYS[code], tn = TURNS[code];
       let kind = 'off', what = '';
       if (id >= 14) { kind = WHITE.includes(id - 14) ? 'white' : 'black'; what = NOTE(id - 14); }
-      else if (id !== undefined) { kind = 'fn'; what = FN[id][0]; c.style.setProperty('--k', FN[id][1]); }
-      else if (tn) { kind = 'fn'; what = (tn[0] === 'select' ? 'Select' : 'Presets') + (tn[1] > 0 ? '+' : '-'); c.style.setProperty('--k', 'var(--c6)'); }
+      else if (id !== undefined) { kind = 'fn'; what = FN[id]; }
+      else if (tn) { kind = 'fn'; what = (tn[0] === 'select' ? 'Select' : 'Presets') + (tn[1] > 0 ? '+' : '-'); }
       c.className = 'kc ' + kind + (code.startsWith('Shift') || code === 'Enter' ? ' wide' : '') + (code === 'Space' ? ' space' : '');
       c.innerHTML = `<b></b><i></i>`; c.firstChild.textContent = LABEL[code] || CAP(code); c.lastChild.textContent = what;
       row.append(c);

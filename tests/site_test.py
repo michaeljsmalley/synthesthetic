@@ -82,8 +82,9 @@ try:
     for name, h in (("installer", inst), ("handbook", hb)):
         check(f"{name}: the logo is the ring and the name in the FM-1's face",
               '<span class="word brand rainbow" aria-hidden="true">' in h and "<text " not in h and "Menlo, Consolas, monospace\" font-size" not in h)
-        check(f"{name}: every Synthesthetic in its text set as the name (.brand)",
-              loose(h) == 0 and h.count('<span class="brand">Synthesthetic</span>') >= 2 and ".brand { font-family: var(--pixel)" in h)
+        check(f"{name}: every Synthesthetic in its text set as the name (.brand)",      # (the installer's text is set by
+              loose(h) == 0 and ".brand { font-family: var(--pixel)" in h                    # its script: setText, below)
+              and h.count('<span class="brand">Synthesthetic</span>') >= (2 if name == "handbook" else 0))
     check("installer: the text it sets itself says the name the same way (setText)",
           "function setText(el, s)" in inst and 'show(' in inst and "setText(e, t(e.dataset.t))" in inst)
     check("brandify: not in titles, attributes, scripts, code",
@@ -96,18 +97,18 @@ try:
     pl = (play / "index.html").read_text(encoding="utf-8")
     check("play: the page, its scripts and the firmware for the browser",
           all((play / f).is_file() for f in ("play.js", "worklet.js", "fm1-3d.js", "synthesthetic.wasm"))
-          and '<script type="module" src="play.js"></script>' in pl)
+          and re.search(r'<script type="module" src="play\.js\?v=[0-9a-f]{10}"></script>', pl))
     names = json.loads(re.search(r'<script id="vj-names" type="application/json">(.*?)</script>', pl, re.S).group(1))
     check("play: the webcam's 31 modes and 9 palettes, named as the firmware names them",
           len(names["modes"]) == 31 and names["modes"][-1] == "SCREEN" and len(names["palettes"]) == 9)
     check("play: the logo and the name as on the other pages",
-          '<span class="word brand rainbow" aria-hidden="true">' in pl and '<span class="rainbow brand">' in pl and loose(pl) == 0)
-    prel = [u.split("#")[0] for u in re.findall(r'(?:src|href)="([^"#][^"]*)"', pl) if not re.match(r"(https?:|data:|mailto:)", u)]
+          '<span class="word brand rainbow" aria-hidden="true">' in pl and loose(pl) == 0)
+    prel = [re.split(r"[#?]", u)[0] for u in re.findall(r'(?:src|href)="([^"#][^"]*)"', pl) if not re.match(r"(https?:|data:|mailto:)", u)]
     pgone = [u for u in prel if not (play / u).resolve().exists()]
     check(f"play: its {len(prel)} links inside the site all there", not pgone)
     check("play: linked from the installer (bar, hero, tools) and the handbook",
           inst.count('href="../../play/"') == 3 and 'href="../play/"' in hb)
-    rel = [u for u in re.findall(r'(?:src|href)="([^"#][^"]*)"', hb) if not re.match(r"(https?:|data:|mailto:)", u)]
+    rel = [u.split("#")[0] for u in re.findall(r'(?:src|href)="([^"#][^"]*)"', hb) if not re.match(r"(https?:|data:|mailto:)", u)]
     gone = [u for u in rel if not (tmp / "site" / "handbook" / u).resolve().exists()]
     check(f"handbook: its {len(rel)} links and images inside the site all there", not gone)
     check("handbook: repository files linked on GitHub, site pages relative",

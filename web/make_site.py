@@ -9,7 +9,8 @@
   firmware/felucca-VER.fwsc   the package
   webapp/installer/index.html index_pkg.html with fm1pkg.js, fm1ota.js and the metadata inlined; its hero monitor
                               (channels.jpg, laid out from assets/site/channels.json) and the webcam title's
-                              frame (title-bg.jpg) next to it, the FM-1's font (assets/site/terminus16b.ttf) inlined
+                              frame (title-bg.jpg) next to it
+  (every page)                web/site.css inlined, with the FM-1's font (assets/site/terminus16b.ttf) in it
   webapp/editor/index.html    editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt)
   webapp/editor/synthesthetic-editor.html  the editor in one file, for offline use (SLOOP 2.6): its icon font inlined,
                               its links to the installer and the font licence online; opened from the disk in
@@ -44,16 +45,18 @@ REPO = "https://github.com/michaeljsmalley/synthesthetic"       # the source: th
 # ---- the name, as the FM-1 prints it: its screen's pixel face (Terminus), in capitals. The bar's logo is the ring and
 # the name in that face, its letters turning through the spectrum (as on the boot screen); in the copy every
 # "Synthesthetic" is a .brand span (brandify_html at build time; the installer's own brandify for the text it sets).
+# Their CSS is in web/site.css, the site's one stylesheet.
 BRAND = "Synthesthetic"
-BRAND_CSS = """
-  /* the name as the FM-1 prints it: the screen's pixel face, in capitals, at the nearest whole multiple of its 16 px */
-  .brand { font-family: var(--pixel); font-weight: normal; font-style: normal; text-transform: uppercase; letter-spacing: 0; }
-  @supports (font-size: round(nearest, 1em, 16px)) { .brand { font-size: max(16px, round(nearest, 1em, 16px)); } }
-  .logo { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
-  .logo .mark { display: block; width: 38px; height: 38px; flex: none; }
-  .logo .word { font-size: 32px; line-height: 1; white-space: nowrap; }
-  @media (max-width: 359px) { .logo .word { font-size: 16px; } .logo .mark { width: 28px; height: 28px; } }
-"""
+FONTS = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=swap"
+
+
+def site_css():
+    """web/site.css, as every page inlines it: the FM-1's font in it"""
+    font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
+    css = (HERE / "site.css").read_text(encoding="utf-8")
+    if css.count("/*SITE-FONT*/") != 1:
+        raise SystemExit("site.css must contain /*SITE-FONT*/ once; update make_site.py")
+    return css.replace("/*SITE-FONT*/", font)
 
 
 def logo_html():
@@ -65,12 +68,6 @@ def logo_html():
     word = "".join(f'<span style="--o: {round(i * 240 / (len(BRAND) - 1))}">{c}</span>' for i, c in enumerate(BRAND.upper()))
     return (f'<svg class="mark" viewBox="0 0 200 200" aria-hidden="true">{m.group(1).strip()}</svg>'
             f'<span class="word brand rainbow" aria-hidden="true">{word}</span>')
-
-
-def rainbow_name():
-    """the name in rainbow letters (each its own hue, all turning: .rainbow), as the installer's and the handbook's titles"""
-    return '<span class="rainbow brand">' + "".join(f'<span style="--o: {round(i * 240 / (len(BRAND) - 1))}">{c}</span>'
-                                                    for i, c in enumerate(BRAND)) + "</span>"
 
 
 def brandify_html(html):
@@ -205,81 +202,47 @@ def md_render(md):
 
 
 HANDBOOK_CSS = """
-  /* Layout: the installer's broadcast-monitor look for reading: the same bar, the FM-1's face for headings and
-     labels, a reading column beside a contents column that stays in view on wide screens. */
-  @font-face { font-family: "FM-1 Terminus"; src: url(/*SITE-FONT*/) format("truetype"); font-display: swap; }
-  :root {
-    color-scheme: dark;
-    --glass: #211a2a; --panel: #2a2234; --rule: #43384f; --ink: #f3eff8; --mute: #b3a8c2;   /* the installer's plum */
-    --pixel: "FM-1 Terminus", ui-monospace, Menlo, Consolas, monospace;
-    --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, Menlo, Consolas, monospace;
-    --pad-l: max(clamp(16px, 4vw, 64px), env(safe-area-inset-left, 0px));
-    --pad-r: max(clamp(16px, 4vw, 64px), env(safe-area-inset-right, 0px));
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body { margin: 0; background: var(--glass); color: var(--ink); font: 17px/1.62 var(--sans); }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--mute); }
-  a:hover { text-decoration-color: var(--ink); }
-  :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-  .band { padding-left: var(--pad-l); padding-right: var(--pad-r); }
-  .wrap { max-width: 1440px; margin-inline: auto; }
-  header.band { padding-block: 16px; border-bottom: 1px solid var(--rule); }
-  .deco-row { height: 110px; }
-  .deco-row canvas { display: block; width: 100%; height: 100%; }
-  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 14px 32px; flex-wrap: wrap; }
-  nav { display: flex; gap: 8px 26px; flex-wrap: wrap; font: 16px/1 var(--pixel); text-transform: uppercase; }
-  nav a { color: var(--mute); text-decoration: none; padding-block: 6px; }
-  nav a:hover { color: var(--ink); }
-  main.band { padding-block: clamp(28px, 5vw, 64px) 72px; }
-  main .wrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 56px; }
-  aside { display: none; }
-  @media (min-width: 1100px) {
-    main .wrap { grid-template-columns: 240px minmax(0, 800px); justify-content: start; gap: clamp(48px, 6vw, 112px); }
-    aside { display: block; position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow: auto; }
-    #contents, #contents + ol { display: none; }
-  }
-  aside p { margin: 0 0 12px; font: 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--mute); }
-  aside ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 15px; }
-  aside a { display: block; padding: 4px 0; color: var(--mute); text-decoration: none; }
-  aside a:hover { color: var(--ink); }
-  article { min-width: 0; }
-  @property --h { syntax: "<number>"; inherits: true; initial-value: 0; }
-  @keyframes hueturn { to { --h: 360; } }
-  .rainbow { animation: hueturn 4s linear infinite; }
-  .rainbow span { color: hsl(calc(var(--h) + var(--o, 0)) 100% 62%); }
-  @media (prefers-reduced-motion: reduce) { .rainbow { animation: none; } html { scroll-behavior: auto; } }
-  h1 { margin: 0 0 22px; font: 32px/1.15 var(--pixel); font-weight: normal; text-wrap: balance; }
-  h2 { margin: 64px 0 16px; padding-top: 20px; border-top: 1px solid var(--rule); font: 32px/1.15 var(--pixel);
-       font-weight: normal; text-transform: uppercase; text-wrap: balance; scroll-margin-top: 20px; }
-  h3 { margin: 36px 0 10px; font: 16px/1.3 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .03em;
-       scroll-margin-top: 20px; }
-  p, ul, ol { margin: 0 0 14px; }
-  article > p, article li { max-width: 72ch; }
-  ul, ol { padding-left: 22px; } li { margin: 4px 0; } li::marker { color: var(--mute); }
+  /* The handbook, as the booklet that comes with the tape. Layout: the contents in columns 1 to 3, staying in view on
+     a wide screen, and the text in columns 4 to 11, about 70 characters wide. Tables and code scroll on their own. */
+  .book { align-items: start; }
+  .book > aside { grid-column: 1 / span 3; position: sticky; top: 96px; max-height: calc(100vh - 120px); overflow: auto; }
+  .book > article { grid-column: 4 / span 8; min-width: 0; }
+  .book > aside ol { list-style: none; margin: 12px 0 0; padding: 0; border-top: 2px solid var(--ink); }
+  .book > aside li { border-bottom: 1px dotted var(--fold); }
+  .book > aside a { display: block; padding: 6px 0; font-size: 14px; text-decoration: none; }
+  .book > aside a:hover { color: var(--s1); }
+  .opening { margin: 0 calc(-1 * var(--pad)) var(--panel); }
+  article { font-size: 17px; line-height: 1.6; }
+  article h1 { margin-bottom: 28px; }
+  article h2 { margin: 64px 0 18px; padding-top: 18px; border-top: 2px solid var(--ink); }
+  article h3 { margin: 36px 0 10px; }
+  article p, article ul, article ol { margin: 0 0 14px; }
+  article > p, article li { max-width: 68ch; }
+  article ul, article ol { padding-left: 22px; }
+  article li { margin: 4px 0; }
+  article li::marker { color: var(--gray); }
   strong { font-weight: 600; }
-  code { font: .86em/1.4 var(--mono); background: var(--panel); padding: 1px 5px; border: 1px solid var(--rule); }
-  pre { background: #1a1421; border: 1px solid var(--rule); padding: 14px 16px; margin: 0 0 16px; overflow-x: auto; }
-  pre code { background: none; border: 0; padding: 0; font-size: 13.5px; line-height: 1.55; }
-  .table { overflow-x: auto; margin: 0 0 18px; }
+  code { font: .85em/1.4 var(--mono); background: var(--raised); padding: 1px 5px; }
+  pre { margin: 0 0 16px; padding: 14px 16px; background: var(--raised); overflow-x: auto; }
+  pre code { padding: 0; background: none; font-size: 13.5px; line-height: 1.55; }
+  .table { overflow-x: auto; margin: 0 0 18px; border: 2px solid var(--ink); }
   table { border-collapse: collapse; width: 100%; font-size: 15px; }
-  th { text-align: left; color: var(--mute); font: 16px/1.2 var(--pixel); text-transform: uppercase; }
-  th, td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { text-align: left; background: var(--ink); color: var(--card); font: 400 11px/1.4 var(--ext); letter-spacing: .08em; text-transform: uppercase; }
+  th, td { padding: 10px 14px; vertical-align: top; }
+  td { border-top: 1px solid var(--line); }
   figure { margin: 24px 0; }
-  figure img { display: block; width: 100%; height: auto; background: #000; box-shadow: 0 0 0 1px var(--rule); }
-  figcaption { color: var(--mute); font-size: 14px; margin-top: 8px; }
-  footer.band { padding-block: 26px 40px; border-top: 1px solid var(--rule); color: var(--mute); font-size: 14px; }
-  footer p { margin: 0; max-width: 110ch; }
-""" + BRAND_CSS
+  figure img { display: block; width: 100%; height: auto; background: var(--screen); }
+  figcaption { margin-top: 8px; color: var(--gray); font-size: 14px; }
+  @media (min-width: 1101px) { #contents, #contents + ol { display: none; } }
+  @media (max-width: 1100px) { .book > aside { display: none; } .book > article { grid-column: 1 / -1; } }
+"""
 
 
-def handbook(out):
+def handbook(out, version):
     """out/handbook/index.html from HANDBOOK.md"""
     md = (HERE.parent / "HANDBOOK.md").read_text(encoding="utf-8")
     title, body = md_render(md)
     toc = "".join(f'<li><a href="#{md_slug(t)}">{md_esc(t)}</a></li>' for t in re.findall(r"^## (.+)$", md, re.M) if t != "Contents")
-    font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
     page = f"""<!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only; made from HANDBOOK.md by web/make_site.py: edit that file, not this one -->
 <html lang="en">
@@ -287,36 +250,42 @@ def handbook(out):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{md_esc(title)}</title>
-<meta name="description" content="Synthesthetic for the M-VAVE FM-1: an audio-visual instrument with a USB webcam. Install, play, stream, recover, build.">
-<meta name="theme-color" content="#211a2a">
+<meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into a USB webcam with audio-reactive visualizers.">
+<meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap">
-<style>{HANDBOOK_CSS.replace("/*SITE-FONT*/", font)}</style>
+<link rel="stylesheet" href="{FONTS}">
+<style>{site_css()}{HANDBOOK_CSS}</style>
 </head>
 <body>
-<header class="band">
-  <div class="wrap">
-    <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic installer">{logo_html()}</a>
-    <nav aria-label="Site"><a href="../webapp/installer/">Installer</a><a href="../play/">Play</a><a href="../webapp/editor/">Editor</a><a href="{REPO}">Source</a></nav>
-  </div>
-</header>
-<div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="sines"></canvas></div>
-<main class="band">
-  <div class="wrap">
-    <aside aria-label="Contents"><p>Contents</p><ol>{toc}</ol></aside>
-    <article>
+<div class="card">
+  <aside class="spine" aria-hidden="true"><p>Synthesthetic<span class="label">Handbook</span><span class="label">{md_esc(version)}</span></p></aside>
+  <div class="front">
+    <header class="bar">
+      <div class="grid">
+        <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic installer">{logo_html()}</a>
+        <nav aria-label="Site"><a href="../webapp/installer/#webcam">Webcam</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="../play/">Play</a><a class="opt" href="./" aria-current="page">Handbook</a></nav>
+      </div>
+    </header>
+    <main class="panel">
+      <div class="stripes opening" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="grid book">
+        <aside aria-label="Contents"><p class="label">Contents</p><ol>{toc}</ol></aside>
+        <article>
 {body}
-    </article>
+        </article>
+      </div>
+    </main>
+    <footer class="panel">
+      <div class="grid">
+        <p>Synthesthetic is free software under the GPL-3.0, based on SLOOP by isod89 and Felucca by Leo Kuroshita of
+          Hügelton Instruments. <a href="{REPO}/blob/main/HANDBOOK.md">Read this page on GitHub</a></p>
+        <p>M-VAVE and FM-1 are trademarks of their owners. Synthesthetic isn't affiliated with them.</p>
+      </div>
+    </footer>
   </div>
-</main>
-<footer class="band">
-  <div class="wrap"><p>Synthesthetic is free software under the GPL-3.0, based on SLOOP by isod89 and on Felucca by Leo Kuroshita,
-    Hügelton Instruments. M-VAVE and FM-1 are trademarks of their respective owners; Synthesthetic is not affiliated
-    with them. <a href="{REPO}/blob/main/HANDBOOK.md">This page on GitHub</a>.</p></div>
-</footer>
-<script>{(HERE / "deco.js").read_text(encoding="utf-8")}</script>
+</div>
 </body>
 </html>
 """
@@ -352,18 +321,33 @@ def play_page(out, version):
     if f"SYNTHESTHETIC {version}".upper().encode() not in wasm.read_bytes():
         print(f"site: build/web/synthesthetic.wasm is not {version}: python3 tools/build_web.py --release {version}")
     html = (HERE / "play.html").read_text(encoding="utf-8")
-    for mark in ("/*SITE-FONT*/", "<!--LOGO-->", "/*BRAND-CSS*/", "<!--RAINBOW-->", "/*DECO*/", "/*VJ-NAMES*/"):
+    for mark in ("/*SITE-CSS*/", "<!--LOGO-->", "/*VJ-NAMES*/", "<!--VERSION-->"):
         if html.count(mark) != 1:
             raise SystemExit(f"play.html must contain {mark} once; update make_site.py")
-    font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
-    html = (html.replace("/*SITE-FONT*/", font).replace("<!--LOGO-->", logo_html()).replace("/*BRAND-CSS*/", BRAND_CSS)
-            .replace("<!--RAINBOW-->", rainbow_name()).replace("/*DECO*/", (HERE / "deco.js").read_text(encoding="utf-8"))
+    html = (html.replace("/*SITE-CSS*/", site_css()).replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version))
             .replace("/*VJ-NAMES*/", json.dumps(vj_names())))
+    # every file by its contents' stamp (play.js names the others with theirs), so a new page never runs a copy the
+    # browser kept from before: a new play.js against an old firmware, or the other way round
+    stamp = lambda data: hashlib.sha256(data).hexdigest()[:10]              # noqa: E731
+    js = (HERE / "play" / "play.js").read_text(encoding="utf-8")
+    for name, data in (("fm1-3d.js", (HERE / "play" / "fm1-3d.js").read_bytes()),
+                       ("worklet.js", (HERE / "play" / "worklet.js").read_bytes()), ("synthesthetic.wasm", wasm.read_bytes())):
+        for ref in (f"'./{name}'", f"'{name}'"):
+            if js.count(ref) == 1:
+                js = js.replace(ref, f"{ref[:-1]}?v={stamp(data)}'")
+                break
+        else:
+            raise SystemExit(f"play.js must name '{name}' once; update make_site.py")
+    if html.count('<script type="module" src="play.js"></script>') != 1:
+        raise SystemExit('play.html must load <script type="module" src="play.js"></script> once; update make_site.py')
+    html = html.replace('<script type="module" src="play.js"></script>',
+                        f'<script type="module" src="play.js?v={stamp(js.encode("utf-8"))}"></script>')
     html = brandify_html(html)
     d = out / "play"
     d.mkdir(parents=True, exist_ok=True)
     (d / "index.html").write_text(html, encoding="utf-8")
-    for f in ("play.js", "worklet.js", "fm1-3d.js"):
+    (d / "play.js").write_text(js, encoding="utf-8")
+    for f in ("worklet.js", "fm1-3d.js"):
         shutil.copy(HERE / "play" / f, d / f)
     shutil.copy(wasm, d / "synthesthetic.wasm")
     return len(html)
@@ -394,16 +378,29 @@ SITE = HERE.parent / "assets" / "site"                       # tools/gen_site_as
 SITE_PICS = ("channels.jpg", "title-bg.jpg")
 
 
+FAMILIES = (("grpScopes", (1, 2, 3, 4, 5)), ("grpPatterns", (6, 7, 8, 10, 11, 12, 15, 16)), ("grpDrums", (9, 13, 14)),
+            ("grpFeedback", tuple(range(17, 24))), ("grpDemoscene", tuple(range(24, 31))), ("grpScreen", (31,)))
+COLUMNS = ((0, 1), (2, 3), (4, 5))      # the three columns under the window, by FAMILIES' index
+
+
 def modes_wall():
-    """the gallery: every mode from HANDBOOK.md's table (number, name, what it shows), its frame from assets/site/modes"""
+    """the 31 modes from HANDBOOK.md's table, by family in three columns under the hero's window: each a button that
+    shows its frame (assets/site/modes) in the window, SCREEN with the line that says what it sends (data-t modeScreen)"""
     md = (HERE.parent / "HANDBOOK.md").read_text(encoding="utf-8")
     rows = re.findall(r"^\| (\d+) \| \*\*([A-Z]+)\*\* \| (.+) \|$", md, re.M)
-    if len(rows) != 31:
-        raise SystemExit(f"HANDBOOK.md's table of the modes has {len(rows)} rows, not 31; update make_site.py")
-    li = "".join(f'<li class="mode{" screen" if int(n) == 31 else ""}"><figure><img src="modes/{int(n):02d}.jpg" alt="{md_esc(name)}" '
-                 f'loading="lazy" width="320" height="180"></figure><h3><span>{int(n):02d}</span> {md_esc(name)}</h3>'
-                 f"<p>{md_esc(desc)}</p></li>" for n, name, desc in rows)
-    return f'<ul class="wall">{li}</ul>'
+    if len(rows) != 31 or rows[-1][1] != "SCREEN":
+        raise SystemExit(f"HANDBOOK.md's table of the modes has {len(rows)} rows, not 31 ending with SCREEN; update make_site.py")
+    if sorted(n for _, ns in FAMILIES for n in ns) != list(range(1, 32)):
+        raise SystemExit("make_site.py: FAMILIES must hold each of the 31 modes once")
+    names = {int(n): name for n, name, _ in rows}
+
+    def group(key, ns):
+        li = "".join(f'<li><button type="button" data-mode="{n:02d}" data-name="{md_esc(names[n])}" aria-pressed="false">'
+                     f"<span>{n:02d}</span>{md_esc(names[n])}</button></li>" for n in ns)
+        note = '<p class="note" data-t="modeScreen"></p>' if key == "grpScreen" else ""
+        return f'<div class="group"><h3 data-t="{key}"></h3><ol class="tracks">{li}</ol>{note}</div>'
+    return ('<div class="contents">' + "".join("<div>" + "".join(group(*FAMILIES[i]) for i in col) + "</div>" for col in COLUMNS)
+            + "</div>")
 
 
 def monitor(channels, secs=2.5):
@@ -416,8 +413,8 @@ def monitor(channels, secs=2.5):
            "  @media (prefers-reduced-motion: reduce) { .ch { animation: none; } .ch:first-child { opacity: 1; } }")
     chs = "".join(f'<div class="ch" style="background-position: 0 {k * 100 / max(n - 1, 1):.4f}%; animation-delay: {k * secs:g}s">'
                   f'<b>{c["n"]:02d}/31 {c["name"]}</b></div>' for k, c in enumerate(channels))
-    html = ('<div class="monitor" role="img" aria-label="The FM-1 webcam, changing modes: '
-            + ", ".join(c["name"] for c in channels) + '">' + chs + '<span class="tally">LIVE</span><span class="vf"></span></div>')
+    html = ('<div class="display monitor" role="img" aria-label="The FM-1 webcam, changing modes: '
+            + ", ".join(c["name"] for c in channels) + '">' + chs + '</div>')
     return html, css
 
 
@@ -430,7 +427,7 @@ def app_files(out, version, fw_name):
     manifest = {
         "name": "Synthesthetic", "short_name": "Synthesthetic", "id": "editor/", "start_url": "editor/", "scope": "./",
         "display": "standalone", "background_color": "#000000", "theme_color": "#000000",
-        "description": "Synthesthetic for the M-VAVE FM-1: the editor and the installer, also without internet",
+        "description": "The Synthesthetic editor and installer for the M-VAVE FM-1, available offline",
         "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                   {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
                   {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
@@ -484,16 +481,13 @@ def main(pkg, version, out):
     name = f"synthesthetic-{re.sub(r'[^A-Za-z0-9.-]', '-', version)}.fwsc"
     meta = json.dumps({"version": version, "product": product, "pkg": "../../firmware/" + name,
                        "sha256": hashlib.sha256(raw).hexdigest()})   # the page checks the download against it
-    for mark in ("/*LIB*/", "/*META*/", "/*SITE-FONT*/", "<!--MONITOR-->", "/*MONITOR-CSS*/", "<!--MODES-->", "/*DECO*/",
-                 "/*BRAND-CSS*/", "<!--LOGO-->"):
+    for mark in ("/*LIB*/", "/*META*/", "/*SITE-CSS*/", "<!--MONITOR-->", "/*MONITOR-CSS*/", "<!--MODES-->", "<!--LOGO-->", "<!--VERSION-->"):
         if html.count(mark) != 1:
             raise SystemExit(f"index_pkg.html must contain {mark} once; update make_site.py")
     mon_html, mon_css = monitor(json.loads((SITE / "channels.json").read_text(encoding="utf-8")))
-    font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
-    html = (html.replace("/*LIB*/", lib).replace("/*META*/", meta).replace("/*SITE-FONT*/", font)
+    html = (html.replace("/*LIB*/", lib).replace("/*META*/", meta).replace("/*SITE-CSS*/", site_css())
             .replace("<!--MONITOR-->", mon_html).replace("/*MONITOR-CSS*/", mon_css).replace("<!--MODES-->", modes_wall())
-            .replace("/*DECO*/", (HERE / "deco.js").read_text(encoding="utf-8")))
-    html = html.replace("<!--LOGO-->", logo_html()).replace("/*BRAND-CSS*/", BRAND_CSS)
+            .replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version)))
     inst, ed, fw = out / "webapp" / "installer", out / "webapp" / "editor", out / "firmware"
     for d in (inst, ed, fw):
         d.mkdir(parents=True, exist_ok=True)
@@ -535,7 +529,7 @@ def main(pkg, version, out):
     elif (ed / dsp.name).exists():
         (ed / dsp.name).unlink()  # never serve an old audio build as the current one
     app_files(out, version, name)
-    hb = handbook(out)
+    hb = handbook(out, version)
     pl = play_page(out, version)
     (out / "index.html").write_text(
         '<!doctype html><meta charset="utf-8"><title>Synthesthetic</title>'

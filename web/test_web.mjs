@@ -1884,8 +1884,8 @@ async function installerVj() {
       "installer: webcam title: video build asked (01), title (06, capitals, ASCII, 19) and overlay (07 3) sent");
   }
   {   /* step 1 of the install: what the FM-1 answers with, and what that means for installing over it */
-    const cases = [["FM-1_951", /answers as FM-1_951: Synthesthetic 0\.1\. Installing updates it/], ["FM-1_950", /Synthesthetic \(a development build\)/],
-                   ["FM-1_927", /Felucca-family firmware/], ["FM-1_000", /USB rescue updater/], ["FM-1_015", /another firmware\. If it is M-VAVE's official V15/]];
+    const cases = [["FM-1_951", /reports FM-1_951\. It's running Synthesthetic 0\.1\. Installing updates it/], ["FM-1_950", /Synthesthetic \(a development build\)/],
+                   ["FM-1_927", /Dinghy, Felucca, SLOOP or a fork/], ["FM-1_000", /USB rescue mode/], ["FM-1_015", /different firmware\. If that's M-VAVE's official V15/]];
     const got = [];
     for (const [id, re] of cases) {
       const dev = new FakeSyn(id, true), { els } = run(dev);
@@ -1904,7 +1904,7 @@ async function installerVj() {
     await c.els.get("vj-go").on.click();
     await sleep(10);
     ok(!sent(audio, 6) && /without the webcam/.test(a.els.get("vj-status").textContent) && !sloop.vc.length
-      && /another firmware.*FM-1_927/.test(b.els.get("vj-status").textContent) && /not allowed/.test(c.els.get("vj-status").textContent),
+      && /different firmware \(FM-1_927\)/.test(b.els.get("vj-status").textContent) && /wasn't allowed/.test(c.els.get("vj-status").textContent),
       "installer: webcam title: an audio-only build, another firmware, no MIDI: said so, nothing sent");
   }
 }

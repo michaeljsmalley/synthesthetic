@@ -6,653 +6,490 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Synthesthetic installer</title>
-<meta name="description" content="Install Synthesthetic on the M-VAVE FM-1: a groovebox whose sound drives 30 visualizers, on its own screen and over USB as a webcam.">
-<!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#211a2a"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<meta name="description" content="Synthesthetic is the first firmware that turns the M-VAVE FM-1 into a USB webcam, with 30 audio-reactive visualizers drawn from your music. Install it from this page.">
+<!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#e2e2de"><link rel="icon" href="../icon-192.png"><!--/PWA-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=swap">
 <style>
-  /* Layout: a deep plum wall with the FM-1's screens hung on it. Full-width bands: the pitch beside the live picture,
-     the install as three steps with its precautions beside it, the modes as a wall of real frames, the webcam, the
-     tools; between the bands, audio pictures drawn live (layered sines, equaliser bars, dotted waves, traces,
-     spikes, contour rings: web/deco.js). Colour comes from those and the frames: buttons stay light on the plum. */
-  @font-face { font-family: "FM-1 Terminus"; src: url(/*SITE-FONT*/) format("truetype"); font-display: swap; }
-  :root {
-    color-scheme: dark;
-    --glass: #211a2a;      /* the wall: a deep plum */
-    --panel: #2a2234;      /* a raised band */
-    --lift: #342a40;       /* a raised block on a band */
-    --rule: #43384f;       /* hairlines */
-    --ink: #f3eff8;        /* text */
-    --mute: #b3a8c2;       /* secondary text */
-    --tally: #ff4d6d;      /* the LIVE tally light, and failures */
-    --good: #5be39a;       /* done */
-    --warn: #ffc94a;       /* take care */
-    --c1: #ff4d8d; --c2: #ff9f1c; --c3: #ffd23f; --c4: #7ae582; --c5: #22d3c5; --c6: #4d9bff;   /* the visualisers' colours */
-    --pixel: "FM-1 Terminus", ui-monospace, Menlo, Consolas, monospace;   /* the FM-1 screen's face, at 16 or 32 px */
-    --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;               /* reading */
-    --pad-l: max(clamp(16px, 4vw, 64px), env(safe-area-inset-left, 0px));
-    --pad-r: max(clamp(16px, 4vw, 64px), env(safe-area-inset-right, 0px));
-    --wrap: 1440px;
-    --gap: clamp(28px, 4.5vw, 80px);
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 76px; }
-  body { margin: 0; background: var(--glass); color: var(--ink); font: 17px/1.55 var(--sans); }
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--glass); }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--mute); }
-  a:hover { text-decoration-color: var(--ink); }
-  :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-  [hidden] { display: none !important; }
-  h1, h2, h3 { text-wrap: balance; }
-  .band { padding-left: var(--pad-l); padding-right: var(--pad-r); }
-  .wrap { max-width: var(--wrap); margin-inline: auto; }
-  .label { margin: 0; font: 16px/1.25 var(--pixel); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
-  .sec-head { display: grid; gap: 10px; margin-bottom: clamp(22px, 3vw, 36px); max-width: 760px; }
-  .sec-head h2 { margin: 0; font: 32px/1.1 var(--pixel); font-weight: normal; text-transform: uppercase; }
-  .sec-head p { margin: 0; color: var(--mute); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 16px/1 var(--pixel);
-         text-transform: uppercase; letter-spacing: .03em; text-decoration: none; cursor: pointer; padding: 14px 18px;
-         border: 1px solid var(--rule); background: none; color: var(--ink); }
-  .btn:hover:not(:disabled) { border-color: var(--mute); }
-  .btn.primary { background: var(--ink); color: var(--glass); border-color: var(--ink); box-shadow: 0 10px 30px -12px rgb(255 77 141 / .55); }
-  .btn.primary:hover:not(:disabled) { background: #fff; border-color: #fff; }
-  .btn:disabled { color: var(--mute); background: var(--panel); border-color: var(--rule); cursor: default; }
-
-  /* the bar: stays on top, with the sections and the language */
-  header.band { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-block: 12px;
-                background: rgb(33 26 42 / .9); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-                border-bottom: 1px solid var(--rule); }
-  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 10px 32px; flex-wrap: wrap; }
-  /*BRAND-CSS*/
-  nav { display: flex; align-items: center; gap: 6px 24px; flex-wrap: wrap; font: 16px/1 var(--pixel); text-transform: uppercase; }
-  nav a { color: var(--mute); text-decoration: none; padding-block: 6px; }
-  nav a:hover { color: var(--ink); }
-  nav .sep { width: 1px; height: 16px; background: var(--rule); }
-  .lang { font: 15px/1 var(--sans); color: var(--mute); background: none; border: 1px solid var(--rule); padding: 6px 10px; cursor: pointer; }
-  .lang:hover { color: var(--ink); border-color: var(--mute); }
-
-  /* the hero */
-  .hero { padding-block: clamp(32px, 5.5vw, 88px) clamp(20px, 3vw, 40px); }
-  /* the audio pictures between the bands */
-  .deco-row { height: var(--rowh, 88px); }
-  .deco-row canvas { display: block; width: 100%; height: 100%; }
-  .deco-row.tall { --rowh: 150px; }
-  .hero .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--gap); align-items: center; }
-  .pitch { display: grid; gap: 22px; max-width: 640px; }
-  .pitch h1 { margin: 0; font: 600 clamp(30px, 3.4vw, 48px)/1.08 var(--sans); letter-spacing: -.01em; }
-  .lead { display: grid; gap: 12px; font-size: clamp(18px, 1.35vw, 21px); line-height: 1.5; }
-  .lead p, .lead ul { margin: 0; }
-  .lead ul { padding-left: 1.15em; display: grid; gap: 2px; }
-  .lead li::marker { color: var(--mute); }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 6px; }
-  /* the rainbow letters, as on the FM-1: each letter its own hue (--o), all turning together (--h) */
-  @property --h { syntax: "<number>"; inherits: true; initial-value: 0; }
-  @keyframes hueturn { to { --h: 360; } }
-  .rainbow { animation: hueturn 4s linear infinite; }
-  .rainbow span, .vjprev span { color: hsl(calc(var(--h) + var(--o, 0)) 100% 62%); }
-  /* a line that ripples: its letters bob, the wave running from the last letter to the first */
-  .wave { font-weight: 600; }
-  .wave .w { white-space: nowrap; }
-  .wave .w span { display: inline-block; animation: bob 1.6s ease-in-out infinite; animation-delay: calc(var(--i) * -0.07s); }
-  @keyframes bob { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-.32em); } 62% { transform: translateY(.07em); } }
-  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-  .screen-col { display: grid; gap: 12px; }
-  .monitor { position: relative; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: #000; border-radius: 4px;
-             box-shadow: 0 0 0 1px var(--rule), 0 50px 120px -50px #000; }
+/*SITE-CSS*/
+  /* The installer: words in columns 1 to 5, pictures and data in 7 to 12, the same in every panel. The hero: the title and the webcam window on one band, the stripes running
+     behind the window to both edges of the card. Under them the words and the technical data on the left, and on the
+     right the 31 modes, right under the window that shows them. Then the webcam, the install, the instrument, the
+     tools and the way back to V15. */
+  .hero { padding-top: 32px; }
+  .band { position: relative; }
+  .titles { grid-column: 1 / span 6; align-self: start; display: grid; gap: 16px; }
+  .band .stripes { position: absolute; left: calc(-1 * var(--pad)); right: calc(-1 * var(--pad)); bottom: 0; }
+  .band .window { grid-column: 7 / span 6; position: relative; z-index: 1; }
   .ch { position: absolute; inset: 0; background-image: url(channels.jpg); background-repeat: no-repeat; opacity: 0; }
-  .ch b { position: absolute; left: 4%; bottom: 7%; font: 16px/1 var(--pixel); font-weight: normal; color: #fff;
-          background: rgb(0 0 0 / .55); padding: 4px 6px; letter-spacing: .03em; }
-  .tally { position: absolute; top: 7%; left: 4%; display: flex; align-items: center; gap: 8px; font: 16px/1 var(--pixel);
-           color: #fff; background: rgb(0 0 0 / .55); padding: 4px 8px 4px 6px; }
-  .tally::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--tally); box-shadow: 0 0 8px var(--tally); }
-  .vf { position: absolute; inset: 3.5%; pointer-events: none; opacity: .8; --c: rgb(255 255 255 / .85);
-        background: linear-gradient(var(--c), var(--c)) left top / 22px 2px, linear-gradient(var(--c), var(--c)) left top / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) right top / 22px 2px, linear-gradient(var(--c), var(--c)) right top / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) left bottom / 22px 2px, linear-gradient(var(--c), var(--c)) left bottom / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) right bottom / 22px 2px, linear-gradient(var(--c), var(--c)) right bottom / 2px 22px;
-        background-repeat: no-repeat; }
-  .monitor::after, .vjscreen::after, .mode figure::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-        background: repeating-linear-gradient(to bottom, rgb(0 0 0 / .16) 0 1px, transparent 1px 3px); }
-  .osd { display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  .ch b { position: absolute; left: 3%; bottom: 5%; padding: 4px 6px; font: 16px/1 var(--pixel); font-weight: normal; color: #fff; background: rgb(0 0 0 / .55); }
   /*MONITOR-CSS*/
+  .window .pick { position: absolute; inset: 14px; width: auto; aspect-ratio: auto; z-index: 1; }
+  .under { margin-top: 24px; align-items: start; }
+  .words { grid-column: 1 / span 5; display: grid; gap: 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .modes { grid-column: 7 / span 6; display: grid; gap: 12px; }
+  .contents { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--gap); }
+  .group + .group { margin-top: 12px; }
+  .group h3 { margin-bottom: 6px; font: 400 10px/1.4 var(--ext); letter-spacing: .1em; text-transform: uppercase; color: var(--gray); }
+  .tracks { list-style: none; margin: 0; padding: 0; }
+  .tracks button { display: grid; grid-template-columns: 2.6em minmax(0, 1fr); align-items: baseline; width: 100%; padding: 2px 0; border: 0;
+                   border-bottom: 1px dotted var(--fold); background: none; color: var(--ink); text-align: left; cursor: pointer;
+                   font: 600 14px/1.25 var(--sans); font-variation-settings: "wdth" 92; letter-spacing: .02em; }
+  .tracks button span { font: 400 10px/1 var(--ext); letter-spacing: .04em; color: var(--gray); }
+  .tracks button:hover, .tracks button[aria-pressed="true"] { color: var(--s1); }
+  .tracks button[aria-pressed="true"] span { color: var(--s1); }
+  .group .note { margin-top: 8px; font-size: 13px; line-height: 1.4; }
 
-  /* the install: three steps, the precautions beside them */
-  .install { padding-block: clamp(40px, 6vw, 96px); }
-  .install-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap); align-items: start; }
-  .steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
-  .step { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 18px; padding: 22px; background: var(--panel);
-          border: 1px solid var(--rule); }
-  .step.now { border-color: var(--mute); }
-  .step.ok { border-color: color-mix(in srgb, var(--good) 55%, var(--rule)); }
-  .step .num { width: 56px; height: 56px; display: grid; place-items: center; font: 32px/1 var(--pixel);
-               border: 1px solid var(--rule); color: var(--mute); position: relative; }
-  .step .num::after { content: ""; position: absolute; left: -1px; right: -1px; bottom: -1px; height: 3px;
-               background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c6)); opacity: .45; }
-  .step.now .num::after, .step.ok .num::after { opacity: 1; }
-  .step.now .num { color: var(--ink); border-color: var(--mute); }
-  .step.ok .num { color: var(--good); border-color: var(--good); }
-  .step-body { display: grid; gap: 12px; align-content: start; }
-  .step-body h3 { margin: 0; font: 16px/1.3 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .04em; padding-top: 4px; }
-  .step-body p { margin: 0; }
-  .note { color: var(--mute); font-size: 15px; }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .tone-good { --tone: var(--good); } .tone-warn { --tone: var(--warn); } .tone-bad { --tone: var(--tally); }
-  .result { margin: 0; padding: 12px 14px; background: var(--lift); border-left: 3px solid var(--tone, var(--rule)); font-size: 16px; }
-  .result:empty { display: none; }
-  .status.tone-good, .status.tone-warn, .status.tone-bad, .note.tone-good, .note.tone-warn, .note.tone-bad {
-    padding-left: 12px; border-left: 3px solid var(--tone); }
-  #go { width: 100%; font-size: 32px; padding: 18px 24px; }
-  .phases { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font: 16px/1.2 var(--pixel); }
-  .phases li { display: flex; align-items: center; gap: 8px; color: var(--mute); text-transform: uppercase; }
-  .phases li::before { content: ""; width: 8px; height: 8px; border: 1px solid currentColor; }
-  .phases li[data-state="on"] { color: var(--ink); }
-  .phases li[data-state="on"]::before { background: var(--ink); animation: blink 1s steps(2, start) infinite; }
-  .phases li[data-state="ok"] { color: var(--ink); }
-  .phases li[data-state="ok"]::before { background: var(--c); border-color: var(--c); }
-  .phases li:nth-child(1) { --c: var(--c1); } .phases li:nth-child(2) { --c: var(--c2); } .phases li:nth-child(3) { --c: var(--c3); }
-  .phases li:nth-child(4) { --c: var(--c5); } .phases li:nth-child(5) { --c: var(--good); }
-  .phases li[data-state="bad"] { color: var(--tally); }
-  .phases li[data-state="bad"]::before { background: var(--tally); }
-  @keyframes blink { to { visibility: hidden; } }
-  progress { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; border: 0; background: var(--lift); }
-  progress::-webkit-progress-bar { background: var(--lift); }
-  progress::-webkit-progress-value { background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5)); }
-  progress::-moz-progress-bar { background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5)); }
-  .status { margin: 0; min-height: 1.55em; font-variant-numeric: tabular-nums; }
-  details.log summary { cursor: pointer; color: var(--mute); font-size: 14px; }
-  details.log pre { margin: 8px 0 0; color: var(--mute); font: 12.5px/1.45 ui-monospace, Menlo, Consolas, monospace;
-                    white-space: pre-wrap; max-height: 180px; overflow: auto; }
-  .next { margin: 0; padding-left: 1.15em; display: grid; gap: 6px; }
-  .next li::marker { color: var(--mute); }
-  aside.care { display: grid; gap: 16px; padding-top: 4px; }
-  aside.care p { margin: 0; color: var(--mute); font-size: 15px; max-width: 62ch; }
-  aside.care p b { color: var(--ink); font-weight: 600; }
-
-  /* the modes: a wall of real frames */
-  .modes { padding-block: clamp(40px, 6vw, 96px); background: var(--panel); }
-  .wall { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px 18px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
-  .mode { display: grid; gap: 8px; align-content: start; }
-  .mode figure { position: relative; margin: 0; aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 3px;
-                 box-shadow: 0 0 0 1px rgb(0 0 0 / .5), 0 18px 40px -22px #000; transition: transform .2s ease; }
-  .mode:hover figure { transform: translateY(-3px); }
-  .mode img { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .mode h3 { margin: 0; font: 16px/1.2 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .03em; }
-  .mode h3 span { color: var(--mute); }
-  .mode p { margin: 0; color: var(--mute); font-size: 14.5px; line-height: 1.45; }
-  .mode.screen { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px 24px; align-items: center;
-                 padding-top: 22px; border-top: 1px solid var(--rule); }
-  .mode.screen figure { grid-row: span 2; box-shadow: 0 0 0 1px var(--mute); }
-  .mode.screen h3 { align-self: end; font-size: 32px; }
-  .mode.screen p { align-self: start; font-size: 17px; color: var(--ink); max-width: 52ch; }
-  @media (max-width: 700px) { .mode.screen { grid-template-columns: minmax(0, 1fr); } .mode.screen figure { grid-row: auto; } .mode.screen h3 { font-size: 16px; } }
-
-  /* the webcam: the how-to and the title beside the picture they change */
-  .webcam { padding-block: clamp(40px, 6vw, 96px); }
-  .webcam .wrap > .grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--gap); align-items: start; }
-  .howto { display: grid; gap: 26px; max-width: 640px; }
-  .howto ol { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; }
-  .howto ol li::marker { font-family: var(--pixel); color: var(--mute); }
-  .titlectl { display: grid; gap: 12px; padding-top: 22px; border-top: 1px solid var(--rule); }
-  .titlectl h3 { margin: 0; font: 16px/1.3 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .04em; }
-  .titlectl p { margin: 0; }
-  #vj-text { flex: 1 1 240px; min-width: 0; font: 16px/1.2 var(--pixel); text-transform: uppercase; letter-spacing: .04em;
-             padding: 12px; background: var(--glass); color: var(--ink); border: 1px solid var(--rule); }
-  #vj-ov { flex: 0 1 auto; font: 16px/1.2 var(--sans); padding: 11px 10px; background: var(--glass); color: var(--ink); border: 1px solid var(--rule); }
+  .split { align-items: start; row-gap: 32px; }
+  .split > .l { grid-column: 1 / span 5; }
+  .split > .r { grid-column: 7 / span 6; }
+  .head + .numbered, .head + .steps { margin-top: 28px; }
+  .numbered { list-style: none; margin: 0; padding: 0; counter-reset: n; border-top: 2px solid var(--ink); }
+  .numbered > li { counter-increment: n; display: grid; grid-template-columns: 48px minmax(0, 1fr); padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .numbered > li::before { content: counter(n, decimal-leading-zero); font: 400 11px/1.9 var(--ext); color: var(--gray); }
+  .titlectl { display: grid; gap: 12px; margin-top: 36px; }
+  #vj-text { flex: 1 1 220px; font: 16px/1.2 var(--pixel); text-transform: uppercase; letter-spacing: .04em; }
+  #vj-ov { flex: 0 1 auto; }
   #vj-go { justify-self: start; }
-  .vjscreen { position: relative; aspect-ratio: 16 / 9; width: 100%; display: grid; place-items: center; overflow: hidden;
-              background: #000 url(title-bg.jpg) center / cover no-repeat; border-radius: 4px; box-shadow: 0 0 0 1px var(--rule);
-              position: sticky; top: 92px; }
-  .vjprev { position: relative; z-index: 1; padding: 0 4%; text-align: center; overflow-wrap: anywhere;
-            font: clamp(16px, 3.2vw, 32px)/1.1 var(--pixel); letter-spacing: .02em; animation: hueturn 4s linear infinite;
+  .vjscreen { display: grid; place-items: center; background-image: url(title-bg.jpg); }
+  .vjprev { position: relative; z-index: 1; padding: 0 4%; text-align: center; overflow-wrap: anywhere; font: 16px/1.1 var(--pixel); letter-spacing: .02em;
+            animation: hueturn 4s linear infinite;
             text-shadow: -2px 0 #000, 2px 0 #000, 0 -2px #000, 0 2px #000, -2px -2px #000, 2px 2px #000, -2px 2px #000, 2px -2px #000; }
-  .vjprev.off { font: 16px/1.4 var(--sans); color: #fff; background: rgb(0 0 0 / .6); padding: 8px 12px; animation: none; text-shadow: none; }
+  .vjprev span { color: hsl(calc(var(--h) + var(--o, 0)) 100% 62%); }
+  .vjprev.off { font: 14px/1.4 var(--sans); color: #fff; background: rgb(0 0 0 / .6); padding: 8px 12px; animation: none; text-shadow: none; }
 
-  /* the tools */
-  .tools { padding-block: clamp(40px, 6vw, 96px); background: var(--panel); }
-  .tools .sec-head { grid-template-columns: minmax(0, 1fr) auto; align-items: end; max-width: none; }
-  .tools .rings { width: 120px; height: 120px; grid-row: span 2; }
-  .tool-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
-  .tool-list li { display: flex; }
-  .tool-list li:nth-child(1) { --c: var(--c5); } .tool-list li:nth-child(2) { --c: var(--c3); }
-  .tool-list li:nth-child(3) { --c: var(--c2); } .tool-list li:nth-child(4) { --c: var(--c1); } .tool-list li:nth-child(5) { --c: var(--c4); }
-  .tool { flex: 1; display: grid; gap: 8px; align-content: start; padding: 20px; background: var(--glass); border: 1px solid var(--rule);
-          border-top: 3px solid var(--c, var(--rule));
-          color: var(--ink); text-decoration: none; text-align: left; font: inherit; cursor: pointer; }
-  .tool:hover { border-color: var(--mute); }
-  .tool b { font: 16px/1.2 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .03em;
-            display: flex; justify-content: space-between; gap: 12px; }
-  .tool b::after { content: "\2192"; color: var(--mute); }
-  .tool span { color: var(--mute); font-size: 15px; }
+  .steps { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+  .step { display: grid; grid-template-columns: 48px minmax(0, 1fr); padding: 24px 0; border-bottom: 1px solid var(--line); }
+  .step .num { width: 30px; height: 30px; display: grid; place-items: center; border: 2px solid var(--ink); font: 400 12px/1 var(--ext); }
+  .step.now .num { background: var(--ink); color: var(--card); }
+  .step.ok .num { background: var(--s4); border-color: var(--s4); color: #fff; }
+  .step-body { display: grid; gap: 12px; align-content: start; min-width: 0; }
+  .result:empty { display: none; }
+  #go { width: 100%; min-height: 56px; font-size: 13px; }
+  .phases { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font: 400 10px/1.4 var(--ext); letter-spacing: .08em;
+            text-transform: uppercase; color: var(--gray); }
+  .phases li { display: flex; align-items: center; gap: 7px; }
+  .phases li::before { content: ""; width: 9px; height: 9px; box-shadow: inset 0 0 0 1px var(--gray); }
+  .phases li[data-state="on"], .phases li[data-state="ok"] { color: var(--ink); }
+  .phases li[data-state="on"]::before { background: var(--s2); box-shadow: none; animation: blink 1s steps(2, start) infinite; }
+  .phases li[data-state="ok"]::before { background: var(--s4); box-shadow: none; }
+  .phases li[data-state="bad"] { color: var(--bad); }
+  .phases li[data-state="bad"]::before { background: var(--s1); box-shadow: none; }
+  @keyframes blink { to { visibility: hidden; } }
+  progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 4px; border: 0; background: var(--line); }
+  progress::-webkit-progress-bar { background: var(--line); }
+  progress::-webkit-progress-value { background: var(--ink); }
+  progress::-moz-progress-bar { background: var(--ink); }
+  .status { min-height: 1.5em; font-variant-numeric: tabular-nums; }
+  details.log summary { cursor: pointer; color: var(--gray); font-size: 13px; }
+  details.log pre { margin: 8px 0 0; color: var(--gray); font: 12px/1.45 var(--mono); white-space: pre-wrap; max-height: 180px; overflow: auto; }
+  .next { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; list-style: square; }
+  .next li::marker { color: var(--gray); }
+  .box { border: 2px solid var(--ink); }
+  .box h3 { padding: 13px 16px; background: var(--ink); color: var(--card); font: 400 11px/1.4 var(--ext); letter-spacing: .08em; text-transform: uppercase; }
+  .box ul { list-style: none; margin: 0; padding: 0; }
+  .box li { padding: 12px 16px; font-size: 15px; }
+  .box li + li { border-top: 1px solid var(--line); }
 
-  /* back to the official firmware */
-  .stock { padding-block: clamp(32px, 5vw, 64px); }
-  details.stockbox { border-block: 1px solid var(--rule); }
-  details.stockbox > summary { padding-block: 18px; cursor: pointer; font: 16px/1.3 var(--pixel); text-transform: uppercase; letter-spacing: .03em; }
-  details.stockbox > summary:hover { color: #fff; }
-  .stock .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px var(--gap); padding-bottom: 24px; }
+  .tool-list { list-style: none; margin: 32px 0 0; padding: 0; row-gap: 24px; }
+  .tool-list li { grid-column: span 3; display: flex; }
+  .tool { flex: 1; display: grid; gap: 6px; align-content: start; padding: 14px 0 0; border-top: 2px solid var(--ink); color: var(--ink); text-decoration: none; }
+  .tool b { font: 400 12px/1.4 var(--ext); letter-spacing: .06em; text-transform: uppercase; }
+  .tool span { color: var(--gray); font-size: 15px; }
+  .tool:hover b { text-decoration: underline; text-underline-offset: 4px; }
+  #app-li { margin-top: 24px; }
+
+  details.stockbox > summary { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; list-style: none; font: 400 13px/1.4 var(--ext);
+                               letter-spacing: .06em; text-transform: uppercase; }
+  details.stockbox > summary::-webkit-details-marker { display: none; }
+  details.stockbox > summary::after { content: "+"; font-family: var(--sans); font-size: 20px; line-height: 1; }
+  details.stockbox[open] > summary::after { content: "\2212"; }
+  .stock .grid { margin-top: 28px; row-gap: 24px; }
   .stock .grid > div { display: grid; gap: 12px; align-content: start; }
-  .stock p { margin: 0; color: var(--mute); font-size: 15px; max-width: 62ch; }
+  .stock .grid > div:first-child { grid-column: 1 / span 5; }
+  .stock .grid > div:last-child { grid-column: 7 / span 6; }
+  .stock p { color: var(--gray); font-size: 15px; max-width: 60ch; }
   .stock label { color: var(--ink); }
-  #stock-file { font: 15px/1.4 var(--sans); color: var(--mute); max-width: 100%; }
+  #stock-file { font: 14px/1.4 var(--sans); color: var(--gray); max-width: 100%; }
+  #stock-file::file-selector-button { margin-right: 10px; padding: 8px 12px; font: 400 11px/1.2 var(--ext); letter-spacing: .06em; text-transform: uppercase;
+                                      color: var(--ink); background: none; border: 2px solid var(--ink); cursor: pointer; }
   #stock-go, .stock .btn { justify-self: start; }
 
-  footer.band { padding-block: 26px 40px; color: var(--mute); font-size: 14px; }
-  footer .wrap { display: grid; gap: 6px; }
-  footer p { margin: 0; max-width: 110ch; }
-
-  @media (max-width: 1000px) {
-    .hero .wrap, .install-grid, .webcam .wrap > .grid { grid-template-columns: minmax(0, 1fr); }
-    .screen-col { order: -1; }
-    .vjscreen { position: relative; top: auto; order: -1; }
-    .stock .grid { grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 700px) { .vjprev:not(.off) { font-size: 32px; } }
+  @media (max-width: 980px) {
+    .band .stripes { position: static; margin: 28px calc(-1 * var(--pad)); }
+    .band { row-gap: 0; }
+    .modes { margin-top: 40px; }
+    .tool-list li { grid-column: span 6 !important; }
   }
-  @media (max-width: 600px) {
-    header.band { position: static; }
-    html { scroll-padding-top: 12px; }
-    nav .sep, nav .opt { display: none; }
-    .step { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 18px; }
-    .step .num { width: 44px; height: 44px; font-size: 16px; }
-    #go { font-size: 16px; padding: 18px; }
+  @media (max-width: 560px) {
+    .contents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tool-list li { grid-column: 1 / -1 !important; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .rainbow, .vjprev, .wave .w span, .phases li[data-state="on"]::before { animation: none; }
-    .mode figure { transition: none; }
-  }
+  @media (prefers-reduced-motion: reduce) { .vjprev, .phases li[data-state="on"]::before { animation: none; } }
 </style>
 </head>
 <body>
-<header class="band">
-  <div class="wrap">
-    <a class="logo" href="#top" aria-label="Synthesthetic"><!--LOGO--></a>
-    <nav aria-label="Site"><a href="#install" data-t="navInstall"></a><a href="#modes" data-t="navModes"></a><a href="#webcam" data-t="navWebcam"></a><a href="../../play/" data-t="navPlay"></a><span class="sep" aria-hidden="true"></span><a class="opt" href="../../handbook/" data-t="navHandbook"></a><a class="opt" href="../editor/" data-t="navEditor"></a><a class="opt" href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener" data-t="navSource"></a><button class="lang" id="lang"></button></nav>
-  </div>
-</header>
-<main id="top">
-  <!--STUDIO_GUIDE-->
-  <!--BANNER-->
-  <section class="band hero">
-    <div class="wrap">
-      <div class="pitch">
-        <p class="label" data-t="eyebrow"></p>
-        <h1><span class="rainbow brand"><span style="--o: 0">S</span><span style="--o: 20">y</span><span style="--o: 40">n</span><span style="--o: 60">t</span><span style="--o: 80">h</span><span style="--o: 100">e</span><span style="--o: 120">s</span><span style="--o: 140">t</span><span style="--o: 160">h</span><span style="--o: 180">e</span><span style="--o: 200">t</span><span style="--o: 220">i</span><span style="--o: 240">c</span></span> transforms your music into a visual experience.</h1>
-        <div class="lead">
-          <p>This multitrack groovebox features:</p>
-          <ul>
-            <li>4 tracks (3 synths + 1 drum machine)</li>
-            <li>10+ synth engines</li>
-            <li>150+ sounds</li>
-            <li>30+ drum kits</li>
-            <li><span class="sr">30 audio-reactive visualizers.</span><span class="wave rainbow" aria-hidden="true"><span class="w"><span style="--o: 0; --i: 0">3</span><span style="--o: 9; --i: 1">0</span></span> <span class="w"><span style="--o: 18; --i: 2">a</span><span style="--o: 27; --i: 3">u</span><span style="--o: 36; --i: 4">d</span><span style="--o: 44; --i: 5">i</span><span style="--o: 53; --i: 6">o</span><span style="--o: 62; --i: 7">-</span><span style="--o: 71; --i: 8">r</span><span style="--o: 80; --i: 9">e</span><span style="--o: 89; --i: 10">a</span><span style="--o: 98; --i: 11">c</span><span style="--o: 107; --i: 12">t</span><span style="--o: 116; --i: 13">i</span><span style="--o: 124; --i: 14">v</span><span style="--o: 133; --i: 15">e</span></span> <span class="w"><span style="--o: 142; --i: 16">v</span><span style="--o: 151; --i: 17">i</span><span style="--o: 160; --i: 18">s</span><span style="--o: 169; --i: 19">u</span><span style="--o: 178; --i: 20">a</span><span style="--o: 187; --i: 21">l</span><span style="--o: 196; --i: 22">i</span><span style="--o: 204; --i: 23">z</span><span style="--o: 213; --i: 24">e</span><span style="--o: 222; --i: 25">r</span><span style="--o: 231; --i: 26">s</span><span style="--o: 240; --i: 27">.</span></span></span></li>
-          </ul>
-          <p>Visualizers render on the FM-1 screen <em>and</em> over USB as a webcam for OBS, Zoom, or Photo Booth.</p>
-        </div>
-        <div class="cta"><a class="btn primary" href="#install" data-t="ctaInstall"></a><a class="btn" href="../../play/" data-t="ctaPlay"></a><a class="btn" href="#modes" data-t="ctaModes"></a></div>
-      </div>
-      <div class="screen-col">
-        <!--MONITOR-->
-        <div class="osd label"><span>USB video class</span><span>MJPEG 320 × 180</span><span>30 fps</span><span>No driver</span></div>
-      </div>
-    </div>
-  </section>
-  <div class="deco-row tall" aria-hidden="true"><canvas class="deco" data-style="sines"></canvas></div>
-
-  <section class="band install" id="install" aria-labelledby="install-h">
-    <div class="wrap">
-      <div class="sec-head"><h2 id="install-h" data-t="installHead"></h2><p data-t="installSub"></p></div>
-      <div class="install-grid">
-        <ol class="steps">
-          <li class="step now" id="s1">
-            <div class="num" aria-hidden="true">1</div>
-            <div class="step-body">
-              <h3 data-t="s1Head"></h3>
-              <p data-t="s1Help"></p>
-              <p class="note" id="browser"></p>
-              <div class="row"><button class="btn" id="check" data-t="checkGo"></button></div>
-              <p class="result" id="check-result" role="status"></p>
-            </div>
-          </li>
-          <li class="step" id="s2">
-            <div class="num" aria-hidden="true">2</div>
-            <div class="step-body">
-              <h3 data-t="s2Head"></h3>
-              <button class="btn primary" id="go" disabled data-t="install"></button>
-              <ol class="phases" id="phases" aria-label="Progress">
-                <li data-p="verify" data-t="phVerify"></li>
-                <li data-p="loader" data-t="phLoader"></li>
-                <li data-p="write" data-t="phWrite"></li>
-                <li data-p="reboot" data-t="phReboot"></li>
-                <li data-p="done" data-t="phDone"></li>
-              </ol>
-              <progress id="bar" max="100" value="0"></progress>
-              <p class="status" id="status" role="status"></p>
-              <p class="note" data-t="warn"></p>
-              <details class="log" id="logbox" hidden><summary data-t="logHead"></summary><pre id="log"></pre></details>
-            </div>
-          </li>
-          <li class="step" id="s3">
-            <div class="num" aria-hidden="true">3</div>
-            <div class="step-body">
-              <h3 data-t="s3Head"></h3>
-              <ol class="next"><li data-t="next1"></li><li data-t="next2"></li><li><a href="#webcam" data-t="next3"></a></li></ol>
-            </div>
-          </li>
-        </ol>
-        <aside class="care" aria-labelledby="care-h">
-          <h3 class="label" id="care-h" data-t="notesHead"></h3>
-          <p><b data-t="backupHead"></b> <span data-t="backupNote"></span> <a href="../../handbook/#install-and-update" data-t="howLink"></a></p>
-          <p><b data-t="familyHead"></b> <span data-t="familyNote"></span></p>
-          <p><b data-t="cableHead"></b> <span data-t="direct"></span></p>
-          <p><b data-t="rescueHead"></b> <span data-t="rescueNote"></span> <span data-t="brick"></span> <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener">FM-1-transporter</a></p>
-          <p><b data-t="betaHead"></b> <span data-t="beta"></span></p>
-        </aside>
-      </div>
-    </div>
-  </section>
-
-  <div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="bars" data-seed="7"></canvas></div>
-  <section class="band modes" id="modes" aria-labelledby="modes-h">
-    <div class="wrap">
-      <div class="sec-head"><h2 id="modes-h" data-t="modesHead"></h2><p data-t="modesSub"></p></div>
-      <!--MODES-->
-    </div>
-  </section>
-
-  <div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="dots" data-seed="3"></canvas></div>
-  <section class="band webcam" id="webcam" aria-labelledby="cam-h">
-    <div class="wrap">
-      <div class="sec-head"><h2 id="cam-h" data-t="camHead"></h2></div>
+<div class="card">
+  <aside class="spine" aria-hidden="true"><p>Synthesthetic<span class="label" data-t="spine"></span><span class="label"><!--VERSION--></span></p></aside>
+  <div class="front">
+    <header class="bar">
       <div class="grid">
-        <div class="howto">
-          <ol><li data-t="cam1"></li><li data-t="cam2"></li><li data-t="cam3"></li></ol>
-          <div class="titlectl">
-            <h3 id="vj-h" data-t="vjHead"></h3>
-            <p class="note" data-t="vjHelp"></p>
-            <div class="row">
-              <input id="vj-text" type="text" maxlength="19" value="SYNTHESTHETIC" autocomplete="off" spellcheck="false">
-              <select id="vj-ov"></select>
-            </div>
-            <button class="btn primary" id="vj-go" data-t="vjGo"></button>
-            <p class="status" id="vj-status" role="status"></p>
-            <p class="note" data-t="vjMore"></p>
-          </div>
-        </div>
-        <div class="vjscreen"><div class="vjprev" id="vj-prev" aria-hidden="true"></div></div>
+        <a class="logo" href="#top" aria-label="Synthesthetic"><!--LOGO--></a>
+        <nav aria-label="Site"><a href="#webcam" data-t="navWebcam"></a><a href="#modes" data-t="navModes"></a><a href="#install" data-t="navInstall"></a><a href="../../play/" data-t="navPlay"></a><a class="opt" href="../../handbook/" data-t="navHandbook"></a><button id="lang" type="button"></button></nav>
       </div>
-    </div>
-  </section>
-
-  <div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="area" data-seed="11"></canvas></div>
-  <section class="band tools" id="tools" aria-labelledby="tools-h">
-    <div class="wrap">
-      <div class="sec-head"><h2 id="tools-h" data-t="toolsHead"></h2><canvas class="deco rings" data-style="rings" aria-hidden="true"></canvas></div>
-      <ul class="tool-list">
-        <li><a class="tool" href="../../play/"><b data-t="tPlay"></b><span data-t="tPlayD"></span></a></li>
-        <li><a class="tool" href="../editor/"><b data-t="tEditor"></b><span data-t="tEditorD"></span></a></li>
-        <li><a class="tool" href="../../handbook/"><b data-t="tHandbook"></b><span data-t="tHandbookD"></span></a></li>
-        <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
-        <li id="app-li" hidden><button class="tool" id="app" hidden><b data-t="tApp"></b><span data-t="tAppD"></span></button></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="band stock" id="official">
-    <div class="wrap">
-      <details class="stockbox">
-        <summary data-t="stockTitle"></summary>
-        <div class="grid">
-          <div>
-            <p data-t="stockHelp"></p>
-            <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
-            <p data-t="stockBackup"></p>
-            <a class="btn" href="../editor/" data-t="stockEditor"></a>
-          </div>
-          <div>
-            <p><label><input id="stock-saved" type="checkbox"> <span data-t="stockSaved"></span></label></p>
-            <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
-            <button class="btn" id="stock-go" disabled data-t="stockGo"></button>
-            <progress id="stock-bar" max="100" value="0"></progress>
-            <p class="status" id="stock-status" role="status"></p>
-            <p data-t="back"></p>
+    </header>
+    <main id="top">
+      <!--STUDIO_GUIDE-->
+      <!--BANNER-->
+      <section class="panel hero" aria-labelledby="hero-h">
+        <div class="grid band">
+          <div class="titles"><h1 id="hero-h" data-t="heroHead"></h1><p class="label" data-t="heroSub"></p></div>
+          <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="window">
+            <!--MONITOR-->
+            <div class="display pick" id="mode-screen" hidden><span class="id" id="mode-id"></span></div>
           </div>
         </div>
-      </details>
-    </div>
-  </section>
-</main>
-<div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="spikes" data-seed="5"></canvas></div>
-<footer class="band">
-  <div class="wrap">
-    <p>Synthesthetic is based on SLOOP by isod89 and on Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>. Hold OCT− alone while switching on for USB rescue.</p>
-    <p>Fonts: Terminus (Dimitar Toshkov Zhekov, SIL OFL 1.1), the FM-1 screen's, and Barlow (Jeremy Tribby, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL, and Sonic Pi (CC0 1.0); drum sounds: the Hügelton Sample Pack (Hügelton Instruments).</p>
-    <p>M-VAVE and FM-1 are trademarks of their respective owners; Synthesthetic is not affiliated with them.</p>
-    <p><span data-t="license"></span> <a href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener">github.com/michaeljsmalley/synthesthetic</a></p>
+        <div class="grid under">
+          <div class="words">
+            <p class="lede" data-t="heroLede"></p>
+            <div class="cta"><a class="btn primary" href="#install" data-t="ctaInstall"></a><a class="btn" href="../../play/" data-t="ctaPlay"></a></div>
+            <dl class="specs">
+              <div class="top"><dt data-t="specSignal"></dt><dd data-t="specSignalV"></dd></div>
+              <div><dt data-t="specVideo"></dt><dd>USB video class · MJPEG · 320 × 180 · 30 fps</dd></div>
+              <div><dt data-t="specAudio"></dt><dd data-t="specAudioV"></dd></div>
+              <div><dt>MIDI</dt><dd data-t="specMidiV"></dd></div>
+              <div><dt data-t="specDriver"></dt><dd data-t="specDriverV"></dd></div>
+              <div><dt data-t="specApps"></dt><dd>OBS, Zoom, Photo Booth, QuickTime, FaceTime</dd></div>
+            </dl>
+          </div>
+          <section class="modes" id="modes" aria-labelledby="modes-h">
+            <h2 class="label" id="modes-h" data-t="modesHint"></h2>
+            <!--MODES-->
+          </section>
+        </div>
+      </section>
+
+      <section class="panel" id="webcam" aria-labelledby="cam-h">
+        <div class="grid split">
+          <div class="l">
+            <div class="head"><h2 id="cam-h" data-t="camHead"></h2></div>
+            <ol class="numbered"><li><span data-t="cam1"></span></li><li><span data-t="cam2"></span></li><li><span data-t="cam3"></span></li></ol>
+            <div class="titlectl">
+              <h3 id="vj-h" data-t="vjHead"></h3>
+              <p class="note" data-t="vjHelp"></p>
+              <div class="row">
+                <input id="vj-text" type="text" maxlength="19" value="SYNTHESTHETIC" autocomplete="off" spellcheck="false">
+                <select id="vj-ov"></select>
+              </div>
+              <button class="btn" id="vj-go" type="button" data-t="vjGo"></button>
+              <p class="status" id="vj-status" role="status"></p>
+            </div>
+          </div>
+          <div class="r"><div class="window"><div class="display vjscreen"><div class="vjprev" id="vj-prev" aria-hidden="true"></div></div></div></div>
+        </div>
+      </section>
+
+      <section class="panel" id="install" aria-labelledby="install-h">
+        <div class="grid split">
+          <div class="l">
+            <div class="head"><h2 id="install-h" data-t="installHead"></h2><p data-t="installSub"></p></div>
+            <ol class="steps">
+              <li class="step now" id="s1">
+                <span class="num" aria-hidden="true">1</span>
+                <div class="step-body">
+                  <h3 data-t="s1Head"></h3>
+                  <p class="note" data-t="s1Help"></p>
+                  <p class="note" id="browser"></p>
+                  <div class="row"><button class="btn" id="check" type="button" data-t="checkGo"></button></div>
+                  <p class="result" id="check-result" role="status"></p>
+                </div>
+              </li>
+              <li class="step" id="s2">
+                <span class="num" aria-hidden="true">2</span>
+                <div class="step-body">
+                  <h3 data-t="s2Head"></h3>
+                  <button class="btn primary" id="go" type="button" disabled data-t="install"></button>
+                  <ol class="phases" id="phases" aria-label="Progress">
+                    <li data-p="verify" data-t="phVerify"></li>
+                    <li data-p="loader" data-t="phLoader"></li>
+                    <li data-p="write" data-t="phWrite"></li>
+                    <li data-p="reboot" data-t="phReboot"></li>
+                    <li data-p="done" data-t="phDone"></li>
+                  </ol>
+                  <progress id="bar" max="100" value="0"></progress>
+                  <p class="status" id="status" role="status"></p>
+                  <p class="note" data-t="warn"></p>
+                  <details class="log" id="logbox" hidden><summary data-t="logHead"></summary><pre id="log"></pre></details>
+                </div>
+              </li>
+              <li class="step" id="s3">
+                <span class="num" aria-hidden="true">3</span>
+                <div class="step-body">
+                  <h3 data-t="s3Head"></h3>
+                  <ul class="next"><li data-t="next1"></li><li data-t="next2"></li><li><a href="#webcam" data-t="next3"></a></li></ul>
+                </div>
+              </li>
+            </ol>
+          </div>
+          <aside class="r box" aria-labelledby="care-h">
+            <h3 id="care-h" data-t="notesHead"></h3>
+            <ul>
+              <li><span data-t="careBackup"></span> <a href="../../handbook/#back-up-first" data-t="howLink"></a></li>
+              <li data-t="careFamily"></li>
+              <li data-t="careRescue"></li>
+              <li data-t="careBeta"></li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel" id="instrument" aria-labelledby="inst-h">
+        <div class="grid split">
+          <div class="l head"><h2 id="inst-h" data-t="instHead"></h2><p><span data-t="instText"></span> <a href="https://github.com/michaeljsmalley/synthesthetic/blob/main/docs/upstream-sloop/GUIDE.md" target="_blank" rel="noopener" data-t="instLink"></a></p></div>
+          <dl class="r specs">
+            <div class="top"><dt data-t="instRow"></dt><dd data-t="instRowV"></dd></div>
+            <div><dt data-t="instTracks"></dt><dd data-t="instTracksV"></dd></div>
+            <div><dt data-t="instEngines"></dt><dd>10+</dd></div>
+            <div><dt data-t="instSounds"></dt><dd>150+</dd></div>
+            <div><dt data-t="instKits"></dt><dd>30+</dd></div>
+            <div><dt data-t="instVis"></dt><dd data-t="instVisV"></dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="panel tools" id="tools" aria-labelledby="tools-h">
+        <h2 id="tools-h" data-t="toolsHead"></h2>
+        <ul class="grid tool-list">
+          <li><a class="tool" href="../../play/"><b data-t="tPlay"></b><span data-t="tPlayD"></span></a></li>
+          <li><a class="tool" href="../editor/"><b data-t="tEditor"></b><span data-t="tEditorD"></span></a></li>
+          <li><a class="tool" href="../../handbook/"><b data-t="tHandbook"></b><span data-t="tHandbookD"></span></a></li>
+          <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
+        </ul>
+        <p id="app-li" hidden><button class="btn small" id="app" type="button" hidden data-t="tApp"></button> <span class="note" data-t="tAppD"></span></p>
+      </section>
+
+      <section class="panel stock" id="official">
+        <details class="stockbox">
+          <summary data-t="stockTitle"></summary>
+          <div class="grid">
+            <div>
+              <p data-t="stockHelp"></p>
+              <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+              <p data-t="stockBackup"></p>
+              <a class="btn small" href="../editor/" data-t="stockEditor"></a>
+            </div>
+            <div>
+              <p><label><input id="stock-saved" type="checkbox"> <span data-t="stockSaved"></span></label></p>
+              <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
+              <button class="btn" id="stock-go" type="button" disabled data-t="stockGo"></button>
+              <progress id="stock-bar" max="100" value="0"></progress>
+              <p class="status" id="stock-status" role="status"></p>
+            </div>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer class="panel">
+      <div class="grid">
+        <p><span data-t="footLicense"></span> <a href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener" data-t="footSource"></a> · <a href="../../handbook/#credits-and-licenses" data-t="footCredits"></a></p>
+        <p><span data-t="footBased"></span> <span data-t="footTrademark"></span></p>
+      </div>
+    </footer>
   </div>
-</footer>
-<script>/*DECO*/</script>
+</div>
 <script type="module">
 /*LIB*/
 const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
-    intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
-    warn: "書き込み中は USB を抜かないでください。",
+    warn: "書き込み中は USB ケーブルを抜かないでください。",
     install: "インストール", other: "English",
-    editor: "エディタ（インストール後、パソコンから音色やシーケンスを編集）",
-    edOffline: "エディタをダウンロード（パソコンでインターネットなしで使う：ファイルを Chrome / Edge で開く）",
-    appInstall: "アプリとしてインストール（エディタとインストーラーがオフラインで使える・Android も）",
-    direct: "USB ケーブルはパソコンに直接つないでください。Probe や Transporter などの機材は不要です。",
-    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
-    beta: "これはベータ版で、不安定な場合があります。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
-    back: "公式ファームウェアに戻すには、M-VAVE 公式のアップデーター M-UPGRADE（Downloads → PC Software → M-UPGRADE）と公式ファームウェア（PC Firmware → FM-1 V15）が必要です。",
-    nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
+    nomidi: "このブラウザは FM-1 と通信できません。Chrome か Edge で開いてください。", loadfail: "ファームウェアを読み込めませんでした（{v}）。",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
-    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB ケーブルを挿し直して、もう一度「インストール」を押してください。",
     error: "エラー: ",
-    denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
-    notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    denied: "MIDI の使用が許可されませんでした。アドレスバー横のサイト設定で MIDI を許可してから、もう一度お試しください。",
+    notfound: "FM-1 が見つかりません。データ通信用のケーブルでつながっているか確かめ、MIDI を使う他のアプリを閉じてから、もう一度お試しください。",
     model: "接続されている機器は FM-1 ではありません。",
-    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
-    noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
-    noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
-    mismatch: "書き込みは終わりましたが、FM-1 が別のバージョンを報告しています: ",
-    foreign: "FM-1 は別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で書き込みを終えてから、もう一度インストールしてください: ",
-    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
-    leave: "書き込み中です。ページを閉じないでください。",
-    license: "GPL-3.0、無保証。ソース:",
-    stockTitle: "公式ファームウェア（V15）に戻す",
-    stockHelp: "M-VAVE のサイトから公式の FM-1 V15 をダウンロードし、中の FM-1.fwsc（変更していないもの）を選んでください。ファイルはこのブラウザの中で確認され、どこにも送られません。",
-    stockBackup: "公式ファームウェアは Synthesthetic の曲・プロジェクト・サンプルを開けません。先にエディタでバックアップを保存してください（Projects → Backup）。Synthesthetic を入れ直せば、エディタから復元できます。",
-    stockEditor: "エディタを開いてバックアップする", stockSaved: "バックアップをパソコンに保存しました",
-    stockFile: "公式の FM-1.fwsc", stockGo: "公式 V15 をインストール",
-    stockValid: "公式 V15 を確認しました", stockBad: "公式 V15 ではありません: ",
-    stockConfirm: "FM-1 に公式 V15 をインストールします。Synthesthetic の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
-    stockFinish: "FM-1 は Synthesthetic の書き込みモードです。先に「インストール」で Synthesthetic の書き込みを終えてから、公式 V15 に戻してください。",
-    handbook: "ハンドブック（英語）：インストールから配信まで、Synthesthetic のすべて",
-    notesHead: "インストールの前に",
-    eyebrow: "M-VAVE FM-1 用ファームウェア",
-    navInstall: "インストール",
-    navModes: "モード",
-    navWebcam: "Webカメラ",
-    navPlay: "試奏",
-    navHandbook: "ハンドブック",
-    navEditor: "エディタ",
-    navSource: "ソース",
-    ctaInstall: "FM-1 にインストール",
-    ctaPlay: "ブラウザで試奏",
-    ctaModes: "31 のモードを見る",
+    lost: "USB の接続が切れました。ケーブルを挿し直して、もう一度お試しください。",
+    noloader: "書き込みモードの FM-1 が見つかりません。USB ケーブルを挿し直して、もう一度「インストール」を押してください。インストールが終わるまで、FM-1 は書き込みモードのままです。",
+    noreturn: "再起動後に FM-1 が応答しません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、FM-1 は {v} と報告しています。",
+    foreign: "FM-1 は別のファームウェア（{v}）の書き込みモードです。M-UPGRADE で書き込みを終えてから、もう一度「インストール」を押してください。",
+    badpkg: "ファームウェアのファイルが壊れています。ページを再読み込みしてやり直してください。",
+    leave: "書き込み中です。このページを閉じないでください。",
+    spine: "M-VAVE FM-1 用 USB ビデオファームウェア",
+    navWebcam: "Webカメラ", navModes: "モード", navInstall: "インストール", navPlay: "試奏", navHandbook: "ハンドブック",
+    heroHead: "USB ビデオ出力",
+    heroSub: "M-VAVE FM-1 用",
+    heroLede: "Synthesthetic は音楽を映像に変えます。USB で映像を送れる初めての FM-1 ファームウェアで、お使いの FM-1 を OBS、Zoom、FaceTime などのカメラとして使えます。",
+    ctaInstall: "インストール", ctaPlay: "ブラウザで試す",
+    specSignal: "信号", specSignalV: "USB ケーブル 1 本", specVideo: "映像", specAudio: "音声", specAudioV: "USB オーディオ · 16 ビット · 44.1 kHz ステレオ",
+    specMidiV: "USB MIDI と TRS 入力", specDriver: "ドライバー", specDriverV: "不要", specApps: "対応アプリ",
+    modesHint: "タップまたはホバーで、ビジュアライザーのサンプルを表示します",
+    grpScopes: "スコープ", grpPatterns: "パターン", grpDrums: "ドラム", grpFeedback: "フィードバック", grpDemoscene: "デモシーン", grpScreen: "スクリーン",
+    modeScreen: "FM-1 の画面をそのまま送ります。演奏や操作の解説を配信できます。",
+    camHead: "Web カメラとして使う",
+    cam1: "データ通信用の USB ケーブルで FM-1 をパソコンにつなぎます。",
+    cam2: "OBS、Zoom、Photo Booth などのビデオアプリで「Synthesthetic」というカメラを選びます。",
+    cam3: "演奏すると、映像が音楽に合わせて動きます。SELECT でモードが変わります。",
+    vjHead: "Web カメラのタイトル",
+    vjHelp: "オーバーレイがオンのとき、映像に重ねて表示されます。FM-1 の設定として保存されます。",
+    vjOvLabel: "重ねて表示する内容", vjOv0: "表示しない", vjOv1: "情報（モード・BPM）", vjOv2: "タイトル", vjOv3: "情報とタイトル",
+    vjGo: "FM-1 に送る", vjSent: "{v} を FM-1 に送りました。FM-1 の設定として保存されます。", vjSentNone: "送信しました。タイトルは空です。",
+    vjHidden: "この設定ではタイトルは表示されません。",
+    vjNotOurs: "この FM-1 には別のファームウェア（{v}）が入っています。先に Synthesthetic をインストールしてください。",
+    vjNoVideo: "この FM-1 のビルドには Web カメラ機能がありません。",
     installHead: "インストール",
-    installSub: "Chrome か Edge から USB で約 2 分。プロジェクト・プリセット・サンプルはそのまま残ります。",
+    installSub: "Chrome か Edge で約 2 分です。プロジェクト、プリセット、サンプルはそのまま残ります。",
     s1Head: "FM-1 を確認",
-    s1Help: "FM-1 をデータ通信用の USB ケーブルでこのパソコンに直接つなぎ（ハブなし）、電源を入れ、MIDI を使う他のアプリやタブを閉じてください。",
+    s1Help: "データ通信用の USB ケーブルでパソコンに直接つなぎ、電源を入れてください。MIDI を使う他のアプリは閉じておきます。",
     browserOk: "このブラウザは FM-1 と通信できます。",
     checkGo: "確認する",
     checking: "FM-1 を探しています…",
-    idRuns: "FM-1 の応答は {v}：",
-    idSyn: "Synthesthetic {v}。インストールすると更新され、作業内容はそのまま残ります。",
+    idRuns: "FM-1 の識別名は {v} です。",
+    idSyn: "Synthesthetic {v} が入っています。インストールすると更新され、作業内容はそのまま残ります。",
     idSynDev: "（開発版）",
-    idRescue: "USB レスキュー（アップデーター）です。インストールで Synthesthetic を書き戻せます。",
-    idFelucca: "Felucca 系のファームウェア（Dinghy、Felucca、SLOOP、またはその派生）です。Dinghy か SLOOP からはそのままインストールできます。その他の派生からは、先に公式 V15 に戻してください。",
-    idOta: "書き込みモードです。インストールを押すと書き込みを完了します。",
-    idOther: "別のファームウェアです。M-VAVE 公式の V15 ならそのままインストールできます。他のカスタムファームウェアなら、先に M-UPGRADE で公式 V15 に戻してください。",
+    idRescue: "USB レスキューで起動しています。インストールすると Synthesthetic に戻ります。",
+    idFelucca: "Dinghy、Felucca、SLOOP、またはその派生ファームウェアが入っています。Dinghy か SLOOP からはそのままインストールできます。その他の派生からは、先に公式 V15 に戻してください。",
+    idOta: "書き込みモードで待っています。「インストール」を押すと書き込みを完了します。",
+    idOther: "別のファームウェアが入っています。M-VAVE 公式の V15 ならそのままインストールできます。他のカスタムファームウェアなら、先に M-UPGRADE で公式 V15 に戻してください。",
     s2Head: "Synthesthetic をインストール",
-    ready: "準備完了：Synthesthetic {v}",
-    phVerify: "パッケージ確認",
-    phLoader: "書き込みモード",
-    phWrite: "書き込み",
-    phReboot: "再起動",
-    phDone: "完了",
+    ready: "Synthesthetic {v} をインストールできます。",
+    phVerify: "ファイル確認", phLoader: "書き込みモード", phWrite: "書き込み", phReboot: "再起動", phDone: "完了",
     logHead: "技術ログ",
     s3Head: "使ってみる",
-    next1: "TRACKS 画面で HOME をタップするとビジュアライザーが開きます。SELECT でモード、PRESETS でパレット、KNOB 1〜4 で映像が変わります。",
-    next2: "パソコンで OBS、Zoom、Photo Booth などのカメラに「Synthesthetic」を選びます。",
+    next1: "TRACKS 画面で HOME をタップするとビジュアライザーが開きます。SELECT でモードが変わります。",
+    next2: "OBS、Zoom、Photo Booth などで「Synthesthetic」というカメラを選びます。",
     next3: "Web カメラにタイトルを付ける",
-    backupHead: "まずバックアップを。",
-    backupNote: "フラッシュ全体のコピーがあれば、FM-1 を元どおりに戻せます。",
+    notesHead: "インストールの前に",
+    careBackup: "初めてカスタムファームウェアを入れる前に、フラッシュ全体をバックアップしてください。",
     howLink: "バックアップの方法",
-    familyHead: "他のカスタムファームウェアから？",
-    familyNote: "先に M-UPGRADE で公式 V15 に戻してください。別系統のファームウェアに直接上書きすると、FM-1 が起動しなくなる原因になります。",
-    cableHead: "ケーブル：",
-    rescueHead: "インストールが止まったら：",
-    rescueNote: "OCT− を押しながら電源を入れると USB レスキューが開き、もう一度インストールできます。",
-    betaHead: "ベータ版：",
-    modesHead: "31 のモード",
-    modesSub: "ここの画像はすべて、音楽を鳴らしながら FM-1 の Web カメラから取り込んだものです。FM-1 では SELECT で切り替え、MIDI やオートパイロットでも切り替わります。最後の SCREEN は FM-1 の画面そのものを配信します。",
-    camHead: "Web カメラとして使う",
-    cam1: "FM-1 をパソコンにつなぐと「Synthesthetic」というカメラとして認識されます（320 × 180、30 fps、ドライバー不要）。",
-    cam2: "OBS、Zoom、Photo Booth などのビデオアプリで選びます。カメラを同時に使えるアプリは 1 つだけなので、すべてのカメラを使うアプリは終了してください。",
-    cam3: "Photo Booth はプレビューを鏡像で表示するため文字が反転して見えますが、映像そのものは正しい向きです。",
+    careFamily: "他のカスタムファームウェアからは、先に M-UPGRADE で公式 V15 に戻してください。",
+    careRescue: "インストールが途中で止まったら、OCT− を押しながら電源を入れて、もう一度インストールしてください。",
+    careBeta: "ベータ版です。自己責任でお使いください。",
+    instHead: "楽器として",
+    instText: "FM-1 でできたことは、すべてそのまま使えます。シンセ、シーケンサー、ドラムは SLOOP のものです。",
+    instLink: "SLOOP のガイド（英語）",
+    instRow: "楽器", instRowV: "マルチトラック・グルーヴボックス",
+    instTracks: "トラック", instTracksV: "4（シンセ 3 + ドラムマシン 1）",
+    instEngines: "シンセエンジン", instSounds: "音色", instKits: "ドラムキット", instVis: "ビジュアライザー", instVisV: "30（音に反応）",
     toolsHead: "ツール",
-    tPlay: "ブラウザで試奏",
-    tPlayD: "本物のファームウェアを 3D の FM-1 で。ウェブカメラの映像も。FM-1 がなくても試せます。",
-    tEditor: "エディタ",
-    tEditorD: "音色、パターン、ソング、キット、サンプル、ビジュアル設定をパソコンから USB で。",
-    tHandbook: "ハンドブック",
-    tHandbookD: "インストール、演奏、配信、復旧、ビルドまで（英語）。",
-    tOffline: "オフライン版エディタ",
-    tOfflineD: "1 つのファイルで保存。Chrome か Edge で開けばインターネット不要。",
-    tApp: "アプリとしてインストール",
-    tAppD: "エディタとインストーラーをオフラインで使えるアプリに（Android も）。",
-    vjHead: "Web カメラのタイトル",
-    vjHelp: "オーバーレイがオンのとき映像に重ねて表示されます。FM-1 の設定として保存されます。",
-    vjOvLabel: "映像に重ねる表示", vjOv0: "表示しない", vjOv1: "情報（モード・BPM）", vjOv2: "タイトル", vjOv3: "情報とタイトル",
-    vjGo: "FM-1 に送る", vjSent: "送信しました（FM-1 に保存されます）: ", vjSentNone: "送信しました: タイトルなし",
-    vjHidden: "（タイトルは表示されません）",
-    vjNotOurs: "FM-1 は別のファームウェアで動いています。先に Synthesthetic をインストールしてください: ",
-    vjNoVideo: "この FM-1 のビルドには Web カメラ機能がありません。",
-    vjMore: "パレット、オートパイロット、MIDI、ノブなどはエディタの VJ ページで設定できます。",
-    back: "M-VAVE のアップデーター M-UPGRADE（Downloads → PC Software）でも戻せます。FM-1 が見つからない場合は、MIDI を使う他のアプリとブラウザのタブを閉じてください。",
+    tPlay: "ブラウザで試奏", tPlayD: "3D の FM-1 で本物のファームウェアが動きます。",
+    tEditor: "エディタ", tEditorD: "音色、パターン、サンプル、ビジュアルを USB で編集します。",
+    tHandbook: "ハンドブック", tHandbookD: "復旧方法も載った詳しいマニュアルです（英語）。",
+    tOffline: "オフライン版エディタ", tOfflineD: "1 ファイルのエディタ。インターネットなしで使えます。",
+    tApp: "アプリとしてインストール", tAppD: "エディタとインストーラーをオフラインで使えます。",
+    stockTitle: "公式ファームウェア（V15）に戻す",
+    stockHelp: "M-VAVE のサイトから V15 をダウンロードし、中にある FM-1.fwsc を変更せずに選んでください。ファイルはこのブラウザの中で確認され、アップロードはされません。",
+    stockBackup: "公式ファームウェアでは Synthesthetic のプロジェクトを開けないので、先にエディタでバックアップを保存してください（Projects → Backup）。",
+    stockEditor: "エディタを開く", stockSaved: "バックアップを保存しました",
+    stockFile: "公式の FM-1.fwsc", stockGo: "公式 V15 をインストール",
+    stockValid: "公式 V15 であることを確認しました。", stockBad: "公式 V15 ではありません（{v}）。",
+    stockConfirm: "この FM-1 に公式 V15 をインストールしますか？ 公式ファームウェアでは Synthesthetic のプロジェクトを開けません。バックアップは保存しましたか？",
+    stockFinish: "FM-1 は Synthesthetic の書き込みモードです。先に上の「インストール」で Synthesthetic の書き込みを終えてから、V15 に戻してください。",
+    footLicense: "GPL-3.0 のフリーソフトウェアです（無保証）。",
+    footSource: "ソースコード",
+    footCredits: "クレジット",
+    footBased: "SLOOP（isod89）と Felucca（Hügelton Instruments の Leo Kuroshita）をもとにしています。",
+    footTrademark: "M-VAVE と FM-1 は各社の商標です。Synthesthetic は各社とは関係ありません。",
   },
   en: {
-    intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
-    warn: "Do not unplug the USB cable while writing.",
+    warn: "Don't unplug the USB cable while it's writing.",
     install: "Install", other: "日本語",
-    editor: "Editor (after installing: edit sounds and sequences from the computer)",
-    edOffline: "Download the editor to use it without internet on a computer (open the file in Chrome or Edge)",
-    appInstall: "Install the app (the editor and the installer offline, Android too)",
-    direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
-    brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
-    beta: "This is a beta and may be unstable. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
-    back: "To go back to the official firmware you need M-VAVE's official updater, M-UPGRADE (Downloads → PC Software → M-UPGRADE), and the official firmware (PC Firmware → FM-1 V15).",
-    nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
+    nomidi: "This browser can't talk to the FM-1. Open this page in Chrome or Edge.", loadfail: "Couldn't load the firmware ({v}).",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
-    reboot: "Restarting", done: "Done", stopped: "Stopped. Replug the USB cable and press Install again.",
+    reboot: "Restarting", done: "Done", stopped: "It stopped. Unplug the USB cable, plug it back in and press Install again.",
     error: "Error: ",
-    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
-    notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
-    model: "The connected device is not an FM-1.",
-    lost: "The USB connection was lost. Replug it and press Install again.",
-    noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
-    noreturn: "The FM-1 did not come back. Power-cycle it.",
-    mismatch: "Written, but the FM-1 reports another version: ",
-    foreign: "The FM-1 is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then press Install again: ",
-    badpkg: "The file to install is damaged. Reload the page.",
-    leave: "Writing. Do not close the page.",
-    license: "GPL-3.0, no warranty. Source:",
-    stockTitle: "Return to the official firmware (V15)",
-    stockHelp: "Download the official FM-1 V15 from M-VAVE and select the FM-1.fwsc inside it, unmodified. The file is checked in this browser; it is not sent anywhere.",
-    stockBackup: "The official firmware cannot open Synthesthetic's music, projects or samples. Save a backup with the editor first (Projects → Backup); reinstall Synthesthetic and restore it from the editor whenever you want them back.",
-    stockEditor: "Open the editor to back up", stockSaved: "I saved a backup on this computer",
-    stockFile: "The official FM-1.fwsc", stockGo: "Install the official V15",
-    stockValid: "Official V15 verified", stockBad: "Not the official V15: ",
-    stockConfirm: "Install the official V15 on the FM-1? The official firmware cannot open Synthesthetic's music. Did you save a backup?",
-    stockFinish: "The FM-1 is in Synthesthetic's update mode. Press Install to finish the Synthesthetic update first, then return to the official V15.",
-    handbook: "Handbook: everything about Synthesthetic, from installing to streaming",
-    notesHead: "Before you install",
-    eyebrow: "Firmware for the M-VAVE FM-1",
-    navInstall: "Install",
-    navModes: "Modes",
-    navWebcam: "Webcam",
-    navPlay: "Play",
-    navHandbook: "Handbook",
-    navEditor: "Editor",
-    navSource: "Source",
-    ctaInstall: "Install on your FM-1",
-    ctaPlay: "Play it in your browser",
-    ctaModes: "See all 31 modes",
+    denied: "MIDI access wasn't allowed. Allow MIDI in the site settings next to the address bar, then try again.",
+    notfound: "Couldn't find the FM-1. Check that it's connected with a data cable, close other apps that use MIDI and try again.",
+    model: "The connected device isn't an FM-1.",
+    lost: "The USB connection dropped. Plug the cable back in and try again.",
+    noloader: "Couldn't find the FM-1 in update mode. Unplug the USB cable, plug it back in and press Install again. The FM-1 stays in update mode until the install finishes.",
+    noreturn: "The FM-1 didn't come back after restarting. Switch it off and on again.",
+    mismatch: "The install finished, but the FM-1 reports {v}.",
+    foreign: "The FM-1 is in update mode for another firmware ({v}). Finish that update with M-UPGRADE, then press Install again.",
+    badpkg: "The firmware file is damaged. Reload the page and try again.",
+    leave: "Writing. Keep this page open.",
+    spine: "USB video firmware for the M-VAVE FM-1",
+    navWebcam: "Webcam", navModes: "Modes", navInstall: "Install", navPlay: "Play", navHandbook: "Handbook",
+    heroHead: "USB video out",
+    heroSub: "For the M-VAVE FM-1",
+    heroLede: "Synthesthetic transforms your music into a visual experience. It's the first FM-1 firmware that sends video over USB, so your FM-1 shows up as a camera in OBS, Zoom, FaceTime, and more…",
+    ctaInstall: "Install", ctaPlay: "Try it in the browser",
+    specSignal: "Signal", specSignalV: "One USB cable", specVideo: "Video", specAudio: "Audio", specAudioV: "USB audio · 16-bit · 44.1 kHz stereo",
+    specMidiV: "USB MIDI, plus the TRS input", specDriver: "Driver", specDriverV: "None needed", specApps: "Works in",
+    modesHint: "Tap or hover to preview a visualization sample",
+    grpScopes: "Scopes", grpPatterns: "Patterns", grpDrums: "Drums", grpFeedback: "Feedback", grpDemoscene: "Demoscene", grpScreen: "Screen",
+    modeScreen: "Sends the FM-1's own display, for streaming a set or a tutorial.",
+    camHead: "Use it as a webcam",
+    cam1: "Plug the FM-1 into your computer with a USB data cable.",
+    cam2: "Choose the camera named Synthesthetic in OBS, Zoom, Photo Booth or any other video app.",
+    cam3: "Play. The picture follows your music, and SELECT changes the mode.",
+    vjHead: "Webcam title",
+    vjHelp: "Shows over the picture when the overlay is on. The FM-1 keeps it with its settings.",
+    vjOvLabel: "What the overlay shows", vjOv0: "Nothing", vjOv1: "Info (mode, BPM)", vjOv2: "Title", vjOv3: "Info and title",
+    vjGo: "Send to the FM-1", vjSent: "Sent {v} to the FM-1. It's saved with the FM-1's settings.", vjSentNone: "Sent. The title is empty.",
+    vjHidden: "The overlay won't show the title.",
+    vjNotOurs: "This FM-1 is running a different firmware ({v}). Install Synthesthetic first.",
+    vjNoVideo: "This FM-1 is running a build without the webcam.",
     installHead: "Install",
-    installSub: "About two minutes over USB, in Chrome or Edge. Your projects, presets and samples stay where they are.",
+    installSub: "It takes about two minutes in Chrome or Edge. Your projects, presets and samples are kept.",
     s1Head: "Check your FM-1",
-    s1Help: "Plug the FM-1 straight into this computer with a USB data cable (no hub), switch it on, and close other apps and tabs that use MIDI.",
+    s1Help: "Connect it directly to this computer with a USB data cable and switch it on. Close other apps that use MIDI.",
     browserOk: "This browser can talk to the FM-1.",
     checkGo: "Check",
     checking: "Looking for the FM-1…",
-    idRuns: "Your FM-1 answers as {v}: ",
-    idSyn: "Synthesthetic {v}. Installing updates it and keeps your work.",
+    idRuns: "Your FM-1 reports {v}. ",
+    idSyn: "It's running Synthesthetic {v}. Installing updates it and keeps your work.",
     idSynDev: "(a development build)",
-    idRescue: "the USB rescue updater. Install puts Synthesthetic back.",
-    idFelucca: "a Felucca-family firmware: Dinghy, Felucca, SLOOP or a fork of them. From Dinghy or SLOOP, install directly. From another fork, go back to the official V15 first.",
-    idOta: "update mode. Press Install to finish the update.",
-    idOther: "another firmware. If it is M-VAVE's official V15, install directly. If it is another custom firmware, go back to the official V15 with M-UPGRADE first.",
+    idRescue: "It's in USB rescue mode. Installing puts Synthesthetic back.",
+    idFelucca: "It's running Dinghy, Felucca, SLOOP or a fork of one of them. From Dinghy or SLOOP you can install directly. From any other fork, go back to the official V15 first.",
+    idOta: "It's in update mode. Press Install to finish the update.",
+    idOther: "It's running a different firmware. If that's M-VAVE's official V15, you can install directly. If it's another custom firmware, use M-UPGRADE to go back to V15 first.",
     s2Head: "Install Synthesthetic",
-    ready: "Ready: Synthesthetic {v}.",
-    phVerify: "Check package",
-    phLoader: "Update mode",
-    phWrite: "Write",
-    phReboot: "Restart",
-    phDone: "Done",
+    ready: "Ready to install Synthesthetic {v}.",
+    phVerify: "Check file", phLoader: "Update mode", phWrite: "Write", phReboot: "Restart", phDone: "Done",
     logHead: "Technical log",
     s3Head: "Play",
-    next1: "On the TRACKS screen, tap HOME: the visualiser opens. SELECT changes the mode, PRESETS the palette, KNOB 1 to 4 shape the picture.",
-    next2: "On the computer, choose the camera named Synthesthetic in OBS, Zoom or Photo Booth.",
-    next3: "Give the webcam a title.",
-    backupHead: "Back up first.",
-    backupNote: "A full copy of the flash is the one thing that puts an FM-1 back exactly as it was.",
+    next1: "Tap HOME on the TRACKS screen to open the visualizer. SELECT changes the mode.",
+    next2: "Pick the camera named Synthesthetic in OBS, Zoom or Photo Booth.",
+    next3: "Give the webcam a title",
+    notesHead: "Before you install",
+    careBackup: "Back up the whole flash before you install a custom firmware for the first time.",
     howLink: "How to back up",
-    familyHead: "Coming from another custom firmware?",
-    familyNote: "Go back to the official V15 with M-UPGRADE first. Installing over another family's flash layout is how FM-1s get bricked.",
-    cableHead: "Cable.",
-    rescueHead: "If an install stops,",
-    rescueNote: "hold OCT− while switching on: the USB rescue opens and you can install again.",
-    betaHead: "Beta.",
-    modesHead: "31 modes",
-    modesSub: "Every frame here came out of the FM-1's webcam while music played. SELECT steps through them on the FM-1; MIDI and the autopilot can too. The last one, SCREEN, streams the FM-1's own display.",
-    camHead: "Use it as a webcam",
-    cam1: "Plug the FM-1 into the computer. It shows up as a camera named Synthesthetic: 320 × 180 at 30 frames a second, with no driver.",
-    cam2: "Pick it in OBS, Zoom, Photo Booth or any video app. One app at a time can use a camera, so quit apps that grab every camera.",
-    cam3: "Photo Booth mirrors its preview, so text reads backwards there. The picture itself is the right way round.",
+    careFamily: "If the FM-1 runs another custom firmware, go back to official V15 with M-UPGRADE first.",
+    careRescue: "If an install stops partway, hold OCT− while switching on and install again.",
+    careBeta: "This is a beta. Use it at your own risk.",
+    instHead: "The instrument",
+    instText: "Everything the FM-1 did before still works. The synths, the sequencer and the drums come from SLOOP.",
+    instLink: "Read SLOOP's guide",
+    instRow: "Instrument", instRowV: "Multitrack groovebox",
+    instTracks: "Tracks", instTracksV: "4 (3 synths + 1 drum machine)",
+    instEngines: "Synth engines", instSounds: "Sounds", instKits: "Drum kits", instVis: "Visualizers", instVisV: "30, audio-reactive",
     toolsHead: "Tools",
-    tPlay: "Play in the browser",
-    tPlayD: "The real firmware on a 3D FM-1, with its webcam picture. No FM-1 needed.",
-    tEditor: "Editor",
-    tEditorD: "Sounds, patterns, songs, kits, samples and every visual setting, from the computer over USB.",
-    tHandbook: "Handbook",
-    tHandbookD: "Everything in one place: install, play, stream, recover, build.",
-    tOffline: "Offline editor",
-    tOfflineD: "One file to keep. Open it in Chrome or Edge, with no internet.",
-    tApp: "Install the app",
-    tAppD: "The editor and the installer as an app that works offline, on Android too.",
-    vjHead: "Webcam title",
-    vjHelp: "Shown over the picture when the overlay is on. The FM-1 keeps it with its settings.",
-    vjOvLabel: "Shown over the picture", vjOv0: "Nothing", vjOv1: "Info (mode, BPM)", vjOv2: "Title", vjOv3: "Info and title",
-    vjGo: "Send to the FM-1", vjSent: "Sent (the FM-1 keeps it): ", vjSentNone: "Sent: no title",
-    vjHidden: "(the title is not shown)",
-    vjNotOurs: "The FM-1 runs another firmware. Install Synthesthetic first: ",
-    vjNoVideo: "This FM-1 runs a build without the webcam.",
-    vjMore: "Palettes, the autopilot, MIDI and the knobs: the editor's VJ page.",
-    back: "M-VAVE's own updater, M-UPGRADE (Downloads → PC Software), works too. If it does not find the FM-1, close every other app and browser tab that uses MIDI.",
+    tPlay: "Play in the browser", tPlayD: "The real firmware on a 3D FM-1.",
+    tEditor: "Editor", tEditorD: "Sounds, patterns, samples and visuals over USB.",
+    tHandbook: "Handbook", tHandbookD: "The full manual, with the recovery steps.",
+    tOffline: "Offline editor", tOfflineD: "The editor as one file that works without internet.",
+    tApp: "Install the app", tAppD: "The editor and installer, available offline.",
+    stockTitle: "Go back to the official firmware (V15)",
+    stockHelp: "Download V15 from M-VAVE and choose the FM-1.fwsc file inside it, unmodified. It's checked here in your browser and isn't uploaded anywhere.",
+    stockBackup: "The official firmware can't open Synthesthetic's projects, so save a backup in the editor first (Projects → Backup).",
+    stockEditor: "Open the editor", stockSaved: "I've saved a backup",
+    stockFile: "The official FM-1.fwsc", stockGo: "Install official V15",
+    stockValid: "This is the official V15.", stockBad: "This isn't the official V15 ({v}).",
+    stockConfirm: "Install the official V15 on this FM-1? The official firmware can't open Synthesthetic's projects. Have you saved a backup?",
+    stockFinish: "The FM-1 is in Synthesthetic's update mode. Press Install above to finish installing Synthesthetic first, then go back to V15.",
+    footLicense: "Free software under the GPL-3.0, with no warranty.",
+    footSource: "Source code",
+    footCredits: "Credits",
+    footBased: "Based on SLOOP by isod89 and Felucca by Leo Kuroshita of Hügelton Instruments.",
+    footTrademark: "M-VAVE and FM-1 are trademarks of their owners. Synthesthetic isn't affiliated with them.",
   },
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
@@ -941,6 +778,36 @@ $("stock-go").addEventListener("click", async () => {
   } catch (e) { failed(e); }
   lockAll(false);
 });
+/* the 31 modes under the window: point at one (or focus it, or tap it) and the window shows its frame; move away and
+   the window goes back to the webcam's own picture. A tap keeps the frame until the next tap. */
+{
+  const pick = $("mode-screen"), id = $("mode-id"), list = $("modes");
+  let pinned = null;
+  const show = (b) => {
+    const on = !!(b && b.dataset && b.dataset.mode);
+    if (!pick) return;
+    pick.hidden = !on;
+    if (on) {
+      pick.style.backgroundImage = `url(modes/${b.dataset.mode}.jpg)`;
+      id.textContent = `${b.dataset.mode}/31 ${b.dataset.name}`;
+    }
+    document.querySelectorAll("[data-mode]").forEach((x) => x.setAttribute("aria-pressed", String(on && x === b)));
+  };
+  document.querySelectorAll("[data-mode]").forEach((b) => {
+    b.addEventListener("mouseenter", () => show(b));
+    b.addEventListener("focus", () => show(b));
+    b.addEventListener("click", () => {
+      pinned = pinned === b ? null : b;
+      show(pinned || b);
+      const w = pick && pick.parentElement.getBoundingClientRect();     /* (on a phone the window can be off the screen) */
+      if (w && (w.top < 0 || w.bottom > innerHeight)) pick.parentElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+  if (list) {
+    list.addEventListener("mouseleave", () => show(pinned));
+    list.addEventListener("focusout", (e) => { if (!list.contains(e.relatedTarget)) show(pinned); });
+  }
+}
 </script>
 </body>
 </html>

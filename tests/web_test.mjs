@@ -86,10 +86,10 @@ for (let i = 0; i < 40; i++) { run(w, 25); const on = w.web_led(BTN.play) === 3;
 check(beats >= 1, `and PLAY lights with the beat (${beats} in a second)`);
 w.web_input(0, 1 << BTN.play); run(w, 100); w.web_input(0, 0); run(w, 100);
 check(w.web_playing() === 0, 'PLAY again stops it');
-// a first visit: the demo song, in song mode: INTRO 4 bars, VERSE 8, CHORUS 8, VERSE 8, BRIDGE 4, CHORUS 8, round
+// a first visit: the demo song (90 BPM), in song mode: INTRO 4 bars, VERSE 8, CHORUS 8, VERSE 8, BRIDGE 4, CHORUS 8, round
 // again; the chorus lifts, the bridge dips, every part sounds, nothing past the limiter's ceiling, STOP ends the song
 {
-  const BAR = 44100 * 60 * 4 / 122, SCENE = { 3: 'INTRO', 0: 'VERSE', 1: 'CHORUS', 2: 'BRIDGE' };
+  const BAR = 44100 * 60 * 4 / 90, SCENE = { 3: 'INTRO', 0: 'VERSE', 1: 'CHORUS', 2: 'BRIDGE' };
   const song = (mask, bars, watch) => {
     const d = new WebAssembly.Instance(module, {}).exports;
     d._initialize?.(); d.web_flash_erase(); d.web_boot(mask); run(d, 4500);
@@ -115,7 +115,7 @@ check(w.web_playing() === 0, 'PLAY again stops it');
         `the chorus lifts, the bridge dips (verse ${verse.toFixed(1)}, chorus ${chorus.toFixed(1)}, bridge ${bridge.toFixed(1)} dB)`);
   check(Math.max(...all.bar.map((b) => b.peak)) < 0.6, 'under the master limiter\'s ceiling (no clipping)');
   const parts = [1, 2, 4, 8].map((m) => { const s = song(m, 20); return 10 * Math.log10(s.bar.slice(4, 20).reduce((a, b) => a + 10 ** (b.db / 10), 0) / 16); });
-  const names = ['bass', 'keys', 'vibes', 'drums'], lo = Math.min(...parts), hi = Math.max(...parts);
+  const names = ['bass', 'keys', 'lead', 'drums'], lo = Math.min(...parts), hi = Math.max(...parts);
   check(lo > -30 && hi - lo < 7, 'verse and chorus: every part sounds, within 7 dB: ' + parts.map((x, i) => `${names[i]} ${x.toFixed(1)}`).join(', '));
   all.d.web_input(0, 1 << BTN.play); run(all.d, 100); all.d.web_input(0, 0); run(all.d, 200);
   check(all.d.web_playing() === 0 && all.d.web_song() === 0, 'STOP ends the song (the verse is the loop again)');
@@ -166,6 +166,8 @@ check(w2.web_vj_get(0) === 16 && w2.web_vj_get(3) === 2, 'and come back at the n
   go(e, 4500);
   check(last.ready.fresh === true && seen.lcd > 20 && seen.leds >= 1 && seen.cam > 100 && seen.state >= 1,
         `engine: a first visit boots, sends the screen (${seen.lcd}), the LEDs, the webcam (${seen.cam}), its state`);
+  e.message({ t: 'vj', k: 2, v: 0 });                     // (the autopilot off: PLAY starts bar 0, which it would take
+                                                          // as its bar to change the picture whenever the boot ended past bar 0)
   e.message({ t: 'vj', k: 0, v: 24 });                    // FIRE
   e.message({ t: 'input', notes: 0, buttons: 1 << BTN.play }); go(e, 100); e.message({ t: 'input', notes: 0, buttons: 0 });
   go(e, 6000);

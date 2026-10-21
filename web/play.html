@@ -6,108 +6,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Play Synthesthetic</title>
-<meta name="description" content="Synthesthetic's real firmware running in your browser on a 3D FM-1: play it with the mouse, the computer keyboard or a MIDI keyboard, and watch its webcam picture.">
-<meta name="theme-color" content="#211a2a">
+<title>Synthesthetic virtual FM-1</title>
+<meta name="description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1 with your mouse, computer keyboard or a MIDI keyboard, and see the webcam picture it sends.">
+<meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;1,400&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=swap">
 <style>
-  /* Layout: the FM-1 on the plum wall, as large as the band allows, with its webcam's monitor beside it (under it on a
-     narrow screen); below them, how to play it (the mouse, the computer keyboard, MIDI), five things to try, and
-     what runs here. The site's tokens and type, as the installer's. */
-  @font-face { font-family: "FM-1 Terminus"; src: url(/*SITE-FONT*/) format("truetype"); font-display: swap; }
-  :root {
-    color-scheme: dark;
-    --glass: #211a2a; --panel: #2a2234; --lift: #342a40; --rule: #43384f; --ink: #f3eff8; --mute: #b3a8c2;
-    --tally: #ff4d6d; --good: #5be39a; --warn: #ffc94a;
-    --c1: #ff4d8d; --c2: #ff9f1c; --c3: #ffd23f; --c4: #7ae582; --c5: #22d3c5; --c6: #4d9bff;
-    --pixel: "FM-1 Terminus", ui-monospace, Menlo, Consolas, monospace;
-    --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;
-    --pad-l: max(clamp(16px, 4vw, 64px), env(safe-area-inset-left, 0px));
-    --pad-r: max(clamp(16px, 4vw, 64px), env(safe-area-inset-right, 0px));
-    --wrap: 1440px;
-    --gap: clamp(28px, 4.5vw, 80px);
-  }
-  * { box-sizing: border-box; }
-  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 76px; }
-  body { margin: 0; background: var(--glass); color: var(--ink); font: 17px/1.55 var(--sans); }
-  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--glass); }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--mute); }
-  a:hover { text-decoration-color: var(--ink); }
-  :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-  [hidden] { display: none !important; }
-  h1, h2, h3 { text-wrap: balance; }
-  .band { padding-left: var(--pad-l); padding-right: var(--pad-r); }
-  .wrap { max-width: var(--wrap); margin-inline: auto; }
-  .label { margin: 0; font: 16px/1.25 var(--pixel); letter-spacing: .04em; text-transform: uppercase; color: var(--mute); }
-  .sec-head { display: grid; gap: 10px; margin-bottom: clamp(22px, 3vw, 36px); max-width: 760px; }
-  .sec-head h2 { margin: 0; font: 32px/1.1 var(--pixel); font-weight: normal; text-transform: uppercase; }
-  .sec-head p { margin: 0; color: var(--mute); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; font: 16px/1 var(--pixel);
-         text-transform: uppercase; letter-spacing: .03em; text-decoration: none; cursor: pointer; padding: 14px 18px;
-         border: 1px solid var(--rule); background: none; color: var(--ink); }
-  .btn:hover:not(:disabled) { border-color: var(--mute); }
-  .btn.primary { background: var(--ink); color: var(--glass); border-color: var(--ink); box-shadow: 0 10px 30px -12px rgb(255 77 141 / .55); }
-  .btn.primary:hover:not(:disabled) { background: #fff; border-color: #fff; }
-  .btn:disabled { color: var(--mute); background: var(--panel); border-color: var(--rule); cursor: default; box-shadow: none; }
-  .btn.small { padding: 10px 14px; }
-  .note { margin: 0; color: var(--mute); font-size: 15px; }
-  .tone-good { color: var(--good); } .tone-warn { color: var(--warn); } .tone-bad { color: var(--tally); }
-
-  /* the bar: as the installer's */
-  header.band { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; padding-block: 12px;
-                background: rgb(33 26 42 / .9); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-                border-bottom: 1px solid var(--rule); }
-  header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 10px 32px; flex-wrap: wrap; }
-  nav { display: flex; align-items: center; gap: 6px 24px; flex-wrap: wrap; font: 16px/1 var(--pixel); text-transform: uppercase; }
-  nav a { color: var(--mute); text-decoration: none; padding-block: 6px; }
-  nav a:hover, nav a[aria-current="page"] { color: var(--ink); }
-  nav a[aria-current="page"] { text-decoration: underline; text-decoration-color: var(--c1); text-decoration-thickness: 2px; text-underline-offset: 8px; }
-  nav .sep { width: 1px; height: 16px; background: var(--rule); }
-  /*BRAND-CSS*/
-  @property --h { syntax: "<number>"; inherits: true; initial-value: 0; }
-  @keyframes hueturn { to { --h: 360; } }
-  .rainbow { animation: hueturn 4s linear infinite; }
-  .rainbow span { color: hsl(calc(var(--h) + var(--o, 0)) 100% 62%); }
-  .deco-row { height: var(--rowh, 88px); }
-  .deco-row canvas { display: block; width: 100%; height: 100%; }
-
-  /* the opening: what this is, and the power */
-  .intro { padding-block: clamp(22px, 3vw, 44px) clamp(14px, 1.8vw, 24px); }
-  .intro .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 18px var(--gap); align-items: end; }
-  .intro .text { display: grid; gap: 12px; max-width: 820px; }
-  .intro h1 { margin: 0; font: 600 clamp(30px, 3vw, 44px)/1.1 var(--sans); letter-spacing: -.01em; }
-  .intro .lead { margin: 0; font-size: clamp(17px, 1.2vw, 19px); color: var(--mute); max-width: 70ch; }
-  .power { display: grid; gap: 8px; justify-items: stretch; }
-  .power .btn { padding-block: 16px; }
-
-  /* the FM-1 and its webcam */
-  .stage-band { padding-block: 6px clamp(28px, 4vw, 56px); }
-  .stage-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(300px, 4fr); gap: clamp(18px, 2.6vw, 44px); align-items: start; }
-  .device { display: grid; gap: 12px; min-width: 0; }
+/*SITE-CSS*/
+  /* The Play page, split at column 9: a one-line title, then the FM-1 as large as the card allows on the left and its
+     webcam window and settings on the right, all above the fold. The stripes run behind both, their bottom edge on
+     the window's, as on the installer. Below, how to play it with the computer keyboard drawn out, then what runs
+     here. */
+  .stage-panel { padding-top: 28px; }
+  .titles { margin-bottom: 28px; }
+  .titles h1 { font-size: clamp(22px, 2.4vw, 34px); }
+  .stage-grid { position: relative; container-type: inline-size; align-items: start; row-gap: 28px; }
+  /* (the window's height from the grid's width: four columns and three gutters, less the frame, at 16:9, plus the frame) */
+  .stage-grid > .stripes { position: absolute; left: calc(-1 * var(--pad)); right: calc(-1 * var(--pad));
+                           top: calc(((100cqw - 11 * var(--gap)) / 3 + 3 * var(--gap) - 28px) * 9 / 16 + 28px - 91px); }
+  .device, .cam { position: relative; z-index: 1; }
+  .device { grid-column: 1 / span 8; display: grid; gap: 14px; min-width: 0; }
   .stage { position: relative; width: 100%; aspect-ratio: 16 / 9.4; overflow: hidden; touch-action: none; user-select: none;
            -webkit-user-select: none; -webkit-touch-callout: none; cursor: pointer; }
   .stage.on { cursor: default; }
   .stage .fm1-gl { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   .fm1-glass { position: absolute; left: 0; top: 0; width: 240px; height: 240px; transform-origin: 0 0; visibility: hidden; pointer-events: none; }
   .fm1-glass canvas, .flat .screen canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
-  .stage-msg { position: absolute; z-index: 3; left: 50%; top: 4%; transform: translateX(-50%); font: 16px/1 var(--pixel); text-transform: uppercase;
-               color: var(--ink); background: rgb(20 15 26 / .82); border: 1px solid var(--rule); padding: 10px 14px; white-space: nowrap; pointer-events: none; }
-  .device-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
-  .device-bar .grow { flex: 1; }
-  .seg { display: inline-flex; border: 1px solid var(--rule); }
-  .seg button { font: 16px/1 var(--pixel); text-transform: uppercase; color: var(--mute); background: none; border: 0; padding: 10px 12px; cursor: pointer; }
-  .seg button + button { border-left: 1px solid var(--rule); }
-  .seg button[aria-pressed="true"] { color: var(--glass); background: var(--ink); }
-  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: var(--mute); cursor: pointer; }
-  .check input { accent-color: var(--c1); width: 16px; height: 16px; margin: 0; }
-
-  /* the flat FM-1 (no WebGL): the same layout, from above */
   .flat { position: absolute; inset: 4% 3%; }
   .flat .body { position: absolute; inset: 0; border-radius: 4.6% / 8%; background: linear-gradient(135deg, #222226, #131316);
-                box-shadow: 0 30px 60px -30px #000, inset 0 0 0 1px rgb(255 255 255 / .08); }
+                box-shadow: 0 30px 60px -34px rgb(0 0 0 / .6), inset 0 0 0 1px rgb(255 255 255 / .08); }
   .flat .part { position: absolute; transform: translate(-50%, -50%); }
   .flat .screen { width: 19.2%; aspect-ratio: 1; background: #000; box-shadow: 0 0 0 6px #040405, 0 0 0 7px #34343a; }
   .flat .knob { width: 4.6%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #2a2a30, #0a0a0c 70%);
@@ -123,229 +52,177 @@
   .flat .key { width: 4.5%; height: 15%; border-radius: 999px; color: #ffd23f; }
   .flat .key.black { background: #070709; }
   .flat .down { filter: brightness(1.6); transform: translate(-50%, -50%) scale(.96); }
+  .stage-msg { position: absolute; z-index: 3; left: 50%; top: 4%; transform: translateX(-50%); padding: 9px 14px; font: 400 11px/1 var(--ext);
+               letter-spacing: .08em; text-transform: uppercase; color: var(--card); background: var(--ink); white-space: nowrap; pointer-events: none; }
+  .device-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+  .device-bar .grow { flex: 1; }
+  .seg { display: inline-flex; border: 1px solid var(--ink); }
+  .seg button { font: 400 10px/1 var(--ext); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); background: none; border: 0; padding: 11px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--ink); }
+  .seg button[aria-pressed="true"] { color: var(--card); background: var(--ink); }
+  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray); cursor: pointer; }
 
-  /* the webcam */
-  .cam { display: grid; gap: 12px; position: sticky; top: 84px; min-width: 0; }
-  .monitor { position: relative; aspect-ratio: 16 / 9; width: 100%; overflow: hidden; background: #000; border-radius: 4px;
-             box-shadow: 0 0 0 1px var(--rule), 0 40px 100px -50px #000; }
-  .monitor canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .monitor::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-                    background: repeating-linear-gradient(to bottom, rgb(0 0 0 / .16) 0 1px, transparent 1px 3px); }
-  .tally { position: absolute; top: 7%; left: 4%; display: flex; align-items: center; gap: 8px; font: 16px/1 var(--pixel);
-           color: #fff; background: rgb(0 0 0 / .55); padding: 4px 8px 4px 6px; }
-  .tally::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--tally); box-shadow: 0 0 8px var(--tally); }
-  .chan { position: absolute; left: 4%; bottom: 7%; font: 16px/1 var(--pixel); font-weight: normal; color: #fff;
-          background: rgb(0 0 0 / .55); padding: 4px 6px; letter-spacing: .03em; }
-  .vf { position: absolute; inset: 3.5%; pointer-events: none; opacity: .8; --c: rgb(255 255 255 / .85);
-        background: linear-gradient(var(--c), var(--c)) left top / 22px 2px, linear-gradient(var(--c), var(--c)) left top / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) right top / 22px 2px, linear-gradient(var(--c), var(--c)) right top / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) left bottom / 22px 2px, linear-gradient(var(--c), var(--c)) left bottom / 2px 22px,
-                    linear-gradient(var(--c), var(--c)) right bottom / 22px 2px, linear-gradient(var(--c), var(--c)) right bottom / 2px 22px;
-        background-repeat: no-repeat; }
-  .fs { position: absolute; right: 3%; top: 6%; z-index: 2; width: 36px; height: 36px; display: grid; place-items: center; cursor: pointer;
-        color: #fff; background: rgb(0 0 0 / .55); border: 1px solid rgb(255 255 255 / .25); }
-  .fs:hover { border-color: #fff; }
+  .cam { grid-column: 9 / span 4; display: grid; gap: 16px; position: sticky; top: 88px; min-width: 0; z-index: 2; }
+  .monitor canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .chan { position: absolute; left: 3%; bottom: 5%; padding: 4px 6px; font: 16px/1 var(--pixel); font-weight: normal; color: #fff; background: rgb(0 0 0 / .55); }
+  .fs { position: absolute; right: 3%; top: 5%; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer;
+        color: #fff; background: rgb(0 0 0 / .55); border: 0; }
+  .fs:hover { background: rgb(0 0 0 / .85); }
   .monitor:fullscreen { border-radius: 0; }
   .monitor:fullscreen canvas { object-fit: contain; }
-  .osd { display: flex; flex-wrap: wrap; gap: 6px 22px; }
-  .vj { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .vj { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
   .field { display: grid; gap: 6px; min-width: 0; }
   .field.wide { grid-column: 1 / -1; }
-  .field > span { font: 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--mute); }
-  select, input[type="text"] { font: 16px/1.2 var(--pixel); text-transform: uppercase; color: var(--ink); background: var(--panel);
-                               border: 1px solid var(--rule); border-radius: 0; padding: 10px 12px; width: 100%; min-width: 0; }
-  select:hover, input[type="text"]:hover { border-color: var(--mute); }
+  .field > span { font: 400 10px/1.4 var(--ext); letter-spacing: .08em; text-transform: uppercase; color: var(--gray); }
+  .field select { width: 100%; }
   .title-row { display: flex; gap: 8px; }
-  .title-row input { flex: 1; }
+  .title-row input { flex: 1; width: 100%; font: 16px/1.2 var(--pixel); text-transform: uppercase; letter-spacing: .04em; }
 
-  /* how to play */
-  .howto { padding-block: clamp(40px, 6vw, 96px); background: var(--panel); }
-  .ways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(24px, 3vw, 48px); }
-  .way { display: grid; gap: 12px; align-content: start; }
-  .way h3 { margin: 0; font: 16px/1.3 var(--pixel); font-weight: normal; text-transform: uppercase; letter-spacing: .04em; }
-  .way h3::before { content: ""; display: block; width: 44px; height: 3px; margin-bottom: 12px; background: var(--c); }
-  .way:nth-child(1) { --c: var(--c5); } .way:nth-child(2) { --c: var(--c3); } .way:nth-child(3) { --c: var(--c1); }
-  .way p { margin: 0; }
-  .way ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
-  .way li::marker { color: var(--mute); }
-  kbd { font: 15px/1 var(--pixel); text-transform: uppercase; padding: 2px 5px; border: 1px solid var(--rule); border-bottom-width: 2px; background: var(--glass); color: var(--ink); }
-  .kb-wrap { grid-column: 1 / -1; overflow-x: auto; padding-bottom: 4px; }
-  .kb { display: grid; gap: 6px; min-width: 720px; }
+  .ways { margin-top: 32px; row-gap: 32px; }
+  .way { grid-column: span 4; display: grid; gap: 10px; align-content: start; padding-top: 14px; border-top: 2px solid var(--ink); }
+  .way h3 { font: 400 12px/1.4 var(--ext); letter-spacing: .06em; text-transform: uppercase; }
+  .way p, .way ul { color: var(--gray); }
+  .way ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+  .kb-wrap { margin-top: 48px; display: grid; gap: 14px; }
+  .kb-wrap h3 { font: 400 12px/1.4 var(--ext); letter-spacing: .06em; text-transform: uppercase; }
+  .kb-scroll { overflow-x: auto; padding-bottom: 4px; }
+  .kb { display: grid; gap: 6px; min-width: 700px; }
   .kb-row { display: flex; gap: 6px; }
-  .kb-row.r1 { padding-left: 0; } .kb-row.r2 { padding-left: 28px; } .kb-row.r3 { padding-left: 42px; } .kb-row.r4 { padding-left: 0; }
-  .kc { flex: 0 0 52px; height: 52px; display: grid; align-content: space-between; padding: 6px 7px; border: 1px solid var(--rule);
-        background: var(--glass); color: var(--mute); }
-  .kc.wide { flex-basis: 88px; } .kc.space { flex-basis: 300px; }
-  .kc b { font: 16px/1 var(--pixel); font-weight: normal; color: var(--ink); }
-  .kc i { font: 12px/1 var(--pixel); font-style: normal; text-transform: uppercase; }
-  .kc.white { background: #ece7f3; border-color: #ece7f3; } .kc.white b, .kc.white i { color: #211a2a; }
-  .kc.black { background: #0b090e; border-color: #0b090e; } .kc.black i { color: #b3a8c2; }
-  .kc.fn { border-color: var(--k); } .kc.fn i { color: var(--k); }
-  .kc.off { opacity: .35; }
-  .try { margin-top: clamp(32px, 4vw, 56px); display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 16px var(--gap); }
-  .try h2 { margin: 0; font: 32px/1.1 var(--pixel); font-weight: normal; text-transform: uppercase; }
-  .try ol { margin: 0; padding: 0; list-style: none; counter-reset: t; display: grid; gap: 12px; }
-  .try li { counter-increment: t; display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start; }
-  .try li::before { content: counter(t); font: 32px/1 var(--pixel); color: var(--mute); }
-  .try li p { margin: 0; }
+  .kb-row.r2 { padding-left: 27px; } .kb-row.r3 { padding-left: 40px; }
+  .kc { flex: 0 0 48px; height: 48px; display: grid; align-content: space-between; padding: 6px 7px; border: 1px solid var(--line); color: var(--gray); }
+  .kc.wide { flex-basis: 82px; } .kc.space { flex-basis: 280px; }
+  .kc b { font-size: 14px; font-weight: 600; line-height: 1; color: var(--ink); }
+  .kc i { font: 400 8px/1 var(--ext); font-style: normal; letter-spacing: .04em; text-transform: uppercase; }
+  .kc.white { background: #fff; border-color: var(--ink); } .kc.white i { color: var(--ink); }
+  .kc.black { background: var(--ink); border-color: var(--ink); } .kc.black b, .kc.black i { color: var(--card); }
+  .kc.fn { background: var(--raised); border-color: var(--raised); } .kc.fn i { color: var(--ink); }
+  .kc.off { opacity: .45; }
 
-  /* what runs here */
-  .about { padding-block: clamp(40px, 6vw, 88px); }
-  .about .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--gap); align-items: start; }
-  .about .col { display: grid; gap: 14px; }
-  .about p { margin: 0; max-width: 70ch; }
-  .reset { display: grid; gap: 10px; padding: 20px; border: 1px solid var(--rule); background: var(--panel); }
-  .reset .row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .about .grid { align-items: start; row-gap: 32px; }
+  .about .col { grid-column: 1 / span 8; display: grid; gap: 14px; }
+  .about p { max-width: 64ch; }
+  .reset { grid-column: 9 / span 4; border: 2px solid var(--ink); }
+  .reset h3 { padding: 13px 16px; background: var(--ink); color: var(--card); font: 400 11px/1.4 var(--ext); letter-spacing: .08em; text-transform: uppercase; }
+  .reset-body { display: grid; gap: 14px; padding: 16px; }
+  footer p { grid-column: 1 / span 7; }
+  footer p + p { grid-column: 9 / span 4; }
 
-  footer.band { padding-block: 26px 40px; color: var(--mute); font-size: 14px; border-top: 1px solid var(--rule); }
-  footer .wrap { display: grid; gap: 6px; }
-  footer p { margin: 0; max-width: 110ch; }
-
-  @media (max-width: 1100px) {
-    .stage-grid { grid-template-columns: minmax(0, 1fr); }
-    .cam { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
-    .cam > .label { grid-column: 1 / -1; }
-    .about .wrap, .try { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (max-width: 860px) {
-    .ways { grid-template-columns: minmax(0, 1fr); }
-    .cam { grid-template-columns: minmax(0, 1fr); }
-    .intro .wrap { grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 981px) { .titles h1 { white-space: nowrap; } }
+  @media (max-width: 980px) {
+    .cam { position: static; }
+    .stage-grid > .stripes { position: static; margin-inline: calc(-1 * var(--pad)); }
   }
   @media (max-width: 600px) {
-    header.band { position: static; }
-    html { scroll-padding-top: 12px; }
-    nav .sep, nav .opt { display: none; }
     .stage { aspect-ratio: 16 / 12; }
-    .seg button { padding: 10px 9px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-behavior: auto; }
-    .rainbow { animation: none; }
+    .seg button { padding: 11px 9px; }
   }
 </style>
 </head>
 <body>
-<header class="band">
-  <div class="wrap">
-    <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic"><!--LOGO--></a>
-    <nav aria-label="Site"><a href="../webapp/installer/#install">Install</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#webcam">Webcam</a><a href="./" aria-current="page">Play</a><span class="sep" aria-hidden="true"></span><a class="opt" href="../handbook/">Handbook</a><a class="opt" href="../webapp/editor/">Editor</a><a class="opt" href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener">Source</a></nav>
-  </div>
-</header>
-<main>
-  <section class="band intro">
-    <div class="wrap">
-      <div class="text">
-        <p class="label">The real firmware, in the page</p>
-        <h1>Play <!--RAINBOW--> in your browser</h1>
-        <p class="lead">The FM-1 below runs the same firmware as a real one, compiled for the web: the same synth engines, sequencer, screens and 31 visualizers. The webcam picture it would send to OBS or Zoom plays beside it.</p>
+<div class="card">
+  <aside class="spine" aria-hidden="true"><p>Synthesthetic<span class="label">Virtual FM-1</span><span class="label"><!--VERSION--></span></p></aside>
+  <div class="front">
+    <header class="bar">
+      <div class="grid">
+        <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic"><!--LOGO--></a>
+        <nav aria-label="Site"><a href="../webapp/installer/#webcam">Webcam</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="./" aria-current="page">Play</a><a class="opt" href="../handbook/">Handbook</a></nav>
       </div>
-      <div class="power">
-        <button class="btn primary" id="power" type="button">Power on</button>
-        <p class="note" id="power-note">Sound starts when you press it. What you make is kept in this browser.</p>
-      </div>
-    </div>
-  </section>
-  <section class="band stage-band" aria-label="The FM-1">
-    <div class="wrap stage-grid">
-      <div class="device">
-        <div class="stage" id="stage"><span class="stage-msg" id="stage-msg">Click to power on</span></div>
-        <div class="device-bar">
-          <div class="seg" role="group" aria-label="View" id="views">
-            <button type="button" data-view="float" aria-pressed="true">Float</button><button type="button" data-view="still" aria-pressed="false">Still</button><button type="button" data-view="top" aria-pressed="false">From above</button><button type="button" data-view="screen" aria-pressed="false">Screen</button>
+    </header>
+    <main>
+      <section class="panel stage-panel" aria-labelledby="play-h">
+        <div class="titles">
+          <h1 id="play-h">Virtual FM-1</h1>
+        </div>
+        <div class="grid stage-grid">
+          <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="device">
+            <div class="stage" id="stage"><span class="stage-msg" id="stage-msg">Click to power on</span></div>
+            <div class="device-bar">
+              <div class="seg" role="group" aria-label="View" id="views">
+                <button type="button" data-view="float" aria-pressed="true">Float</button><button type="button" data-view="still" aria-pressed="false">Still</button><button type="button" data-view="top" aria-pressed="false">From above</button><button type="button" data-view="screen" aria-pressed="false">Screen</button>
+              </div>
+              <label class="check"><input type="checkbox" id="hints"> Show shortcuts on the keys</label>
+              <span class="grow"></span>
+              <button class="btn small" id="midi" type="button">Connect MIDI</button>
+            </div>
+            <p class="note" id="power-note" hidden></p>
+            <p class="note" id="midi-note" hidden></p>
           </div>
-          <label class="check"><input type="checkbox" id="hints"> Computer keys on the caps</label>
-          <span class="grow"></span>
-          <button class="btn small" id="midi" type="button">Connect MIDI</button>
+          <aside class="cam" aria-label="The webcam">
+            <div class="window">
+              <div class="display monitor" id="monitor">
+                <canvas id="cam" width="320" height="180" aria-label="The webcam picture"></canvas>
+                <b class="chan" id="chan" hidden></b>
+                <button class="fs" id="fs" type="button" aria-label="Show the webcam full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+              </div>
+            </div>
+            <div class="vj">
+              <label class="field"><span>Mode</span><select id="vj-mode"></select></label>
+              <label class="field"><span>Palette</span><select id="vj-pal"></select></label>
+              <label class="field"><span>Autopilot</span><select id="vj-auto"></select></label>
+              <label class="field"><span>Overlay</span><select id="vj-ov"></select></label>
+              <div class="field wide"><span id="vj-title-label">Title</span>
+                <div class="title-row"><input type="text" id="vj-title" maxlength="19" autocomplete="off" spellcheck="false" aria-labelledby="vj-title-label" value="Synthesthetic"><button class="btn small" id="vj-set" type="button">Set</button></div>
+              </div>
+            </div>
+          </aside>
         </div>
-        <p class="note" id="midi-note" hidden></p>
-      </div>
-      <aside class="cam" aria-label="The webcam">
-        <p class="label">The webcam, as OBS sees it</p>
-        <div class="monitor" id="monitor">
-          <canvas id="cam" width="320" height="180" aria-label="The webcam picture"></canvas>
-          <span class="vf" aria-hidden="true"></span>
-          <span class="tally" id="tally" hidden>LIVE</span>
-          <b class="chan" id="chan" hidden></b>
-          <button class="fs" id="fs" type="button" aria-label="Show the webcam full screen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
-        </div>
-        <div class="vj">
-          <label class="field"><span>Mode</span><select id="vj-mode"></select></label>
-          <label class="field"><span>Palette</span><select id="vj-pal"></select></label>
-          <label class="field"><span>Autopilot</span><select id="vj-auto"></select></label>
-          <label class="field"><span>Overlay</span><select id="vj-ov"></select></label>
-          <div class="field wide"><span id="vj-title-label">Title card</span>
-            <div class="title-row"><input type="text" id="vj-title" maxlength="19" autocomplete="off" spellcheck="false" aria-labelledby="vj-title-label" value="Synthesthetic"><button class="btn small" id="vj-set" type="button">Set</button></div>
+      </section>
+      <section class="panel howto" id="how" aria-labelledby="how-h">
+        <div class="head"><h2 id="how-h">How to play</h2></div>
+        <div class="grid ways">
+          <div class="way">
+            <h3>Mouse or touch</h3>
+            <p>Click keys and buttons, and drag or scroll the knobs. To keep a button held while you play keys, right-click it, or press and hold it on a touch screen.</p>
+          </div>
+          <div class="way">
+            <h3>MIDI keyboard</h3>
+            <p>Press Connect MIDI. Your keyboard plays the selected track.</p>
+            <label class="check"><input type="checkbox" id="midi-ch"> Route by MIDI channel instead (tracks 1 to 3 on channels 1 to 3, drums on 10, visuals on 16)</label>
+          </div>
+          <div class="way">
+            <h3>Things to try</h3>
+            <ul>
+              <li>Press PLAY for the demo song.</li>
+              <li>Tap HOME on the TRACKS screen to open the visualizer, then turn SELECT.</li>
+              <li>Pick SCREEN, the last mode, to send the display to the webcam.</li>
+            </ul>
           </div>
         </div>
-        <p class="note">The same settings as the FM-1's VJ menu: they stay with its settings.</p>
-      </aside>
-    </div>
-  </section>
-  <div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="sines"></canvas></div>
-  <section class="band howto" id="how">
-    <div class="wrap">
-      <div class="sec-head"><h2>How to play it</h2><p>Three ways in, all at once if you like.</p></div>
-      <div class="ways">
-        <div class="way">
-          <h3>Mouse or touch</h3>
-          <p>Click or tap a key or a button to press it. Drag a knob up or down, or turn it with the mouse wheel.</p>
-          <p>To hold a button while you play (SEQ, FX, ARP and the others), right-click it, or press and hold it on a touch screen: it stays down until you click it again. On a touch screen you can also hold it with one finger and tap keys with another.</p>
-        </div>
-        <div class="way">
+        <div class="kb-wrap">
           <h3>Computer keyboard</h3>
-          <p>Two rows of piano: <kbd>Z</kbd> to <kbd>,</kbd> with <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>L</kbd> are F3 to F4, <kbd>Q</kbd> to <kbd>I</kbd> with <kbd>2</kbd> <kbd>3</kbd> <kbd>5</kbd> <kbd>6</kbd> <kbd>8</kbd> are G4 to G5. The white keys are also the 16 steps.</p>
-          <p><kbd>Space</kbd> PLAY, <kbd>Enter</kbd> REC, <kbd>Esc</kbd> HOME, <kbd>Shift</kbd> SEQ, <kbd>A</kbd> ARP, <kbd>G</kbd> GLO, <kbd>←</kbd> <kbd>→</kbd> OCT, <kbd>↑</kbd> <kbd>↓</kbd> SELECT, <kbd>[</kbd> <kbd>]</kbd> PRESETS.</p>
+          <div class="kb-scroll"><div class="kb" id="kb" aria-label="The computer keyboard's keys and what they play"></div></div>
         </div>
-        <div class="way">
-          <h3>MIDI keyboard</h3>
-          <p>Press Connect MIDI and allow it. Your keyboard then plays the selected track, as the FM-1's own keys do.</p>
-          <label class="check"><input type="checkbox" id="midi-ch"> By channel instead, as the FM-1 takes MIDI over USB (tracks 1 to 3 on channels 1 to 3, the drums on 10; channel 16 drives the visuals)</label>
+      </section>
+      <section class="panel about" id="about" aria-labelledby="about-h">
+        <div class="grid">
+          <div class="col">
+            <h2 id="about-h">How it works</h2>
+            <p>This is Synthesthetic's actual firmware, built from the same C source code, compiled to WebAssembly and run in your browser's audio thread. Only the hardware is simulated, so anything that needs USB, like the editor or the installer, needs a real FM-1.</p>
+            <p class="note">The 3D model is adapted from <a href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener">FM1.quest</a> by hericdk (GPL-3.0) and drawn with three.js. The idea of running the firmware in a page comes from FM1.quest and sabliran's <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">sloop-web-emu</a>.</p>
+          </div>
+          <div class="reset">
+            <h3>Saved in this browser</h3>
+            <div class="reset-body">
+              <p class="note">Starting over erases what you made here and loads the demo song again.</p>
+              <div class="row" id="reset-row"><button class="btn small" id="reset" type="button">Start over</button></div>
+              <div class="row" id="reset-ask" hidden><button class="btn small primary" id="reset-yes" type="button">Erase and restart</button><button class="btn small" id="reset-no" type="button">Cancel</button></div>
+              <p class="note" id="reset-note" hidden></p>
+            </div>
+          </div>
         </div>
-        <div class="kb-wrap"><div class="kb" id="kb" aria-label="The computer keyboard's keys and what they play"></div></div>
+      </section>
+    </main>
+    <footer class="panel">
+      <div class="grid">
+        <p>Synthesthetic is free software under the GPL-3.0, based on SLOOP by isod89 and Felucca by Leo Kuroshita of Hügelton Instruments. <a href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener">Source code</a> · <a href="../handbook/#credits-and-licenses">Credits</a></p>
+        <p>M-VAVE and FM-1 are trademarks of their owners. Synthesthetic isn't affiliated with them.</p>
       </div>
-      <div class="try">
-        <h2>Five things to try</h2>
-        <ol>
-          <li><p><b>Press PLAY.</b> On a first visit the demo is a song, about 80 seconds of deep house at 122 BPM in the FM-1's song mode: an intro, a verse, the chorus, the verse again, a bridge and the last chorus, then round again. STOP leaves the verse as a loop to play over. Hold SAVE to see the song: white keys 1 to 4 play its sections (A verse, B chorus, C bridge, D intro), key 13 switches between SONG and LOOP.</p></li>
-          <li><p><b>Press HOME on the TRACKS screen.</b> The visualiser fills the screen and the webcam shows the same picture. Turn SELECT for the next of the 31 modes, PRESETS for the palette, the four knobs to shape it.</p></li>
-          <li><p><b>Hold SEQ and tap white keys</b> to switch steps on and off for the selected track. OCT− and OCT+ page through the steps.</p></li>
-          <li><p><b>Hold FX and press a white key</b> for a punch-in effect while the groove plays. Let go and it's gone.</p></li>
-          <li><p><b>Pick SCREEN, the last mode.</b> The webcam then shows the FM-1's own display, ready to stream your workflow.</p></li>
-        </ol>
-      </div>
-    </div>
-  </section>
-  <div class="deco-row" aria-hidden="true"><canvas class="deco" data-style="bars"></canvas></div>
-  <section class="band about" id="about">
-    <div class="wrap">
-      <div class="col">
-        <div class="sec-head"><h2>What runs here</h2></div>
-        <p>The FM-1 on this page runs Synthesthetic's own firmware: the same C sources as the FM-1, compiled to WebAssembly and running in your browser's audio thread. The synth engines, the sequencer, the screens, the LEDs and the visualizers are the real ones. Only the hardware is stood in for: the screen is a canvas, the keys are your mouse, keyboard or MIDI, and the flash is this browser's storage.</p>
-        <p>Not here: USB, so the page shows the webcam picture instead of sending it, and the editor and installer cannot reach this FM-1. Uploading user samples and updating the firmware happen on a real FM-1.</p>
-        <p class="note">The 3D FM-1 is adapted from <a href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener">FM1.quest</a> by hericdk (GPL-3.0), and running the firmware in a page follows sabliran's <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">sloop-web-emu</a>. three.js draws the model.</p>
-      </div>
-      <div class="reset">
-        <p class="label">Start over</p>
-        <p>Projects, presets and settings made here are kept in this browser. Starting over erases them and brings the demo back.</p>
-        <div class="row" id="reset-row"><button class="btn small" id="reset" type="button">Start over</button></div>
-        <div class="row" id="reset-ask" hidden><button class="btn small primary" id="reset-yes" type="button">Erase and restart</button><button class="btn small" id="reset-no" type="button">Keep it</button></div>
-        <p class="note" id="reset-note" hidden></p>
-      </div>
-    </div>
-  </section>
-</main>
-<footer class="band">
-  <div class="wrap">
-    <p>Synthesthetic is based on SLOOP by isod89 and on Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>. The 3D FM-1: FM1.quest by hericdk.</p>
-    <p>Fonts: Terminus (Dimitar Toshkov Zhekov, SIL OFL 1.1), the FM-1 screen's, and Barlow (Jeremy Tribby, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL, and Sonic Pi (CC0 1.0); drum sounds: the Hügelton Sample Pack (Hügelton Instruments). three.js (MIT).</p>
-    <p>M-VAVE and FM-1 are trademarks of their respective owners; Synthesthetic is not affiliated with them.</p>
-    <p>Free software under the GPL-3.0: <a href="https://github.com/michaeljsmalley/synthesthetic" target="_blank" rel="noopener">github.com/michaeljsmalley/synthesthetic</a></p>
+    </footer>
   </div>
-</footer>
+</div>
 <script id="vj-names" type="application/json">/*VJ-NAMES*/</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>/*DECO*/</script>
 <script type="module" src="play.js"></script>
 </body>
 </html>

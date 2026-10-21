@@ -124,6 +124,24 @@ static void web_lcd_mark(uint32_t x, uint32_t y, uint32_t w, uint32_t h)
     if (y + h > web_dirty[3]) web_dirty[3] = y + h;
 }
 static void lcd_sync(void) {}
+/* what drawing costs on the FM-1, so the boot screen keeps its pace here: each fill or blit goes to the panel over
+ * SPI1 at 30 MHz (lcd.c), and the next canvas waits for that transfer to finish (gfx.c cv_begin: one canvas). The
+ * drawing itself, at 240 MHz: about 250 ns a pixel for the logo's ring (per pixel, its radius and an integer atan2,
+ * two divides and a colour), about 60 ns for a plain canvas, and nothing for a fill (the panel's DMA does it) */
+#define WEB_SPI_MHZ 30u
+static uint32_t web_dev_us, web_dev_pend_us;     /* since the last step: drawing and waiting; the transfer still going */
+static void web_dev_draw(uint32_t w, uint32_t h, uint32_t ns_per_px)
+{
+    web_dev_us += web_dev_pend_us + w * h * ns_per_px / 1000u;
+    web_dev_pend_us = w * h * 16u / WEB_SPI_MHZ;
+}
+static uint32_t web_dev_ms(uint32_t delay_ms)    /* a step on the FM-1: what it drew, then its delay (or the last
+                                                  * transfer, if that runs longer) */
+{
+    uint32_t us = web_dev_us + (delay_ms * 1000u > web_dev_pend_us ? delay_ms * 1000u : web_dev_pend_us);
+    web_dev_us = web_dev_pend_us = 0;
+    return (us + 500u) / 1000u;
+}
 static void lcd_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
 {
     uint32_t i, j;
@@ -139,6 +157,7 @@ static void lcd_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
         for (i = 0; i < w; i++)
             web_lcd[(y + j) * 240u + x + i] = c;
     web_lcd_mark(x, y, w, h);
+    web_dev_draw(w, h, 0);
 }
 static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint16_t *px)   /* px: byte-swapped */
 {
@@ -153,17 +172,20 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
             web_lcd[(y + j) * 240u + x + i] = (uint16_t)(v >> 8 | v << 8);
         }
     web_lcd_mark(x, y, w, h);
+    web_dev_draw(w, h, w == 124u ? 250u : 60u);  /* (124 wide: the ring's canvas, splash.c RING_N) */
 }
 static void lcd_init(void) { lcd_fill(0, 0, 240, 240, 0); }
 
-/* the boot screen is drawn in one go here (fm1_delay_ms never waits): each step's change is kept with its time
- * (splash.c SPLASH_STEP), and web_frame shows them at that pace */
+/* the boot screen is drawn in one go here (fm1_delay_ms never waits): each step's change is kept with the time the
+ * FM-1 takes for it, its drawing and transfers and its delay (splash.c SPLASH_STEP, web_dev_ms), and web_frame shows
+ * them at that pace */
 #define WEB_FILM_N (3u << 20)
 static uint8_t web_film[WEB_FILM_N];
 static uint32_t web_film_len, web_film_pos, web_film_due, web_film_full;
 static void web_film_step(uint32_t ms)
 {
     uint32_t x0 = web_dirty[0], y0 = web_dirty[1], x1 = web_dirty[2], y1 = web_dirty[3], y, n;
+    ms = web_dev_ms(ms);
     if (x1 <= x0 || y1 <= y0) {
         x0 = y0 = 0;
         x1 = y1 = 1;
@@ -294,6 +316,7 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)   /* NOR: a progra
 /* -------------------------------------------------------------------------------------- the page's */
 static uint8_t web_phase;                        /* 0 before web_boot, 1 the boot screen, 2 the logo's tick, 3 running */
 static uint32_t web_ph;                          /* the logo's tick: 0..520 as main.c turns it */
+static uint32_t web_boot_dark;                   /* ms of black before the first step: lcd.c lcd_init's waits */
 static int32_t web_knob = 512 * 16;              /* the MASTER knob, smoothed as main.c does */
 
 /* power-on: three parts with their default sounds, the drum track, empty patterns (main.c felucca_init) */
@@ -332,18 +355,19 @@ static void web_felucca_init(void)
 }
 
 /* a first visit: a song to press PLAY on, in the FM-1's song mode: four sections (project slots, as SAVE + a key
- * stores them) in an order that loops: INTRO 4 bars, VERSE 8, CHORUS 8, VERSE 8, BRIDGE 4, CHORUS 8, about 79 s of
- * deep house at 122 BPM in A minor, a little swing and the kick's duck throughout. STOP brings the verse back as the
- * loop to play with; SAVE held shows the song.
- *   INTRO (D)  the drums come in, the piano's Am9 under a low-pass, a noise riser into the verse
- *   VERSE (A)  FUNK BASS (a syncopated line, octaves sliding), M1 PIANO stabs over Am9 | Fmaj9 | Dm9 | E7sus4 -> E7b9,
- *              the vibes answering every other bar
- *   CHORUS (B) the lift: Fmaj9 | G6/9 | Em9 | Am9, the bass in disco octaves, open hats, the VIBES hook with the stabs
- *   BRIDGE (C) the breakdown: Dm9 | Em9 | Fmaj9 | E7, a WARM PAD and a SUB BASS held, the vibes slow, no kick for two
- *              bars, then the build: snares in eighths, then sixteenths rolling into the chorus (E7 -> F: the deceptive
- *              lift)
- * Rootless voicings round middle C, one note moving at a time. mask: the tracks written, bit k track k (the page asks
- * for all of them; the tests solo each) */
+ * stores them) in an order that loops: INTRO 4 bars, VERSE 8, CHORUS 8, VERSE 8, BRIDGE 4, CHORUS 8, about 107 s of
+ * Japanese fusion at 90 BPM in F major, in the spirit of Himiko Kikuchi's "Look Your Back!" and Masayoshi Takanaka's
+ * "Seychelles": a DX-style electric piano, a slap-style bass pushing into each bar, a singing lead, the sixteenths
+ * nearly straight. STOP brings the verse back as the loop to play with; SAVE held shows the song.
+ *   INTRO (D)  the TINE EP on Bbmaj9 | Am11 | Gm9 | C13 over a tape-dusty hat, the bass and the beat coming in, the
+ *              lead's pickup into the verse
+ *   VERSE (A)  Fmaj9 | Bbmaj9 | Fmaj9 | Gm9 C13: the breezy I-IV vamp, the rim on the clave (3-2), the lead's theme
+ *   CHORUS (B) Bbmaj9 | C9sus4 C9 | Am11 | Dm9 C11: city pop's "royal road" (IV-V-iii-vi), the backbeat in, the lead
+ *              doubled an octave up
+ *   BRIDGE (C) Dbmaj9 | Ebmaj9 | Cm9 | F13: bVI-bVII, then ii-V into the last chorus's IV; half time on the ride, the
+ *              lead's solo climbing to the chorus's first note
+ * Rootless voicings from E3 to E4, every voice moving by a step from chord to chord. mask: the tracks written, bit k
+ * track k (the page asks for all of them; the tests solo each) */
 static void web_sound(uint32_t k, uint32_t engine, uint32_t preset)
 {
     track_t *t = &trk[k];
@@ -372,232 +396,307 @@ static void web_hit(uint32_t bar, uint32_t i, uint32_t note, uint32_t lvl, uint3
     dstep_set(&TDRUM->dstep[bar * 16u + i], lane_of_note(note), lvl, rat);
 }
 
-enum { CH_AM9, CH_FM9, CH_DM9, CH_E7S4, CH_E7B9, CH_G69, CH_EM9 };
-static const uint8_t WEB_CH[7][4] = {{60, 64, 67, 71}, {60, 64, 67, 69}, {60, 64, 65, 69}, {59, 62, 64, 69},
-                                     {59, 62, 65, 68}, {59, 62, 64, 69}, {62, 66, 67, 71}};
-/* the stabs: on the one, then the 3-3-4-3 that pulls against the kick; (step, steps held, velocity) */
-static const uint8_t WEB_STAB[5][3] = {{0, 2, 104}, {3, 1, 86}, {6, 2, 96}, {10, 1, 84}, {13, 2, 92}};
-typedef struct { uint8_t at, note, len, vel; } web_tone_t;
+enum { CH_FM9, CH_BBM9, CH_GM9, CH_C13, CH_C9S, CH_C9, CH_AM11, CH_DM9, CH_DBM9, CH_EBM9, CH_CM9, CH_F13 };
+#define CH_C11 CH_GM9                                  /* (C11 is Gm9 over C: the bass says which) */
+static const uint8_t WEB_CH[12][4] = {
+    {52, 55, 57, 60},                                  /* Fmaj9: E G A C (7 9 3 5) */
+    {53, 57, 60, 62},                                  /* Bbmaj9: F A C D (5 7 9 3) */
+    {53, 57, 58, 62},                                  /* Gm9: F A Bb D (7 9 3 5); over C, C11 */
+    {52, 57, 58, 62},                                  /* C13: E A Bb D (3 13 7 9): only the F moves */
+    {53, 55, 58, 62},                                  /* C9sus4: F G Bb D (4 5 7 9) */
+    {52, 55, 58, 62},                                  /* C9: E G Bb D (3 5 7 9): the 4th falls to the 3rd */
+    {52, 55, 60, 62},                                  /* Am11: E G C D (5 7 3 11) */
+    {53, 57, 60, 64},                                  /* Dm9: F A C E (3 5 7 9) */
+    {53, 56, 60, 63},                                  /* Dbmaj9: F Ab C Eb (3 5 7 9) */
+    {55, 58, 62, 65},                                  /* Ebmaj9: the same shape a whole step up */
+    {55, 58, 62, 63},                                  /* Cm9: G Bb D Eb (5 7 9 3) */
+    {55, 57, 62, 63}};                                 /* F13: G A D Eb (9 3 13 7) */
+typedef struct { uint8_t at, note, len, vel, flags; } web_tone_t;   /* a note: step, pitch, steps held, velocity, SF_ */
+typedef struct { uint8_t at, len, vel, ch; } web_comp_t;            /* a chord: step, steps held, velocity, WEB_CH */
 
-/* a section begins: every track empty, its sounds and mix */
-static void web_section_sounds(uint32_t bass, uint32_t keys_e, uint32_t keys_p, uint32_t lead_e, uint32_t lead_p)
+/* a section begins: every track empty, its sounds, its kit and its mix */
+static void web_section_sounds(uint32_t bass_e, uint32_t bass_p, uint32_t keys_e, uint32_t keys_p, uint32_t lead_e,
+                               uint32_t lead_p, uint32_t kit)
 {
     uint32_t i;
-    web_sound(0, 0, bass);
+    web_sound(0, bass_e, bass_p);
     web_sound(1, keys_e, keys_p);
     web_sound(2, lead_e, lead_p);
-    TDRUM->p[P_E0] = 15;                               /* the HOUSE kit (drums.c DRUM_KIT_NAMES) */
+    TDRUM->p[P_E0] = (int16_t)kit;                     /* drums.c DRUM_KIT_NAMES */
     for (i = 0; i < NTRK; i++) {
         steps_clear(&trk[i]);
         memset(trk[i].micro, 0, sizeof trk[i].micro);
         trk[i].p[P_SLEN] = 64;
     }
-    /* the mix (P_LEVEL: 112 is 0 dB, a step 1/2 dB), measured by rendering each part alone: the bass a little under
-     * the kick, the keys and the vibes 2 to 3 dB under them; the keys high-passed (~200 Hz: the low mids are the bass's) */
+    /* the mix (P_LEVEL: 112 is 0 dB, a step 1/2 dB), measured by rendering each part alone; the keys high-passed
+     * (~200 Hz: the low mids are the bass's) and to the left, the lead to the right in its own space */
     trk[0].p[P_SGATE] = 80;
-    trk[0].p[P_LEVEL] = 100;
-    trk[1].p[P_SGATE] = 46;
-    trk[1].p[P_LEVEL] = 94;
+    trk[0].p[P_LEVEL] = 96;
+    trk[1].p[P_SGATE] = 90;
+    trk[1].p[P_LEVEL] = 96;
     trk[1].p[P_TFLT] = 28;
-    trk[1].p[P_REV] = 34;
-    trk[1].p[P_CHOR] = 20;
-    trk[1].p[P_PAN] = -8;
-    trk[2].p[P_SGATE] = 90;
-    trk[2].p[P_LEVEL] = 96;
-    trk[2].p[P_TFLT] = 20;
-    trk[2].p[P_DLY] = 42;
-    trk[2].p[P_REV] = 36;
+    trk[1].p[P_REV] = 32;
+    trk[1].p[P_CHOR] = 34;
+    trk[1].p[P_PAN] = -12;
+    trk[2].p[P_SGATE] = 94;
+    trk[2].p[P_LEVEL] = 100;
+    trk[2].p[P_TFLT] = 10;
+    trk[2].p[P_DLY] = 30;
+    trk[2].p[P_REV] = 40;
     trk[2].p[P_PAN] = 10;
 }
-static void web_stabs(uint32_t bar, uint32_t chord, uint32_t last)   /* last: the chord of the bar's last stab */
-{
+static void web_tones(uint32_t k, uint32_t bar, const web_tone_t *t, uint32_t n, int32_t octave)
+{                                                      /* octave: each note doubled 12 semitones away (0: alone) */
     uint32_t i;
-    for (i = 0; i < 5u; i++)
-        web_note(&trk[1], bar * 16u + WEB_STAB[i][0], 4, WEB_CH[i == 4u ? last : chord], WEB_STAB[i][1],
-                 i == 0u ? SF_ACCENT : 0u, WEB_STAB[i][2]);
-}
-static void web_line(uint32_t bar, const web_tone_t *t, uint32_t n)
-{
-    uint32_t i;
-    for (i = 0; i < n && t[i].len; i++)
-        web_note(&trk[2], bar * 16u + t[i].at, 1, &t[i].note, t[i].len, 0, t[i].vel);
-}
-/* the groove under the verse and the chorus: four on the floor, claps on 2 and 4 (a hair late), the hats on the
- * offbeats (open: every other bar; the chorus: all), a shaker between, a rim moving, congas in bar 3 */
-static void web_groove(uint32_t open_all)
-{
-    uint32_t b, i;
-    for (b = 0; b < 4u; b++) {
-        for (i = 0; i < 16u; i += 4u)
-            web_hit(b, i, 36, b == 0u && i == 0u ? LV_HARD : LV_NORM, 0);
-        web_hit(b, 4, 39, LV_NORM, 0);
-        web_hit(b, 12, 39, LV_NORM, 0);
-        TDRUM->micro[b * 16u + 4u] = TDRUM->micro[b * 16u + 12u] = 3;
-        for (i = 2; i < 16u; i += 4u)
-            web_hit(b, i, open_all || ((b & 1u) && i == 14u) ? 46 : 42, LV_NORM, 0);
-        for (i = 1; i < 16u; i += 2u)
-            web_hit(b, i, 70, i % 4u == 3u ? LV_SOFT : LV_GHOST, 0);
-        web_hit(b, (b & 1u) ? 7u : 3u, 37, LV_SOFT, 0);
-        web_hit(b, (b & 1u) ? 10u : 11u, 37, LV_GHOST, 0);
+    for (i = 0; i < n && t[i].len; i++) {
+        const uint8_t two[2] = {t[i].note, (uint8_t)((int32_t)t[i].note + octave)};
+        web_note(&trk[k], bar * 16u + t[i].at, octave ? 2u : 1u, two, t[i].len, t[i].flags, t[i].vel);
     }
-    web_hit(2, 9, 63, LV_SOFT, 0);
-    web_hit(2, 14, 63, LV_NORM, 0);
-    web_hit(0, 0, 49, LV_NORM, 0);                     /* the crash on the one */
-    web_hit(1, 12, 38, LV_SOFT, 0);                    /* a snare under the fourth clap */
-    web_hit(3, 12, 38, LV_SOFT, 0);
-    web_hit(3, 13, 38, LV_GHOST, 1);                   /* the roll into the top */
-    web_hit(3, 14, 38, LV_SOFT, 2);
-    web_hit(3, 15, 38, LV_NORM, 3);
+}
+static void web_comp(uint32_t bar, const web_comp_t *c, uint32_t n)
+{
+    uint32_t i;
+    for (i = 0; i < n && c[i].len; i++)
+        web_note(&trk[1], bar * 16u + c[i].at, 4, WEB_CH[c[i].ch], c[i].len, c[i].vel >= 100u ? SF_ACCENT : 0u, c[i].vel);
+}
+/* the hat on every sixteenth, the quarters strongest (steps from..to-1) */
+static void web_hats(uint32_t bar, uint32_t from, uint32_t to)
+{
+    uint32_t i;
+    for (i = from; i < to; i++)
+        web_hit(bar, i, 42, (i & 3u) == 0u ? LV_NORM : (i & 1u) ? LV_GHOST : LV_SOFT, 0);
+}
+/* the fill on the last beat: the snare, the high tom twice, the low tom */
+static void web_fill(uint32_t bar)
+{
+    web_hit(bar, 12, 38, LV_NORM, 0);
+    web_hit(bar, 13, 48, LV_SOFT, 0);
+    web_hit(bar, 14, 48, LV_NORM, 0);
+    web_hit(bar, 15, 43, LV_NORM, 0);
 }
 
 static void web_demo(uint32_t mask)
 {
-    /* VERSE: the bass, root root octave(slide) root fifth root and a note into the next bar's root */
-    static const uint8_t VB_AT[7] = {0, 3, 6, 8, 11, 13, 14};
-    static const uint8_t VB[4][7] = {{45, 45, 57, 45, 52, 45, 55}, {41, 41, 53, 41, 48, 41, 52},
-                                     {38, 38, 50, 38, 45, 38, 41}, {40, 40, 52, 40, 47, 40, 44}};
-    static const uint8_t V_CH[4] = {CH_AM9, CH_FM9, CH_DM9, CH_E7S4};
-    static const web_tone_t V_ANSWER[2][4] = {{{8, 79, 2, 88}, {10, 76, 2, 84}, {12, 72, 4, 92}},            /* over F */
-                                              {{8, 76, 2, 90}, {10, 74, 2, 84}, {12, 71, 2, 88}, {14, 68, 2, 92}}};   /* E */
-    /* CHORUS: Fmaj9 G6/9 Em9 Am9 over F G E A; the hook (riding the stabs' rhythm) */
-    static const uint8_t C_CH[4] = {CH_FM9, CH_G69, CH_EM9, CH_AM9};
-    static const uint8_t C_ROOT[4] = {41, 43, 40, 45};
-    static const web_tone_t HOOK[4][5] = {
-        {{0, 69, 3, 100}, {3, 72, 3, 90}, {6, 76, 4, 104}, {10, 74, 2, 86}, {12, 72, 4, 94}},
-        {{0, 71, 3, 100}, {3, 74, 3, 90}, {6, 76, 4, 104}, {10, 74, 2, 86}, {12, 71, 4, 94}},
-        {{0, 71, 3, 100}, {3, 74, 3, 90}, {6, 79, 4, 108}, {10, 78, 2, 88}, {12, 76, 4, 96}},
-        {{0, 76, 3, 104}, {3, 72, 3, 92}, {6, 71, 4, 98}, {10, 69, 6, 100}}};
-    /* BRIDGE: Dm9 Em9 Fmaj9 E7 held; the vibes slow, falling then turning up */
-    static const uint8_t B_CH[4] = {CH_DM9, CH_EM9, CH_FM9, CH_E7S4};
-    static const uint8_t B_ROOT[4] = {38, 40, 41, 40};
-    static const web_tone_t B_LINE[4][3] = {{{0, 77, 6, 92}, {8, 76, 8, 86}}, {{0, 74, 6, 92}, {8, 71, 8, 86}},
-                                            {{0, 72, 6, 92}, {8, 76, 8, 90}}, {{0, 74, 4, 94}, {4, 71, 4, 88}, {8, 68, 8, 96}}};
+    /* VERSE: the Rhodes on the one, re-struck on the "and" of two and of three, the next chord pushed an eighth early */
+    static const web_comp_t V_EP[4][4] = {
+        {{0, 4, 96, CH_FM9}, {6, 2, 82, CH_FM9}, {10, 3, 88, CH_FM9}, {14, 2, 92, CH_BBM9}},
+        {{3, 2, 84, CH_BBM9}, {6, 2, 82, CH_BBM9}, {10, 3, 88, CH_BBM9}, {14, 2, 92, CH_FM9}},
+        {{3, 2, 84, CH_FM9}, {6, 2, 82, CH_FM9}, {10, 3, 88, CH_FM9}, {14, 2, 92, CH_GM9}},
+        {{3, 2, 84, CH_GM9}, {6, 2, 94, CH_C13}, {10, 3, 86, CH_C13}, {14, 2, 90, CH_C13}}};
+    /* the bass, in a bass guitar's register: the root, its octave popped, the fifth and the third, a step into the
+     * next root on the "and" of four (the push), and a ghost before each pop */
+    static const web_tone_t V_BASS[4][10] = {
+        {{0, 29, 3, 112, SF_ACCENT}, {3, 41, 1, 100, SF_ACCENT}, {6, 36, 2, 92, 0}, {8, 33, 2, 96, 0}, {10, 36, 1, 90, 0},
+         {11, 41, 1, 98, 0}, {12, 40, 2, 92, 0}, {14, 34, 2, 108, SF_ACCENT}},
+        {{2, 34, 1, 64, 0}, {3, 46, 1, 100, SF_ACCENT}, {6, 29, 2, 92, 0}, {8, 34, 2, 96, 0}, {10, 38, 1, 90, 0},
+         {11, 41, 1, 96, 0}, {12, 33, 2, 90, 0}, {14, 29, 2, 108, SF_ACCENT}},
+        {{2, 29, 1, 64, 0}, {3, 41, 1, 100, SF_ACCENT}, {6, 36, 2, 92, 0}, {8, 33, 2, 96, 0}, {10, 36, 1, 90, 0},
+         {11, 38, 1, 88, 0}, {12, 40, 1, 90, 0}, {13, 41, 1, 92, 0}, {14, 31, 2, 108, SF_ACCENT}},
+        {{2, 31, 1, 64, 0}, {3, 43, 1, 100, SF_ACCENT}, {4, 38, 2, 90, 0}, {6, 36, 2, 104, SF_ACCENT}, {10, 40, 1, 90, 0},
+         {11, 43, 1, 92, 0}, {12, 34, 2, 92, 0}, {14, 36, 2, 100, 0}}};
+    /* the theme: long notes on the 3rd, the 7th and the 9th, the line answering itself */
+    static const web_tone_t V_THEME[4][8] = {
+        {{0, 69, 3, 96, 0}, {3, 72, 1, 84, 0}, {4, 76, 4, 100, 0}, {8, 74, 2, 86, 0}, {10, 72, 2, 88, 0}, {12, 69, 4, 92, 0}},
+        {{2, 67, 1, 82, 0}, {3, 69, 1, 86, 0}, {4, 72, 4, 98, 0}, {8, 74, 3, 92, 0}, {11, 72, 1, 82, 0}, {12, 69, 2, 88, 0},
+         {14, 65, 2, 90, 0}},
+        {{0, 67, 6, 94, 0}, {6, 69, 2, 86, 0}, {8, 72, 4, 92, 0}, {12, 76, 2, 96, 0}, {14, 74, 2, 90, 0}},
+        {{0, 74, 3, 94, 0}, {3, 72, 1, 82, 0}, {4, 70, 4, 92, 0}, {8, 69, 3, 96, 0}, {11, 67, 1, 84, 0}, {12, 64, 4, 90, 0}}};
+    /* CHORUS: each change pushed an eighth early (the last bar re-strikes its own chord: what follows is the chorus
+     * again, the verse or the intro) */
+    static const web_comp_t C_EP[4][4] = {
+        {{0, 4, 100, CH_BBM9}, {6, 2, 84, CH_BBM9}, {10, 3, 88, CH_BBM9}, {14, 2, 92, CH_C9S}},
+        {{3, 2, 84, CH_C9S}, {6, 2, 94, CH_C9}, {10, 3, 86, CH_C9}, {14, 2, 92, CH_AM11}},
+        {{3, 2, 82, CH_AM11}, {6, 2, 86, CH_AM11}, {10, 3, 88, CH_AM11}, {14, 2, 94, CH_DM9}},
+        {{3, 2, 84, CH_DM9}, {6, 2, 96, CH_C11}, {10, 3, 86, CH_C11}, {14, 2, 92, CH_C11}}};
+    static const web_tone_t C_BASS[4][10] = {
+        {{0, 34, 3, 112, SF_ACCENT}, {3, 46, 1, 100, SF_ACCENT}, {6, 29, 2, 92, 0}, {8, 34, 2, 96, 0}, {10, 38, 1, 90, 0},
+         {11, 41, 1, 96, 0}, {12, 33, 2, 90, 0}, {14, 36, 2, 108, SF_ACCENT}},
+        {{2, 36, 1, 64, 0}, {3, 48, 1, 100, SF_ACCENT}, {6, 31, 2, 92, 0}, {8, 36, 2, 100, 0}, {10, 40, 1, 90, 0},
+         {11, 43, 1, 94, 0}, {12, 31, 1, 90, 0}, {13, 32, 1, 88, 0}, {14, 33, 2, 108, SF_ACCENT}},
+        {{2, 33, 1, 64, 0}, {3, 45, 1, 100, SF_ACCENT}, {6, 40, 2, 92, 0}, {8, 33, 2, 96, 0}, {10, 36, 1, 90, 0},
+         {11, 40, 1, 94, 0}, {12, 43, 1, 90, 0}, {13, 40, 1, 88, 0}, {14, 38, 2, 108, SF_ACCENT}},
+        {{2, 38, 1, 64, 0}, {3, 50, 1, 100, SF_ACCENT}, {4, 33, 2, 90, 0}, {6, 36, 2, 104, SF_ACCENT}, {9, 48, 1, 96, 0},
+         {10, 34, 1, 88, 0}, {11, 31, 1, 88, 0}, {12, 29, 1, 90, 0}, {13, 31, 1, 88, 0}, {14, 36, 2, 100, 0}}};
+    /* the hook over the royal road: up to the 4th of C9sus4 and the C9's 5th, then down through Am and Dm to the 13th
+     * of C11, which the next chord takes as its 7th (Bbmaj9) or its 3rd (Fmaj9) */
+    static const web_tone_t C_HOOK[4][8] = {
+        {{0, 74, 3, 100, 0}, {3, 72, 1, 86, 0}, {4, 74, 2, 92, 0}, {6, 77, 2, 96, 0}, {8, 72, 4, 92, 0}, {12, 74, 2, 90, 0},
+         {14, 77, 2, 100, 0}},
+        {{0, 77, 4, 98, 0}, {6, 76, 2, 94, 0}, {8, 74, 2, 90, 0}, {10, 76, 2, 92, 0}, {12, 79, 4, 104, 0}},
+        {{0, 76, 4, 98, 0}, {4, 74, 2, 90, 0}, {6, 72, 2, 88, 0}, {8, 74, 4, 92, 0}, {12, 76, 2, 94, 0}, {14, 77, 2, 98, 0}},
+        {{2, 76, 2, 92, 0}, {4, 74, 4, 96, 0}, {8, 72, 4, 92, 0}, {12, 70, 2, 90, 0}, {14, 69, 2, 94, 0}}};
+    /* BRIDGE: the chords held, re-struck halfway, the next one pushed on the "and" of four */
+    static const web_comp_t B_EP[4][3] = {
+        {{0, 8, 96, CH_DBM9}, {8, 6, 84, CH_DBM9}, {14, 2, 90, CH_EBM9}},
+        {{0, 8, 92, CH_EBM9}, {8, 6, 84, CH_EBM9}, {14, 2, 90, CH_CM9}},
+        {{0, 8, 92, CH_CM9}, {8, 6, 84, CH_CM9}, {14, 2, 92, CH_F13}},
+        {{0, 8, 96, CH_F13}, {8, 6, 88, CH_F13}, {14, 2, 92, CH_F13}}};
+    static const web_tone_t B_BASS[4][7] = {
+        {{0, 37, 6, 108, SF_ACCENT}, {6, 32, 2, 90, 0}, {8, 37, 4, 96, 0}, {12, 36, 2, 88, 0}, {14, 39, 2, 104, SF_ACCENT}},
+        {{6, 34, 2, 90, 0}, {8, 39, 4, 96, 0}, {12, 38, 2, 88, 0}, {14, 36, 2, 104, SF_ACCENT}},
+        {{6, 31, 2, 90, 0}, {8, 36, 4, 96, 0}, {12, 34, 2, 88, 0}, {14, 29, 2, 104, SF_ACCENT}},
+        {{4, 36, 2, 90, 0}, {6, 39, 2, 92, 0}, {8, 41, 2, 96, 0}, {10, 38, 2, 90, 0}, {12, 36, 2, 92, 0}, {14, 33, 2, 100, 0}}};
+    /* the solo: down the Db chord to its 13th and on to Eb's 7th, round Eb to Cm's 3rd, up Cm, then the run up F13 to
+     * its 3rd, high, and down to its 7th, which the chorus resolves to Bbmaj9's 3rd */
+    static const web_tone_t B_SOLO[4][9] = {
+        {{0, 77, 2, 96, 0}, {2, 75, 2, 88, 0}, {4, 72, 2, 90, 0}, {6, 68, 2, 86, 0}, {8, 70, 4, 92, 0}, {12, 72, 2, 88, 0},
+         {14, 74, 2, 94, 0}},
+        {{0, 77, 2, 94, 0}, {2, 79, 2, 96, 0}, {4, 77, 2, 88, 0}, {6, 74, 2, 90, 0}, {8, 70, 4, 92, 0}, {12, 72, 2, 88, 0},
+         {14, 75, 2, 94, 0}},
+        {{0, 74, 2, 92, 0}, {2, 75, 2, 88, 0}, {4, 79, 4, 98, 0}, {8, 77, 2, 90, 0}, {10, 75, 2, 88, 0}, {12, 74, 2, 90, 0},
+         {14, 72, 2, 92, 0}},
+        {{0, 69, 1, 90, 0}, {1, 72, 1, 86, 0}, {2, 74, 1, 88, 0}, {3, 75, 1, 90, 0}, {4, 77, 2, 96, 0}, {6, 79, 2, 98, 0},
+         {8, 81, 4, 106, 0}, {12, 79, 2, 94, 0}, {14, 75, 2, 96, 0}}};
+    /* INTRO: the Rhodes on IV-iii-ii-V, held, then the verse's pushes; the lead's pickup down to the theme's A */
+    static const web_comp_t I_EP[4][4] = {
+        {{0, 6, 88, CH_BBM9}, {6, 2, 74, CH_BBM9}, {10, 6, 80, CH_BBM9}},
+        {{0, 6, 88, CH_AM11}, {6, 2, 74, CH_AM11}, {10, 6, 80, CH_AM11}},
+        {{0, 4, 92, CH_GM9}, {6, 2, 80, CH_GM9}, {10, 3, 84, CH_GM9}, {14, 2, 88, CH_C13}},
+        {{3, 2, 84, CH_C13}, {6, 2, 82, CH_C13}, {10, 3, 86, CH_C13}, {14, 2, 90, CH_C13}}};
+    static const web_tone_t I_BASS[2][8] = {
+        {{0, 31, 3, 108, SF_ACCENT}, {3, 43, 1, 96, SF_ACCENT}, {6, 38, 2, 90, 0}, {8, 31, 2, 94, 0}, {10, 34, 1, 88, 0},
+         {11, 38, 1, 90, 0}, {14, 36, 2, 104, SF_ACCENT}},
+        {{2, 36, 1, 64, 0}, {3, 48, 1, 98, SF_ACCENT}, {6, 31, 2, 90, 0}, {8, 36, 2, 94, 0}, {10, 40, 1, 88, 0},
+         {11, 43, 1, 90, 0}, {12, 34, 2, 92, 0}, {14, 36, 2, 98, 0}}};
+    static const web_tone_t I_PICKUP[3] = {{8, 67, 2, 86, 0}, {12, 72, 2, 92, 0}, {14, 70, 2, 90, 0}};
     uint32_t b, i;
-    song.g[G_BPM] = 122;
-    song.g[G_SWING] = 22;                              /* (about 55 %: the 16ths lean, the offbeats bounce) */
-    song.g[G_DUCK] = 34;                               /* every kick dips the synths a little: the pump */
+    song.g[G_BPM] = 90;
+    song.g[G_SWING] = 12;                              /* (the odd sixteenths 6 % of a step late: a lean, not a shuffle) */
+    song.g[G_DUCK] = 0;
+    song.g[G_DRLVL] = 116;                             /* (the drums up a little: the kick level with the bass) */
 
-    /* ---- INTRO (section D): the drums come in, the piano muffled, a riser */
-    web_section_sounds(8, 1, 4, 11, 7);                /* FUNK BASS (silent here), M1 PIANO, NOISE RISER */
-    trk[1].p[P_TFLT] = -34;                            /* the piano under a low-pass (the verse opens it) */
-    trk[2].p[P_LEVEL] = 100;
-    trk[2].p[P_TFLT] = 0;
-    trk[2].p[P_DLY] = 0;
+    /* ---- INTRO (section D) */
+    web_section_sounds(1, 12, ENGI_FM6, 0, 0, 9, 4);   /* FM BASS, TINE EP, G-FUNK LD; the DUST kit */
+    trk[1].p[P_LEVEL] = 90;                            /* (the EP alone at first: softer) */
+    if (mask & 1u)
+        for (b = 2; b < 4u; b++)
+            web_tones(0, b, I_BASS[b - 2u], 8, 0);
     if (mask & 2u)
         for (b = 0; b < 4u; b++)
-            web_stabs(b, CH_AM9, CH_AM9);
-    if (mask & 4u) {                                   /* the riser: held through the last bar, its FREQ locked a */
-        web_note(&trk[2], 48, 1, (const uint8_t[]){60}, 16, 0, 100);   /* little higher on every step: a sweep up */
-        for (i = 0; i < 16u; i++)
-            lock_set(&trk[2], 48u + i, P_E0 + 2u, 24 + (int32_t)(i * i * 103u / 225u));
-    }
-    if (mask & 8u)
-        for (b = 0; b < 4u; b++) {
-            for (i = 0; i < 16u; i += 4u)
-                web_hit(b, i, 36, LV_NORM, 0);
-            for (i = 1; i < 16u; i += 2u)
-                web_hit(b, i, 70, i % 4u == 3u ? LV_SOFT : LV_GHOST, 0);
-            if (b)
-                for (i = 2; i < 16u; i += 4u)
-                    web_hit(b, i, 42, b == 1u ? LV_SOFT : LV_NORM, 0);
-            web_hit(b, 3, 37, LV_SOFT, 0);
-            web_hit(b, 11, 37, LV_GHOST, 0);
-            if (b == 3u) {
-                web_hit(b, 4, 39, LV_NORM, 0);
-                web_hit(b, 12, 39, LV_NORM, 0);
-            }
+            web_comp(b, I_EP[b], 4);
+    if (mask & 4u)
+        web_tones(2, 3, I_PICKUP, 3, 0);
+    if (mask & 8u) {
+        for (b = 0; b < 2u; b++)
+            for (i = 0; i < 16u; i += 2u)
+                web_hit(b, i, 42, (i & 3u) == 0u ? LV_SOFT : LV_GHOST, 0);
+        web_hats(2, 0, 16);
+        web_hats(3, 0, 12);
+        web_hit(1, 12, 37, LV_SOFT, 0);
+        for (b = 2; b < 4u; b++) {
+            web_hit(b, 0, 36, LV_NORM, 0);
+            web_hit(b, 10, 36, LV_NORM, 0);
         }
+        web_hit(2, 0, 37, LV_SOFT, 0);                 /* the clave starts (3-2) */
+        web_hit(2, 6, 37, LV_SOFT, 0);
+        web_hit(2, 12, 37, LV_SOFT, 0);
+        web_hit(3, 4, 37, LV_SOFT, 0);
+        web_hit(3, 8, 37, LV_SOFT, 0);
+        web_fill(3);
+    }
     section_store(3);
 
     /* ---- VERSE (section A) */
-    web_section_sounds(8, 1, 4, 4, 1);                 /* FUNK BASS, M1 PIANO, VIBES */
-    trk[2].p[P_LEVEL] = 92;                            /* (the vibes answer here: under the stabs) */
+    web_section_sounds(1, 12, ENGI_FM6, 0, 0, 9, 0);   /* FM BASS, TINE EP, G-FUNK LD; the ACOUSTIC kit */
+    trk[1].p[P_LEVEL] = 92;                            /* (the EP under the theme) */
+    trk[2].p[P_LEVEL] = 94;
     for (b = 0; b < 4u; b++) {
         if (mask & 1u)
-            for (i = 0; i < 7u; i++)
-                web_note(&trk[0], b * 16u + VB_AT[i], 1, &VB[b][i], i == 5u ? 1u : 2u,
-                         (i == 0u || i == 2u ? SF_ACCENT : 0u) | (i == 2u || (i == 6u && b == 3u) ? SF_SLIDE : 0u), i == 0u ? 112 : 96);
+            web_tones(0, b, V_BASS[b], 10, 0);
         if (mask & 2u)
-            web_stabs(b, V_CH[b], b == 3u ? CH_E7B9 : V_CH[b]);
-    }
-    if (mask & 4u) {
-        web_line(1, V_ANSWER[0], 4);
-        web_line(3, V_ANSWER[1], 4);
-    }
-    if (mask & 8u)
-        web_groove(0);
-    section_store(0);
-
-    /* ---- CHORUS (section B) */
-    web_section_sounds(8, 1, 4, 4, 1);
-    trk[0].p[P_LEVEL] = 96;                            /* (octaves on every eighth: more of it, so a little lower) */
-    trk[2].p[P_LEVEL] = 98;                            /* (the hook: up front) */
-    for (b = 0; b < 4u; b++) {
-        if (mask & 1u)
-            for (i = 0; i < 16u; i += 2u) {            /* disco octaves on the eighths */
-                uint8_t n = (uint8_t)(C_ROOT[b] + ((i & 2u) ? 12u : 0u));
-                web_note(&trk[0], b * 16u + i, 1, &n, 2, (i % 8u) == 0u ? SF_ACCENT : 0u, (i & 2u) ? 92 : 108);
-            }
-        if (mask & 2u)
-            web_stabs(b, C_CH[b], C_CH[b]);
+            web_comp(b, V_EP[b], 4);
         if (mask & 4u)
-            web_line(b, HOOK[b], 5);
-    }
-    if (mask & 8u) {
-        web_groove(1);
-        for (b = 0; b < 4u; b++)
-            web_hit(b, 12, 38, LV_SOFT, 0);            /* (the snare under every fourth clap: the chorus lifts) */
-    }
-    section_store(1);
-
-    /* ---- BRIDGE (section C): the breakdown and the build */
-    web_section_sounds(2, 0, 13, 4, 1);                /* SUB BASS, WARM PAD, VIBES */
-    trk[0].p[P_SGATE] = 100;                           /* (held notes fill every moment: lower, so the bridge dips) */
-    trk[0].p[P_LEVEL] = 92;
-    trk[1].p[P_SGATE] = 100;                           /* (the pad held through each bar) */
-    trk[1].p[P_LEVEL] = 90;
-    trk[1].p[P_TFLT] = 24;
-    trk[1].p[P_REV] = 56;
-    trk[1].p[P_CHOR] = 30;
-    trk[2].p[P_REV] = 50;
-    for (b = 0; b < 4u; b++) {
-        if (mask & 1u)
-            web_note(&trk[0], b * 16u, 1, &B_ROOT[b], 16, 0, 100);
-        if (mask & 2u) {
-            if (b == 3u) {                             /* E7sus4, then E7b9 for the turn */
-                web_note(&trk[1], 48, 4, WEB_CH[CH_E7S4], 8, 0, 96);
-                web_note(&trk[1], 56, 4, WEB_CH[CH_E7B9], 8, SF_ACCENT, 100);
-            } else
-                web_note(&trk[1], b * 16u, 4, WEB_CH[B_CH[b]], 16, 0, 96);
-        }
-        if (mask & 4u)
-            web_line(b, B_LINE[b], 3);
+            web_tones(2, b, V_THEME[b], 8, 0);
     }
     if (mask & 8u) {
         for (b = 0; b < 4u; b++) {
-            for (i = 1; i < 16u; i += 2u)
-                web_hit(b, i, 70, i % 4u == 3u ? LV_SOFT : LV_GHOST, 0);
-            for (i = 2; i < 16u; i += 4u)
-                web_hit(b, i, 42, LV_SOFT, 0);
-            web_hit(b, 3, 37, LV_GHOST, 0);
-            web_hit(b, 6, 63, LV_SOFT, 0);
-            web_hit(b, 14, 63, LV_SOFT, 0);
+            web_hats(b, 0, b == 3u ? 12u : 16u);
+            web_hit(b, 0, 36, b == 0u ? LV_HARD : LV_NORM, 0);
+            web_hit(b, 10, 36, LV_NORM, 0);
+            web_hit(b, b == 3u ? 6u : 14u, 36, LV_SOFT, 0);   /* (with the bass's push) */
+            if (b & 1u) {                              /* the clave, 3-2: the rim on 1, the "and" of 2 and 4; then 2 and 3 */
+                web_hit(b, 4, 37, LV_NORM, 0);
+                web_hit(b, 8, 37, LV_NORM, 0);
+            } else {
+                web_hit(b, 0, 37, LV_NORM, 0);
+                web_hit(b, 6, 37, LV_NORM, 0);
+                web_hit(b, 12, 37, LV_NORM, 0);
+            }
+            if (b == 1u)
+                web_hit(b, 6, 46, LV_SOFT, 0);         /* an open hat on the "and" of two */
         }
-        for (i = 0; i < 16u; i += 4u) {                /* the build: the kick back, snares in eighths, then sixteenths */
-            web_hit(2, i, 36, LV_SOFT, 0);
-            web_hit(3, i, 36, LV_NORM, 0);
+        web_hit(0, 0, 49, LV_SOFT, 0);
+        web_fill(3);
+    }
+    section_store(0);
+
+    /* ---- CHORUS (section B) */
+    web_section_sounds(1, 12, ENGI_FM6, 0, 0, 9, 0);
+    trk[0].p[P_LEVEL] = 100;                           /* (the chorus lifts: the bass and the EP up, the hook doubled */
+    trk[1].p[P_LEVEL] = 100;                           /* an octave up) */
+    trk[2].p[P_LEVEL] = 104;
+    for (b = 0; b < 4u; b++) {
+        if (mask & 1u)
+            web_tones(0, b, C_BASS[b], 10, 0);
+        if (mask & 2u)
+            web_comp(b, C_EP[b], 4);
+        if (mask & 4u)
+            web_tones(2, b, C_HOOK[b], 8, 12);
+    }
+    if (mask & 8u) {
+        for (b = 0; b < 4u; b++) {
+            web_hats(b, 0, b == 3u ? 12u : 16u);
+            web_hit(b, 0, 36, b == 0u ? LV_HARD : LV_NORM, 0);
+            web_hit(b, 10, 36, LV_NORM, 0);
+            web_hit(b, b == 0u ? 14u : 6u, 36, LV_SOFT, 0);
+            for (i = 4; i < 16u; i += 8u) {            /* the backbeat, a hair behind */
+                web_hit(b, i, 38, LV_NORM, 0);
+                TDRUM->micro[b * 16u + i] = 3;
+            }
+            web_hit(b, 15, 38, b == 3u ? LV_NORM : LV_GHOST, 0);
+            if (b & 1u)
+                web_hit(b, 14, 46, LV_SOFT, 0);
         }
-        for (i = 0; i < 16u; i += 2u)
-            web_hit(2, i, 38, i < 8u ? LV_GHOST : LV_SOFT, 0);
-        for (i = 0; i < 16u; i++)
-            web_hit(3, i, 38, i < 4u ? LV_SOFT : i < 12u ? LV_NORM : LV_HARD, i >= 12u ? 1u : 0u);
+        web_hit(0, 0, 49, LV_NORM, 0);
+        web_fill(3);
+    }
+    section_store(1);
+
+    /* ---- BRIDGE (section C) */
+    web_section_sounds(1, 12, ENGI_FM6, 0, 0, 9, 0);
+    trk[0].p[P_LEVEL] = 88;                            /* (the bridge dips: held, softer) */
+    trk[1].p[P_LEVEL] = 90;
+    trk[1].p[P_REV] = 44;
+    trk[2].p[P_LEVEL] = 88;
+    trk[2].p[P_REV] = 48;
+    for (b = 0; b < 4u; b++) {
+        if (mask & 1u)
+            web_tones(0, b, B_BASS[b], 7, 0);
+        if (mask & 2u)
+            web_comp(b, B_EP[b], 3);
+        if (mask & 4u)
+            web_tones(2, b, B_SOLO[b], 9, 0);
+    }
+    if (mask & 8u) {
+        for (b = 0; b < 4u; b++) {
+            for (i = 0; i < (b == 3u ? 8u : 16u); i += 2u)   /* the ride in eighths */
+                web_hit(b, i, 51, (i & 3u) == 0u ? LV_SOFT : LV_GHOST, 0);
+            web_hit(b, 4, 44, LV_SOFT, 0);             /* the foot's hat on two and four */
+            web_hit(b, 12, 44, LV_SOFT, 0);
+            web_hit(b, 8, 37, LV_NORM, 0);             /* the side-stick on three: half time */
+            web_hit(b, 0, 36, LV_SOFT, 0);
+        }
+        for (i = 8; i < 12u; i++)                      /* the build into the last chorus */
+            web_hit(3, i, 38, i == 8u ? LV_SOFT : LV_GHOST, 0);
+        web_fill(3);
+        web_hit(3, 12, 36, LV_NORM, 0);
     }
     section_store(2);
 
     /* ---- the song, in song mode; the verse is the loop on the tracks (what STOP brings back) */
     {
         static const arr_entry_t ORDER[6] = {{3, 4}, {0, 8}, {1, 8}, {0, 8}, {2, 4}, {1, 8}};   /* (the bridge once: its
-                                                         * build leads straight into the last chorus) */
+                                                         * ii-V leads straight into the last chorus) */
         arrangement.count = 6;
         arrangement.loop = 1;
         for (i = 0; i < 6u; i++)
@@ -626,9 +725,12 @@ WEB(web_boot) void web_boot(uint32_t demo)
     }
     settings_init();
     lcd_init();
+    web_boot_dark = 80u + 150u + 120u + web_dev_ms(0);   /* lcd.c: the spin before the panel's commands, the waits
+                                                          * after its reset and its wake-up, then its clearing */
     web_dirty[0] = web_dirty[1] = 240u;          /* (the film starts from black) */
     web_dirty[2] = web_dirty[3] = 0;
     synthesthetic_splash();
+    web_film_step(30);                           /* main.c: the rest of the start-up, then 30 ms before the logo's ticks */
     fm1_input_init();
     fm1_adc_init();
     panel_init();
@@ -642,11 +744,14 @@ WEB(web_boot) void web_boot(uint32_t demo)
     memset(web_lcd, 0, sizeof web_lcd);          /* the boot screen again, at its pace (web_frame) */
     web_lcd_mark(0, 0, 240, 240);
     web_film_pos = 0;
-    web_film_due = fm1_ms;
+    web_film_due = fm1_ms + web_boot_dark;
     web_phase = 1;
 }
 
-/* the boot screen: the recorded steps at their pace, then the logo stays about 2 s (main.c) */
+/* the boot screen: the recorded steps at their pace, then the logo's 40 ticks (main.c), at the FM-1's pace: there
+ * they take about 2 s (main.c), a tick drawing the name, the ring and LIVE, then 12 ms, with the audio, USB and the
+ * video core running by then. One constant, to set from a real unit's boot */
+#define WEB_LOGO_TICK_MS 50u
 static void web_boot_frame(void)
 {
     if (web_phase == 1u) {
@@ -667,13 +772,19 @@ static void web_boot_frame(void)
         }
         return;
     }
-    synthesthetic_splash_tick(web_ph);
-    web_ph += 13u * 16u / 12u;                   /* (main.c: 13 a step, a step every 12 ms; a frame here ~16 ms) */
+    if ((int32_t)(fm1_ms - web_film_due) < 0)
+        return;
     if (web_ph >= 520u) {
         lcd_fill(0, 0, 240, 240, C_BLACK);
         ui.force = 1;
         web_phase = 3;
+        return;
     }
+    synthesthetic_splash_tick(web_ph);
+    web_film_due += WEB_LOGO_TICK_MS;
+    if ((int32_t)(fm1_ms - web_film_due) > 0)    /* (a page that fell behind: from now) */
+        web_film_due = fm1_ms;
+    web_ph += 13u;
 }
 
 /* one pass of fm1_main's loop (the page calls it about every 16 ms of audio) */

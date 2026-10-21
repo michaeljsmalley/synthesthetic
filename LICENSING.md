@@ -3,13 +3,13 @@
 **Synthesthetic** is a derivative of SLOOP (isod89), itself a derivative of Felucca (Leo Kuroshita, Hügelton
 Instruments). Synthesthetic's own code (the video core, the JPEG encoder, the UVC function, the visualiser, the
 tools and tests that come with them) is Copyright (C) 2026 the Synthesthetic contributors and is licensed under
-the GNU General Public License, version 3 only, like the rest. Felucca's licensing notes follow unchanged;
+the GNU General Public License, version 3 only, like the rest. Felucca's licensing notes follow unchanged, and
 everything they say about Felucca applies to the code Synthesthetic inherits.
 
-One difference from SLOOP: Synthesthetic's builds leave out the CC0 drum kit (`assets/samples-cc0/KIT`, with
-PIANO and FLUTE, for flash space), so the SAMPLE engine's PERC set is made from Felucca's own drum sounds (the
-Hügelton Sample Pack, `tools/gen_waves.py`). The firmware conveys them under the additional permission below.
-`tools/fetch_cc0.py` brings the CC0 sets back.
+Synthesthetic differs from SLOOP in one way here. To save flash space, its builds leave out the CC0 drum kit
+(`assets/samples-cc0/KIT`), along with the PIANO and FLUTE sets. The SAMPLE engine's PERC set is therefore made from
+Felucca's own drum sounds, the Hügelton Sample Pack (`tools/gen_waves.py`), which the firmware includes under the
+additional permission below. `tools/fetch_cc0.py` brings the CC0 sets back.
 
 # Felucca licensing
 

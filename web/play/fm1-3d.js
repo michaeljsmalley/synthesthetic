@@ -49,14 +49,14 @@ export function createFM1(stage, opt) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.outputEncoding = T.sRGBEncoding;
   renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.3; renderer.setClearColor(0x000000, 0);
   const scene = new T.Scene(), camera = new T.PerspectiveCamera(24, 2, .5, 120);
-  scene.add(new T.HemisphereLight(0xc8d0ff, 0x1c1620, .5));
+  scene.add(new T.HemisphereLight(0xf4f3ef, 0x262624, .5));
   const key = new T.DirectionalLight(0xfff2e0, 1.15); key.position.set(-5, 7, 9); scene.add(key);
-  const rim = new T.DirectionalLight(0xff9fd0, .45); rim.position.set(7, -3, 4); scene.add(rim);   // (the site's plum)
+  const rim = new T.DirectionalLight(0xffffff, .4); rim.position.set(7, -3, 4); scene.add(rim);
   (function env() {                                             // a studio of soft boxes, for the gloss
     const c = cvs(512, 256), x = c.getContext('2d'), g = x.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, '#7a6a96'); g.addColorStop(.42, '#211a2a'); g.addColorStop(1, '#070509'); x.fillStyle = g; x.fillRect(0, 0, 512, 256);
+    g.addColorStop(0, '#8a8984'); g.addColorStop(.42, '#262624'); g.addColorStop(1, '#080807'); x.fillStyle = g; x.fillRect(0, 0, 512, 256);
     x.fillStyle = '#fff'; x.globalAlpha = .85; x.fillRect(60, 46, 190, 22); x.fillRect(300, 74, 150, 14); x.globalAlpha = .55; x.fillRect(120, 100, 260, 6);
-    x.globalAlpha = .35; x.fillRect(200, 18, 110, 10); x.fillStyle = '#ff4d8d'; x.globalAlpha = .35; x.fillRect(430, 40, 60, 90);
+    x.globalAlpha = .35; x.fillRect(200, 18, 110, 10); x.fillStyle = '#fff'; x.globalAlpha = .25; x.fillRect(430, 40, 60, 90);
     const t = new T.CanvasTexture(c); t.mapping = T.EquirectangularReflectionMapping; t.encoding = T.sRGBEncoding;
     const pm = new T.PMREMGenerator(renderer); scene.environment = pm.fromEquirectangular(t).texture; pm.dispose();
   })();
