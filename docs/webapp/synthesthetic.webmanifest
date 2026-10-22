@@ -5,8 +5,8 @@
  "start_url": "editor/",
  "scope": "./",
  "display": "standalone",
- "background_color": "#000000",
- "theme_color": "#000000",
+ "background_color": "#fafaf8",
+ "theme_color": "#fafaf8",
  "description": "The Synthesthetic editor and installer for the M-VAVE FM-1, available offline",
  "icons": [
   {

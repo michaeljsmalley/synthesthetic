@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // The Play page: Synthesthetic's firmware (worklet.js, synthesthetic.wasm) on a 3D FM-1 (fm1-3d.js; a flat one
-// without WebGL), its webcam picture beside it. The firmware runs in the audio thread; this side draws what it sends
-// (the screen's changes, the LEDs, the webcam's frames, its state), sends it the panel (the model, the computer
+// without WebGL), the video it sends beside it. The firmware runs in the audio thread; this side draws what it sends
+// (the screen's changes, the LEDs, the video's frames, its state), sends it the panel (the model, the computer
 // keyboard, a MIDI keyboard) and keeps its flash image in IndexedDB.
 import { createFM1, KPOS, BUTTONS, WHITE, BLACK, LCDC } from './fm1-3d.js';
 
@@ -156,7 +156,7 @@ function receive(m) {
   }
 }
 
-// ------------------------------------------------------------------ the webcam's monitor
+// ------------------------------------------------------------------- the video's monitor
 const cam = $('cam'), cx = cam.getContext('2d');
 const pic = document.createElement('canvas'), px2 = pic.getContext('2d');
 pic.width = 160; pic.height = 90;
@@ -178,7 +178,7 @@ function drawCam({ screen, px, rgb }) {
     sx2.putImageData(scrImg, 0, 0);
     cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 180);
     cx.drawImage(scr, 72, 0);
-  } else {                                            // 160 x 90, twice the size: the webcam's 320 x 180
+  } else {                                            // 160 x 90, twice the size: the video's 320 x 180
     px2.putImageData(picImg, 0, 0);
     cx.drawImage(pic, 0, 0, 320, 180);
   }
@@ -191,7 +191,7 @@ $('fs').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen(); else (mon.requestFullscreen || mon.webkitRequestFullscreen)?.call(mon);
 });
 
-// the webcam's settings: as the FM-1's VJ menu (and the editor's VJ page) set them
+// the video's settings: as the FM-1's VJ menu (and the editor's VJ page) set them
 function fill(sel, names) { sel.textContent = ''; names.forEach((n, i) => sel.append(new Option(n, String(i)))); }
 fill($('vj-mode'), NAMES.modes.map((n, i) => `${i + 1} ${n}`));
 fill($('vj-pal'), NAMES.palettes);

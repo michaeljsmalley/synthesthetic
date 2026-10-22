@@ -7,8 +7,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Synthesthetic Editor</title>
-<!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#000000"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<title>Synthesthetic editor</title>
+<meta name="description" content="Edit the sounds, patterns, samples and visual settings on your M-VAVE FM-1 over USB, in Chrome or Edge. Synthesthetic's editor works offline too.">
+<!--OG-->
+<!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#fafaf8"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Michroma&amp;display=swap">
 <style>
   /* SLOOP 2.4 editor: the FM-1's screen on a big display. Black, the four track colours, the device's own
      Terminus pixel font (tools/gen_webfont.py, inlined: the editor also runs from file://), 16 px and 32 px only
@@ -20,7 +25,6 @@
     --bg: #000; --s1: #0b0b0e; --s2: #1a1a1e; --s3: #36363c; --line: #232329; --dim: #76767e; --fg2: #c4c4cc; --fg: #f2f2f2;
     --red: #ff2c34; --t1: #287cff; --t2: #1ecc70; --t3: #ffc618; --t4: #ff621a; --trk: var(--t1);
     --font: "Synthesthetic Terminus", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
-    --rb1: #ff2020; --rb2: #ff8c14; --rb3: #ffeb14; --rb4: #28ff46; --rb5: #148cff; --rb6: #4b0082; --rb7: #8f00ff;   /* the wordmark's spectrum */
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -87,17 +91,10 @@
   td { padding: 2px 12px 2px 0; }
   td.i { color: var(--dim); text-align: right; }
 
-  /* ---- the frame: the side bar (logo, pages, the device), the page ---- */
+  /* ---- the frame: the side bar (pages, the device), the page ---- */
   .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100vh; }
   .side { position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; gap: 16px; padding: 20px 16px;
           border-right: 1px solid var(--line); overflow-y: auto; }
-  .brand { display: flex; align-items: flex-end; gap: 10px; color: var(--fg); text-decoration: none; }
-  .brand svg { width: 132px; height: auto; display: block; }
-  .brand span { color: var(--dim); text-transform: lowercase; padding-bottom: 2px; }
-  .brand .wordmark { text-transform: none; font-weight: 700; letter-spacing: .06em; color: transparent;
-    background: linear-gradient(90deg, var(--rb1), var(--rb2), var(--rb3), var(--rb4), var(--rb5), var(--rb6), var(--rb7), var(--rb1));
-    background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; animation: chroma 4s linear infinite; }
-  @keyframes chroma { to { background-position: -300% 0; } }
   .tabs { display: flex; flex-direction: column; gap: 2px; }
   .tabs .navh { color: var(--s3); margin: 14px 0 4px 12px; text-transform: lowercase; }
   .tabs .navh:first-child { margin-top: 0; }
@@ -247,9 +244,7 @@
     .preview-seq-note { display: none; }
     .preview-seq-cell.on .seq-hit { display: block; }
   }
-  .devcard .links { display: flex; justify-content: space-between; gap: 8px; }
-  .lang { background: none; color: var(--dim); padding: 0; text-decoration: underline; text-transform: none; }
-  .lang:hover:not(:disabled) { background: none; color: var(--fg); }
+  .devcard #install { white-space: normal; text-align: left; }
 
   .main { min-width: 0; padding: 0 32px 32px; }
   .top { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 20px 0 12px; border-bottom: 1px solid var(--line); }
@@ -564,7 +559,6 @@
     .app { grid-template-columns: minmax(0, 1fr); }
     .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px;
             border-right: 0; border-bottom: 1px solid var(--line); }
-    .brand svg { width: 96px; }
     .tabs { flex-direction: row; overflow-x: auto; order: 3; width: 100%; }
     .tabs .navh { display: none; }
     .tabs button { border-left: 0; border-bottom: 3px solid transparent; }
@@ -848,15 +842,74 @@
     .lvpad { height: 64px; }
     .lvfxpads { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
+  /* ---- Synthesthetic: the site's card around the editor (web/site.css, the cassette inlay card). The spine, the bar
+     with the logo and the site's links, and the editor in a black window, the way the site shows the FM-1's screen.
+     The names start with sx-, since the editor has its own .card, .panel and .bar. ---- */
+  @font-face { font-family: "FM-1 Terminus"; src: url(/*SITE-FONT*/) format("truetype"); font-display: swap; }   /* (the bold one, as the site's) */
+  :root { --sx-card: #fafaf8; --sx-ink: #121212; --sx-gray: #5e5e59; --sx-line: #d4d4cf; --sx-focus: #2d6cd0;
+          --sx-ext: "Michroma", "Eurostile", "Helvetica Neue", Arial, sans-serif; --sx-sans: "Archivo", "Helvetica Neue", Arial, sans-serif; }
+  .sx { --sx-pad: 24px; --sx-top: 98px; --sx-chrome: 132px;   /* above the app the bar (64), the window's margin (24) and padding (10); below, 10 + 24 */
+        display: grid; grid-template-columns: 76px minmax(0, 1fr); min-height: 100vh; background: var(--sx-card); color: var(--sx-ink);
+        -webkit-font-smoothing: auto; font-smooth: auto; text-rendering: auto; }
+  html:has(.sx), html:has(.sx) body { background: var(--sx-card); }
+  .sx-spine { border-right: 1px solid var(--sx-line); }
+  .sx-spine p { position: sticky; top: 0; display: flex; align-items: center; gap: 28px; margin: 0 auto; padding: 28px 0; width: max-content;
+                writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+  .sx-spine p > :first-child { order: 2; }
+  :lang(ja) .sx-spine p { transform: none; }
+  :lang(ja) .sx-spine p > :first-child { order: 0; }
+  .sx-name { font: 16px/1 "FM-1 Terminus", var(--font); text-transform: uppercase; -webkit-font-smoothing: none; }
+  .sx-label { font: 400 11px/1.5 var(--sx-ext); letter-spacing: .08em; text-transform: uppercase; color: var(--sx-gray); }
+  :lang(ja) .sx-label { letter-spacing: 0; }
+  .sx-front { min-width: 0; }
+  .sx-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 24px; min-height: 64px;
+            padding: 8px var(--sx-pad); border-bottom: 1px solid var(--sx-line); }
+  .sx-logo { display: inline-flex; align-items: center; gap: 10px; color: var(--sx-ink); text-decoration: none; }
+  .sx-logo .mark { display: block; width: 26px; height: 26px; flex: none; }
+  .sx-logo .word { font: 16px/1 "FM-1 Terminus", var(--font); text-transform: uppercase; white-space: nowrap; -webkit-font-smoothing: none; }
+  @property --h { syntax: "<number>"; inherits: true; initial-value: 0; }
+  @keyframes hueturn { to { --h: 360; } }
+  .sx-logo .rainbow { animation: hueturn 4s linear infinite; }
+  .sx-logo .rainbow span { background-color: hsl(calc(var(--h) + var(--o, 0)) 80% 45%); background-color: oklch(.6 .19 calc(var(--h) + var(--o, 0)));
+                           -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sx-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; font: 400 15px/1.5 var(--sx-sans); }
+  .sx-nav a { color: var(--sx-gray); text-decoration: none; padding-block: 8px; }
+  .sx-nav a:hover { color: var(--sx-ink); }
+  .sx-nav .sx-lang { font: 400 11px/1 var(--sx-ext); letter-spacing: .08em; text-transform: none; color: var(--sx-ink); background: none;
+                     border: 1px solid var(--sx-ink); border-radius: 0; padding: 7px 10px; cursor: pointer; -webkit-font-smoothing: auto; }
+  .sx-nav .sx-lang:hover:not(:disabled) { background: var(--sx-ink); color: var(--sx-card); }
+  .sx-bar :focus-visible { outline: 2px solid var(--sx-focus); outline-offset: 2px; }
+  .sx-window { margin: var(--sx-pad); padding: 10px; background: var(--sx-ink); border-radius: 18px; }
+  .sx .app { min-height: calc(100vh - var(--sx-chrome)); border-radius: 8px; overflow: clip; background: var(--bg); color: var(--fg2);
+             -webkit-font-smoothing: none; font-smooth: never; text-rendering: optimizeSpeed; }
+  @media (min-width: 861px) { .sx .side { height: calc(100vh - var(--sx-top)); } }   /* (the device card in sight under the bar) */
+  @media (max-width: 980px) {
+    .sx { grid-template-columns: minmax(0, 1fr); }
+    .sx-spine { display: none; }
+  }
+  @media (max-width: 640px) {
+    .sx { --sx-pad: 12px; }
+    .sx-window { padding: 6px; border-radius: 14px; }
+    .sx .app { border-radius: 6px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .sx-logo .rainbow { animation: none; } }
+  html.lvfocus .sx { grid-template-columns: minmax(0, 1fr); }
+  html.lvfocus .sx-spine, html.lvfocus .sx-bar { display: none; }
+  html.lvfocus .sx-window { margin: 0; padding: 0; border-radius: 0; }
+  html.lvfocus .sx .app { min-height: 100vh; border-radius: 0; }
 </style>
 </head>
 <body>
+<div class="sx">
+<aside class="sx-spine" aria-hidden="true"><p><span class="sx-name">Synthesthetic</span><span class="sx-label" data-t="siteSpine"></span><span class="sx-label"><!--VERSION--></span></p></aside>
+<div class="sx-front">
+<header class="sx-bar">
+  <a class="sx-logo" href="../installer/" aria-label="Synthesthetic installer"><!--LOGO--></a>
+  <nav class="sx-nav" aria-label="Site"><a href="../installer/#video" data-t="siteVideo"></a><a href="../installer/#modes" data-t="siteModes"></a><a href="../installer/#install" data-t="siteInstall"></a><a href="../../play/" data-t="sitePlay"></a><a href="../../handbook/" data-t="siteHandbook"></a><button class="sx-lang" id="lang" type="button"></button></nav>
+</header>
+<div class="sx-window">
 <div class="app">
   <aside class="side">
-    <a class="brand" href="#sound" aria-label="Synthesthetic">
-      <svg viewBox="0 0 200 200" role="img" aria-hidden="true"><path d="M100.0,100.0 L100.0,4.0 A96.0,96.0 0 0 1 148.0,16.9 Z" fill="#FF1414"/><path d="M100.0,100.0 L148.0,16.9 A96.0,96.0 0 0 1 183.1,52.0 Z" fill="#FF8A14"/><path d="M100.0,100.0 L183.1,52.0 A96.0,96.0 0 0 1 196.0,100.0 Z" fill="#FFFF14"/><path d="M100.0,100.0 L196.0,100.0 A96.0,96.0 0 0 1 183.1,148.0 Z" fill="#8AFF14"/><path d="M100.0,100.0 L183.1,148.0 A96.0,96.0 0 0 1 148.0,183.1 Z" fill="#14FF14"/><path d="M100.0,100.0 L148.0,183.1 A96.0,96.0 0 0 1 100.0,196.0 Z" fill="#14FF8A"/><path d="M100.0,100.0 L100.0,196.0 A96.0,96.0 0 0 1 52.0,183.1 Z" fill="#14FFFF"/><path d="M100.0,100.0 L52.0,183.1 A96.0,96.0 0 0 1 16.9,148.0 Z" fill="#148AFF"/><path d="M100.0,100.0 L16.9,148.0 A96.0,96.0 0 0 1 4.0,100.0 Z" fill="#1414FF"/><path d="M100.0,100.0 L4.0,100.0 A96.0,96.0 0 0 1 16.9,52.0 Z" fill="#8A14FF"/><path d="M100.0,100.0 L16.9,52.0 A96.0,96.0 0 0 1 52.0,16.9 Z" fill="#FF14FF"/><path d="M100.0,100.0 L52.0,16.9 A96.0,96.0 0 0 1 100.0,4.0 Z" fill="#FF148A"/><circle cx="100" cy="100" r="62" fill="#000"/><polyline points="49.2,100.0 52.3,94.9 55.5,90.0 58.7,85.5 61.9,81.6 65.0,78.3 68.2,75.9 71.4,74.5 74.6,74.0 77.8,74.5 80.9,75.9 84.1,78.3 87.3,81.6 90.5,85.5 93.6,90.0 96.8,94.9 100.0,100.0 103.2,105.1 106.4,110.0 109.5,114.5 112.7,118.4 115.9,121.7 119.1,124.1 122.2,125.5 125.4,126.0 128.6,125.5 131.8,124.1 135.0,121.7 138.1,118.4 141.3,114.5 144.5,110.0 147.7,105.1 150.8,100.0" fill="none" stroke="#F2F2F2" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/></svg>
-      <span class="wordmark">SYNTHESTHETIC</span><span>editor</span>
-    </a>
     <nav class="tabs" id="tabs" role="tablist" aria-orientation="vertical">
       <div class="navh" data-t="navTrack"></div>
       <button role="tab" data-tab="live" data-t="tabLive" data-ic="note_eight"></button>
@@ -881,7 +934,6 @@
       <span id="live"></span>
       <span id="mock" hidden data-t="mock"></span>
       <button id="connect" class="pri" data-t="connect" data-ic="port_usb_c"></button>
-      <div class="links"><a class="dim" href="../installer/" data-t="installer"></a><a class="dim" href="../../handbook/" data-t="handbook"></a><button class="lang" id="lang"></button></div>
       <button id="install" class="pri" data-t="install" hidden></button>
       <!--DL--><a class="dim" id="offline" href="synthesthetic-editor.html" download="synthesthetic-editor.html" data-t="offline"></a><!--/DL-->
     </div>
@@ -1212,6 +1264,9 @@
       <span data-t="foot"></span> M-VAVE and FM-1 are trademarks of their respective owners.<br>
       <a href="FUKIAI-LICENSE.txt" data-t="iconsCredit"></a> · <span data-t="fontCredit"></span></footer>
   </main>
+</div>
+</div>
+</div>
 </div>
 <dialog id="preview-note-dialog" aria-labelledby="preview-note-title">
   <form id="preview-note-form">
@@ -4807,8 +4862,6 @@ const TEXT = {
     putDone: "本体に書き込みました: スロット ", storedSlot: "本体に保存しました: スロット ", erasedSlot: "消去しました: スロット ",
     loadedUser: "読み込みました: ", reloaded: "本体で音色が変わったので読み直しました", readingBank: "スロットを読み込み中",
     badEngine: "このファームウェアにないエンジンです: ", flashFail: "書き込みに失敗しました（rc {rc}）",
-    installer: "SYNTHESTHETIC インストーラー",
-    handbook: "ハンドブック（英語）",
     offline: "エディタをダウンロード（パソコンでオフライン用：Chrome / Edge で開く）",
     install: "アプリとしてインストール（オフラインで使える・Android も）",
     tabSeq: "シーケンサー", tabTracks: "トラック", tabSettings: "設定",
@@ -4926,9 +4979,10 @@ const TEXT = {
     dsBad: "FM-1 が受け付けませんでした", dsCopyAsk: "{k} を {x} のコピーにします。よろしいですか？", dsCopied: "コピーしました:",
     dsStop: "ソングを止めてから保存してください", dsFlash: "フラッシュに書けませんでした", dsSaved: "FM-1 に保存しました",
     tabTheme: "テーマ", thTitle: "テーマ",
-    tabVj: "VJ", vjTitle: "映像とウェブカメラ",
-    vjHelp: "SYNTHESTHETIC の映像の設定です。ウェブカメラのタイトルとオーバーレイ、オートパイロット、アトラクトモード、映像用の MIDI チャンネル、モード、パレット、4 つのノブを設定できます。このページを開くと FM-1 から読み込みます。ここで変更して送信すると、FM-1 にすぐ反映され、保存されます。",
-    vjText: "ウェブカメラのタイトル", vjTextHelp: "19 文字まで。オーバーレイでタイトルを表示するときに使われます。", vjOverlay: "オーバーレイ",
+    siteSpine: "エディタ", siteVideo: "映像", siteModes: "モード", siteInstall: "インストール", sitePlay: "試奏", siteHandbook: "ハンドブック",
+    tabVj: "VJ", vjTitle: "映像と USB ビデオ",
+    vjHelp: "SYNTHESTHETIC の映像の設定です。USB ビデオのタイトルとオーバーレイ、オートパイロット、アトラクトモード、映像用の MIDI チャンネル、モード、パレット、4 つのノブを設定できます。このページを開くと FM-1 から読み込みます。ここで変更して送信すると、FM-1 にすぐ反映され、保存されます。",
+    vjText: "タイトル", vjTextHelp: "19 文字まで。オーバーレイでタイトルを表示するときに使われます。", vjOverlay: "オーバーレイ",
     vjMode: "モード", vjPalette: "パレット", vjAuto: "オートパイロット", vjAttract: "アトラクト", vjMidi: "映像の MIDI チャンネル",
     vjKnobs: "ノブ", vjSend: "FM-1 に送信", vjRead: "FM-1 から読み込む",
     vjNoDev: "FM-1 を接続すると、映像の設定を読み込み・送信できます。",
@@ -5154,8 +5208,6 @@ const TEXT = {
     putDone: "Written to the device: slot ", storedSlot: "Stored on the device: slot ", erasedSlot: "Erased slot ",
     loadedUser: "Loaded ", reloaded: "The sound changed on the device: read again", readingBank: "Reading the slots",
     badEngine: "This firmware has no such engine: ", flashFail: "Write failed (rc {rc})",
-    installer: "SYNTHESTHETIC installer",
-    handbook: "Handbook",
     offline: "Download the editor (offline on a computer: open it in Chrome or Edge)",
     install: "Install the app (works offline, Android too)",
     tabSeq: "Sequencer", tabTracks: "Tracks", tabSettings: "Settings",
@@ -5273,9 +5325,10 @@ const TEXT = {
     dsBad: "The FM-1 refused it", dsCopyAsk: "Make {k} a copy of {x}?", dsCopied: "Copied:",
     dsStop: "Stop the song first, then store", dsFlash: "Could not write the flash", dsSaved: "Stored on the FM-1",
     tabTheme: "Theme", thTitle: "Theme",
-    tabVj: "VJ", vjTitle: "Visuals and webcam",
-    vjHelp: "These are SYNTHESTHETIC's visual settings, including the webcam title and overlay, the autopilot, attract mode, the visuals' MIDI channel, the mode, the palette and the four knobs. They're read from the FM-1 when you open this page. Change them here and press Send, and the FM-1 shows the changes right away and saves them.",
-    vjText: "Webcam title", vjTextHelp: "Up to 19 characters. Shown when the overlay includes the title.", vjOverlay: "Overlay",
+    siteSpine: "Editor", siteVideo: "Video", siteModes: "Modes", siteInstall: "Install", sitePlay: "Play", siteHandbook: "Handbook",
+    tabVj: "VJ", vjTitle: "Visuals and USB video",
+    vjHelp: "These are SYNTHESTHETIC's visual settings, including the video's title and overlay, the autopilot, attract mode, the visuals' MIDI channel, the mode, the palette and the four knobs. They're read from the FM-1 when you open this page. Change them here and press Send, and the FM-1 shows the changes right away and saves them.",
+    vjText: "Title", vjTextHelp: "Up to 19 characters. Shown when the overlay includes the title.", vjOverlay: "Overlay",
     vjMode: "Mode", vjPalette: "Palette", vjAuto: "Autopilot", vjAttract: "Attract", vjMidi: "Visuals MIDI channel",
     vjKnobs: "Knobs", vjSend: "Send to the FM-1", vjRead: "Read from the FM-1",
     vjNoDev: "Connect the FM-1 to read and send its visual settings.",
@@ -7208,7 +7261,7 @@ $("thread").addEventListener("click", () => {
 });
 
 /* ---- Synthesthetic: the VJ page (firmware v13: backup object 12; the record: VJ, in the protocol section) ----
-   The webcam's title and overlay, the autopilot, the attract mode, the visuals' MIDI channel, the mode, the palette
+   The video's title and overlay, the autopilot, the attract mode, the visuals' MIDI channel, the mode, the palette
    and the four knobs. Read from the FM-1, changed here, sent back: the FM-1 shows them at once and keeps them (once
    stopped, if the song plays). */
 const VJS = { v: VJ.defaults(), sent: null, dev: undefined, built: false };

@@ -1,21 +1,21 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
      The Play page (web/make_site.py -> play/index.html): <span class="brand">Synthesthetic</span>'s firmware in the page (play/worklet.js,
-     play/synthesthetic.wasm from tools/build_web.py) on a 3D FM-1 (play/fm1-3d.js), its webcam picture beside it. -->
+     play/synthesthetic.wasm from tools/build_web.py) on a 3D FM-1 (play/fm1-3d.js), the video it sends beside it. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Synthesthetic virtual FM-1</title>
-<meta name="description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1 with your mouse, computer keyboard or a MIDI keyboard, and see the webcam picture it sends.">
+<meta name="description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1 with your mouse, computer keyboard or a MIDI keyboard, and see the video it sends over USB.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Synthesthetic">
 <meta property="og:title" content="Synthesthetic virtual FM-1">
-<meta property="og:description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1, and see the webcam picture it sends.">
+<meta property="og:description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1, and see the video it sends over USB.">
 <meta property="og:image" content="https://michaeljsmalley.github.io/synthesthetic/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The Synthesthetic logo, the words USB video out for the M-VAVE FM-1, and a visualizer playing in a black window over rainbow stripes">
+<meta property="og:image:alt" content="The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1, and a visualizer playing in a black window over rainbow stripes">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
@@ -25,7 +25,7 @@
 <style>
   /* Synthesthetic's site, after a 1980s cassette inlay card. Each page is a printed card lying on a desk, with a spine
      down its left edge and panels divided by fold lines. It has Swiss typesetting, an extended face for labels, a band
-     of six color stripes, black windows onto the webcam picture and blocks of technical data. One theme, the printed
+     of six color stripes, black windows onto the FM-1's picture and blocks of technical data. One theme, the printed
      card. web/make_site.py inlines this file in every page.
      Layout: the front of the card is a 12-column grid with the same side padding in every panel, so column edges run
      unbroken from the top of the page to the bottom. A page splits its panels at one column (the installer at 7, the
@@ -178,7 +178,7 @@
   }
 
   /* The Play page, split at column 9: a one-line title, then the FM-1 as large as the card allows on the left and its
-     webcam window and settings on the right, all above the fold. The stripes run behind both, their bottom edge on
+     video window and settings on the right, all above the fold. The stripes run behind both, their bottom edge on
      the window's, as on the installer. Below, how to play it with the computer keyboard drawn out, then what runs
      here. */
   .stage-panel { padding-top: 28px; }
@@ -300,7 +300,7 @@
 <path d="M100.0,100.0 L52.0,16.9 A96.0,96.0 0 0 1 100.0,4.0 Z" fill="#FF148A"/>
 <circle cx="100.0" cy="100.0" r="62.0" fill="#000"/>
 <polyline points="49.2,100.0 52.3,94.9 55.5,90.0 58.7,85.5 61.9,81.6 65.0,78.3 68.2,75.9 71.4,74.5 74.6,74.0 77.8,74.5 80.9,75.9 84.1,78.3 87.3,81.6 90.5,85.5 93.6,90.0 96.8,94.9 100.0,100.0 103.2,105.1 106.4,110.0 109.5,114.5 112.7,118.4 115.9,121.7 119.1,124.1 122.2,125.5 125.4,126.0 128.6,125.5 131.8,124.1 135.0,121.7 138.1,118.4 141.3,114.5 144.5,110.0 147.7,105.1 150.8,100.0" fill="none" stroke="#F2F2F2" stroke-width="7.1" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="word brand rainbow" aria-hidden="true"><span style="--o: 0">S</span><span style="--o: 20">Y</span><span style="--o: 40">N</span><span style="--o: 60">T</span><span style="--o: 80">H</span><span style="--o: 100">E</span><span style="--o: 120">S</span><span style="--o: 140">T</span><span style="--o: 160">H</span><span style="--o: 180">E</span><span style="--o: 200">T</span><span style="--o: 220">I</span><span style="--o: 240">C</span></span></a>
-        <nav aria-label="Site"><a href="../webapp/installer/#webcam">Webcam</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="./" aria-current="page">Play</a><a class="opt" href="../handbook/">Handbook</a></nav>
+        <nav aria-label="Site"><a href="../webapp/installer/#video">Video</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="./" aria-current="page">Play</a><a class="opt" href="../handbook/">Handbook</a></nav>
       </div>
     </header>
     <main>
@@ -323,12 +323,12 @@
             <p class="note" id="power-note" hidden></p>
             <p class="note" id="midi-note" hidden></p>
           </div>
-          <aside class="cam" aria-label="The webcam">
+          <aside class="cam" aria-label="USB video">
             <div class="window">
               <div class="display monitor" id="monitor">
-                <canvas id="cam" width="320" height="180" aria-label="The webcam picture"></canvas>
+                <canvas id="cam" width="320" height="180" aria-label="The video the FM-1 sends over USB"></canvas>
                 <b class="chan" id="chan" hidden></b>
-                <button class="fs" id="fs" type="button" aria-label="Show the webcam full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+                <button class="fs" id="fs" type="button" aria-label="Show the video full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
               </div>
             </div>
             <div class="vj">
@@ -360,7 +360,7 @@
             <ul>
               <li>Press PLAY for the demo song.</li>
               <li>Tap HOME on the TRACKS screen to open the visualizer, then turn SELECT.</li>
-              <li>Pick SCREEN, the last mode, to send the display to the webcam.</li>
+              <li>Pick SCREEN, the last mode, to send the display itself as the video.</li>
             </ul>
           </div>
         </div>
@@ -398,6 +398,6 @@
 </div>
 <script id="vj-names" type="application/json">{"modes": ["WAVE", "BARS", "HEAT", "XY", "METERS", "RING", "SPIRAL", "GRID", "KIT", "TUNNEL", "MIRROR", "STARS", "SQUARES", "SHARDS", "ORBITS", "MOIRE", "WARP", "VORTEX", "RIPPLE", "KALEIDO", "MELT", "SMOKE", "WORMHOLE", "PLASMA", "FIRE", "RIDGES", "LAVA", "CELLS", "WIREFRAME", "FRESNEL", "SCREEN"], "palettes": ["SPECTRUM", "NEON", "FIRE", "OCEAN", "CRT", "VAPOR", "ACID", "THERMAL", "MONO"]}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="play.js?v=fc98160770"></script>
+<script type="module" src="play.js?v=cd1500ba56"></script>
 </body>
 </html>

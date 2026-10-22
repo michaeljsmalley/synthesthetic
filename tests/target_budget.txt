@@ -13,9 +13,9 @@ drawbar_render 271
 drawbar_block 103
 grain_render 1748
 grain_block 132
-slicer_track 832
+slicer_track 828
 drums_mix 6793
 fm6_op_run 72
 fm6_op_fb 26
 fm6_render 362
-fm1_alnk0_irq 256
+fm1_alnk0_irq 300

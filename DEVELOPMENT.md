@@ -15,7 +15,7 @@ read the [handbook](HANDBOOK.md).
 | USB | Full speed (12 Mbit/s) only, with five endpoints |
 | Controls | 27 keys, 14 lit buttons, 7 encoders and the MASTER pot, plus a TRS MIDI input |
 
-Because USB is full speed only, the webcam sends MJPEG. Uncompressed video at this size would only manage about 9
+Because USB is full speed only, the video goes out as MJPEG. Uncompressed video at this size would only manage about 9
 frames per second, and every computer's camera stack accepts MJPEG from a full-speed camera.
 
 ### Two cores
@@ -26,14 +26,14 @@ through small mailboxes, and each mailbox is written by only one core, so neithe
 
 Both cores run their code from the flash. When the first core writes to the flash, during an autosave for example,
 the flash can't be read for a moment. Before that happens, the second core parks itself in a small loop that runs
-from RAM and waits there until the write is done. A long soak test, with autosaves running under a live webcam
+from RAM and waits there until the write is done. A long soak test, with autosaves running under a live video
 stream, has never seen a park fail.
 
 ### The picture
 
 Each frame is 160 × 90 pixels of palette indexes, one byte per pixel. Every frame builds its own 256-color palette,
 once in YCbCr for the JPEG and once in RGB565 for the screen, which makes color cycling and fades almost free. The
-webcam gets the frame doubled to 320 × 180, and the FM-1's screen shows it at one and a half times that size.
+USB video gets the frame doubled to 320 × 180, and the FM-1's screen shows it at one and a half times that size.
 
 The analyzer reads the mix at 22 kHz, before the MASTER knob. It runs a 1024-point FFT and measures 32 bands of about
 a quarter octave each, from 40 Hz to 10 kHz, in decibels. Note-ons for each track, drum hits by type, track levels
@@ -85,7 +85,7 @@ JieLi's download server can be slow or unreachable from some networks, so if a d
 `curl -C -`.
 
 ```sh
-# Firmware with the webcam (a plain build.sh makes the audio-only build)
+# Firmware with USB video (a plain build.sh makes the audio-only build)
 AC79_SDK=$PWD/vendor/ac79-sdk-min JIELI_TOOLCHAIN=$HOME/.jieli/toolchain FELUCCA_UVC=1 sh build.sh
 # A release: identity FM-1_951, version SYNTHESTHETIC 0.1 BETA, output build/felucca-0.1.fwsc
 FELUCCA_UVC=1 sh build.sh --release 0.1
@@ -105,6 +105,10 @@ against reference renders, the JPEG encoder against libjpeg, every visual mode a
 function's descriptors and packets, and the web pages against a simulated FM-1. `tests/web_test.mjs` boots the
 browser version, plays it, captures every mode and checks that a project survives a reload.
 
+Every push to GitHub runs the web page tests, the site build test and `tests/web_test.mjs` on the published Play
+page firmware (`.github/workflows/tests.yml`). The host tests need a device build, so run them yourself before you
+push a firmware change.
+
 ### Tools
 
 | Tool | What it does |
@@ -112,12 +116,12 @@ browser version, plays it, captures every mode and checks that a project survive
 | `build_web.py` | Builds the browser version of the firmware (`firmware/host/web.c`) into the Play page's `synthesthetic.wasm` |
 | `fm1_install.py` | Installs a package over USB-MIDI. With `--info`, it shows what the FM-1 is running |
 | `fm1_vj.py` | Reads and changes every visual setting |
-| `fm1_title.py` | Sets the webcam title and the overlay |
+| `fm1_title.py` | Sets the title and the overlay |
 | `fm1_uvcctl.py` | Reads and changes the camera controls |
 | `fm1_vcdiag.py` | Shows the video core's counters, and can `stop` or `start` it or set `style N` |
-| `fm1_capture.py` | Records the webcam while playing notes and makes a contact sheet |
+| `fm1_capture.py` | Records the video while playing notes and makes a contact sheet |
 | `fm1_avrate.py` | Measures the frame rate macOS actually delivers |
-| `fm1_soak.py` | Runs a long test on the FM-1, with autosaves under a running webcam |
+| `fm1_soak.py` | Runs a long test on the FM-1, with autosaves under running video |
 | `fm1_softkey.py` | Sends the soft key that opens the ROM download mode |
 
 ### Rules

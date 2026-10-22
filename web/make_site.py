@@ -8,7 +8,7 @@
                               links to the site and its images stay in the site
   firmware/felucca-VER.fwsc   the package
   webapp/installer/index.html index_pkg.html with fm1pkg.js, fm1ota.js and the metadata inlined; its hero monitor
-                              (channels.jpg, laid out from assets/site/channels.json) and the webcam title's
+                              (channels.jpg, laid out from assets/site/channels.json) and the title overlay's
                               frame (title-bg.jpg) next to it
   (every page)                web/site.css inlined, with the FM-1's font (assets/site/terminus16b.ttf) in it
   webapp/editor/index.html    editor.html (+ fukiai.ttf, FUKIAI-LICENSE.txt)
@@ -16,8 +16,8 @@
                               its links to the installer and the font licence online; opened from the disk in
                               Chrome / Edge (file:// is a secure context: Web MIDI asks for permission)
   play/index.html             web/play.html: Synthesthetic's firmware in the page (build/web/synthesthetic.wasm, from
-                              tools/build_web.py, run by play/worklet.js) on a 3D FM-1 (play/fm1-3d.js), its webcam's
-                              picture beside it
+                              tools/build_web.py, run by play/worklet.js) on a 3D FM-1 (play/fm1-3d.js), the video it
+                              sends beside it
   webapp/sw.js, webapp/synthesthetic.webmanifest, webapp/icon-*.png  the site without internet (SLOOP 2.6): an app to
                               install; opened once online, the installer, the editor and the firmware are kept
                               by the browser and work offline, still on https (on Android a downloaded file opens
@@ -51,7 +51,7 @@ FONTS = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100.
 
 
 OG_IMAGE = "og.png"                                          # tools/gen_og.py -> assets/site/og.png -> the site's root
-OG_ALT = ("The Synthesthetic logo, the words USB video out for the M-VAVE FM-1, and a visualizer playing in a black "
+OG_ALT = ("The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1, and a visualizer playing in a black "
           "window over rainbow stripes")
 
 
@@ -65,9 +65,11 @@ def og_tags(title, description):
             f'<meta name="twitter:card" content="summary_large_image">')
 
 
-INSTALLER_OG = ("Synthesthetic turns your M-VAVE FM-1 into a USB webcam",
-                "The first FM-1 firmware with video over USB. 30 visualizers react to your music in OBS, Zoom, FaceTime "
-                "and more. Install it from Chrome or Edge.")
+EDITOR_OG = ("Synthesthetic editor", "Edit the sounds, patterns, samples and visual settings on your M-VAVE FM-1 over USB, "
+             "in Chrome or Edge. It works offline too.")
+INSTALLER_OG = ("Synthesthetic, an audio/video synth for the M-VAVE FM-1",
+                "The first FM-1 firmware that sends video over USB. Its 30 visualizers react to your music and show up "
+                "as a camera in OBS, Zoom, FaceTime and more.")
 
 
 def site_css():
@@ -270,8 +272,8 @@ def handbook(out, version):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{md_esc(title)}</title>
-<meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into a USB webcam with audio-reactive visualizers.">
-{og_tags("Synthesthetic handbook", "How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into a USB webcam with audio-reactive visualizers.")}
+<meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into an audio/video synth with video over USB.">
+{og_tags("Synthesthetic handbook", "How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into an audio/video synth with video over USB.")}
 <meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -286,7 +288,7 @@ def handbook(out, version):
     <header class="bar">
       <div class="grid">
         <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic installer">{logo_html()}</a>
-        <nav aria-label="Site"><a href="../webapp/installer/#webcam">Webcam</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="../play/">Play</a><a class="opt" href="./" aria-current="page">Handbook</a></nav>
+        <nav aria-label="Site"><a href="../webapp/installer/#video">Video</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="../play/">Play</a><a class="opt" href="./" aria-current="page">Handbook</a></nav>
       </div>
     </header>
     <main class="panel">
@@ -322,7 +324,7 @@ def handbook(out, version):
 
 
 def vj_names():
-    """the webcam's modes and palettes by name, as the firmware has them (firmware/src/vis_set.h)"""
+    """the video's modes and palettes by name, as the firmware has them (firmware/src/vis_set.h)"""
     src = (HERE.parent / "firmware" / "src" / "vis_set.h").read_text(encoding="utf-8")
     names = {}
     for key, arr, n in (("modes", "VIS_NAME", 31), ("palettes", "VIS_PAL_NAME", 9)):
@@ -346,7 +348,7 @@ def play_page(out, version):
         if html.count(mark) != 1:
             raise SystemExit(f"play.html must contain {mark} once; update make_site.py")
     html = html.replace("<!--OG-->", og_tags("Synthesthetic virtual FM-1", "Play Synthesthetic's firmware in your browser on "
-                                             "a 3D FM-1, and see the webcam picture it sends."))
+                                             "a 3D FM-1, and see the video it sends over USB."))
     html = (html.replace("/*SITE-CSS*/", site_css()).replace("<!--LOGO-->", logo_html()).replace("<!--VERSION-->", md_esc(version))
             .replace("/*VJ-NAMES*/", json.dumps(vj_names())))
     # every file by its contents' stamp (play.js names the others with theirs), so a new page never runs a copy the
@@ -376,16 +378,29 @@ def play_page(out, version):
     return len(html)
 
 
+def editor_page(html, version):
+    """editor.html in the site's card: its link preview, the bar's logo and the version on the spine"""
+    for mark in ("<!--OG-->", "<!--LOGO-->", "<!--VERSION-->", "/*SITE-FONT*/"):
+        if html.count(mark) != 1:
+            raise SystemExit(f"editor.html must contain {mark} once; update make_site.py")
+    font = "data:font/ttf;base64," + base64.b64encode((SITE / "terminus16b.ttf").read_bytes()).decode()
+    return (html.replace("<!--OG-->", og_tags(*EDITOR_OG)).replace("<!--LOGO-->", logo_html())
+            .replace("<!--VERSION-->", md_esc(version)).replace("/*SITE-FONT*/", font))
+
+
 def offline_editor(html):
     """editor.html as one file for the disk: the icon font inlined, the download link out, the relative links online"""
     font = base64.b64encode((HERE / "fukiai.ttf").read_bytes()).decode()
     for a, b in (('url("fukiai.ttf")', 'url(data:font/ttf;base64,' + font + ')'),
-                 ('href="../installer/"', 'href="' + ONLINE + 'webapp/installer/" target="_blank" rel="noopener"'),
-                 ('href="../../handbook/"', 'href="' + ONLINE + 'handbook/" target="_blank" rel="noopener"'),
                  ('href="FUKIAI-LICENSE.txt"', 'href="' + ONLINE + 'webapp/editor/FUKIAI-LICENSE.txt" target="_blank" rel="noopener"')):
         if html.count(a) != 1:
             raise SystemExit(f"editor.html must contain {a} once; update make_site.py")
         html = html.replace(a, b)
+    for pat, to in ((r'href="\.\./installer/([^"]*)"', ONLINE + r"webapp/installer/\1"),     # the bar, the device card
+                    (r'href="\.\./\.\./(handbook|play)/([^"]*)"', ONLINE + r"\1/\2")):
+        html, n = re.subn(pat, 'href="' + to + '" target="_blank" rel="noopener"', html)
+        if not n:
+            raise SystemExit(f"editor.html must link {pat}; update make_site.py")
     for pat, what in ((r"<!--DL-->.*?<!--/DL-->", "<!--DL-->...<!--/DL-->"),       # (the file has no site
                       (r"<!--PWA-->.*?<!--/PWA-->", "<!--PWA-->...<!--/PWA-->"),    # around it: no app to
                       (r"/\*PWA\*/.*?/\*/PWA\*/", "/*PWA*/.../*/PWA*/"),           # install, no copy kept)
@@ -436,7 +451,7 @@ def monitor(channels, secs=2.5):
            "  @media (prefers-reduced-motion: reduce) { .ch { animation: none; } .ch:first-child { opacity: 1; } }")
     chs = "".join(f'<div class="ch" style="background-position: 0 {k * 100 / max(n - 1, 1):.4f}%; animation-delay: {k * secs:g}s">'
                   f'<b>{c["n"]:02d}/31 {c["name"]}</b></div>' for k, c in enumerate(channels))
-    html = ('<div class="display monitor" role="img" aria-label="The FM-1 webcam, changing modes: '
+    html = ('<div class="display monitor" role="img" aria-label="The FM-1\'s video, changing modes: '
             + ", ".join(c["name"] for c in channels) + '">' + chs + '</div>')
     return html, css
 
@@ -449,7 +464,7 @@ def app_files(out, version, fw_name):
         shutil.copy(HERE / f, app / f)
     manifest = {
         "name": "Synthesthetic", "short_name": "Synthesthetic", "id": "editor/", "start_url": "editor/", "scope": "./",
-        "display": "standalone", "background_color": "#000000", "theme_color": "#000000",
+        "display": "standalone", "background_color": "#fafaf8", "theme_color": "#fafaf8",
         "description": "The Synthesthetic editor and installer for the M-VAVE FM-1, available offline",
         "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                   {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
@@ -529,7 +544,7 @@ def main(pkg, version, out):
     for old in list(fw.glob("felucca-*.fwsc")) + list(fw.glob("sloop-*.fwsc")) + list(fw.glob("chromatone-*.fwsc")) + list(fw.glob("synthesthetic-*.fwsc")):   # one package: the current one
         old.unlink()
     shutil.copy(pkg, fw / name)
-    ed_html = (HERE / "editor.html").read_text(encoding="utf-8")
+    ed_html = editor_page((HERE / "editor.html").read_text(encoding="utf-8"), version)
     dl = f'download="synthesthetic-editor-{re.sub(r"[^A-Za-z0-9.-]", "-", version)}.html"'
     if ed_html.count('download="synthesthetic-editor.html"') != 1 or html.count('download="synthesthetic-editor.html"') != 1:
         raise SystemExit('editor.html and index_pkg.html must link download="synthesthetic-editor.html" once; update make_site.py')

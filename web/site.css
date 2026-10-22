@@ -1,6 +1,6 @@
   /* Synthesthetic's site, after a 1980s cassette inlay card. Each page is a printed card lying on a desk, with a spine
      down its left edge and panels divided by fold lines. It has Swiss typesetting, an extended face for labels, a band
-     of six color stripes, black windows onto the webcam picture and blocks of technical data. One theme, the printed
+     of six color stripes, black windows onto the FM-1's picture and blocks of technical data. One theme, the printed
      card. web/make_site.py inlines this file in every page.
      Layout: the front of the card is a 12-column grid with the same side padding in every panel, so column edges run
      unbroken from the top of the page to the bottom. A page splits its panels at one column (the installer at 7, the

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""The installer page's pictures, cut from the live webcam captures in docs/images (every frame a real 320 x 180
+"""The installer page's pictures, cut from the live video captures in docs/images (every frame a real 320 x 180
 frame the FM-1 sent):
   assets/site/channels.jpg    the hero monitor's channels, one under the other (web/make_site.py lays them out from
                               assets/site/channels.json and copies the picture next to the installer)
-  assets/site/title-bg.jpg    the frame behind the webcam title's preview (WARP, the default mode)
+  assets/site/title-bg.jpg    the frame behind the title overlay's preview (WARP, the default mode)
   assets/site/modes/NN.jpg    every mode, 01..31, for the installer page's gallery (its names and descriptions come
                               from HANDBOOK.md's table of the modes)
     tools/gen_site_assets.py

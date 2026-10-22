@@ -1,8 +1,10 @@
 # Synthesthetic handbook
 
-Synthesthetic is the first firmware that turns the M-VAVE FM-1 into a USB webcam. Plug your FM-1 into a computer and
-it shows up as a camera in OBS, Zoom, FaceTime and other video apps, playing 30 visualizers that react to your music.
-It needs no driver or capture card, and the FM-1 is still the same four-track groovebox.
+Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM-1 firmware that sends video to a
+computer over USB. Plug your FM-1 in, choose it from the camera list in OBS, Zoom, FaceTime or another video app, and
+you'll see 30 visualizers that react to your music. There's no camera in the FM-1. It's in that list because a USB
+camera is the standard way to get video onto a computer, so you don't need a driver or capture card. The FM-1 is still
+the same four-track groovebox.
 
 The name comes from synesthesia, aesthetic and synth.
 
@@ -15,7 +17,7 @@ Hügelton Instruments. This is a beta, so use it at your own risk.
 - Download releases and read the source code at [github.com/michaeljsmalley/synthesthetic](https://github.com/michaeljsmalley/synthesthetic).
 - Build it yourself, or see how it works inside, with [DEVELOPMENT.md](DEVELOPMENT.md).
 
-![The 30 picture modes, captured from the webcam while music was playing](docs/images/v3-modes-live.png)
+![The 30 picture modes, captured from the FM-1's USB video while music was playing](docs/images/v3-modes-live.png)
 
 ## Contents
 
@@ -25,7 +27,7 @@ Hügelton Instruments. This is a beta, so use it at your own risk.
 4. [The visualizer](#the-visualizer)
 5. [SCREEN mode](#screen-mode)
 6. [Autopilot and attract mode](#autopilot-and-attract-mode)
-7. [The webcam](#the-webcam)
+7. [USB video](#usb-video)
 8. [MIDI](#midi)
 9. [The web editor and installer](#the-web-editor-and-installer)
 10. [Play in the browser](#play-in-the-browser)
@@ -171,12 +173,12 @@ spectrum modes measure in decibels, from 0 dBFS at full height down to -60 dB at
 
 ## SCREEN mode
 
-With SCREEN selected, the webcam sends the FM-1's display as it looks, including every page, layer and menu you
+With SCREEN selected, the video shows the FM-1's display as it looks, including every page, layer and menu you
 open. It appears at three-quarter size (180 × 180) in the middle of the frame, with no overlay or effects, which works
 well for tutorials or for showing how you work during a set. The autopilot and attract mode never switch to or away
 from SCREEN.
 
-![The webcam on SCREEN showing the TRACKS page, and on WARP with a title](docs/images/screen-and-title-live.png)
+![The video on SCREEN showing the TRACKS page, and on WARP with a title](docs/images/screen-and-title-live.png)
 
 ## Autopilot and attract mode
 
@@ -192,12 +194,16 @@ Set it under VJ > ATTRACT in the menu to off, 30 seconds, or 1, 2 or 5 minutes (
 leave the TRACKS screen that long without touching anything, the visualizer opens by itself. Any button or key closes
 it again and does its normal job.
 
-## The webcam
+## USB video
 
-The camera is called Synthesthetic. It sends 320 × 180 MJPEG at 30 frames per second, the same picture as the
-visualizer, whether or not the visualizer is open on the screen. Photo Booth, QuickTime, OBS, Zoom and FaceTime all
-recognize it, and the 16:9 frame fits their previews without cropping. The MIDI port is still called Felucca,
-because that's the name installers and editors look for.
+The FM-1 has no camera, but it sends its video the way a USB camera does, using the standard USB video class (UVC).
+Every computer and video app already supports UVC, so the FM-1 appears in their camera lists with no driver or
+capture card. In those lists it's called Synthesthetic.
+
+It sends 320 × 180 MJPEG at 30 frames per second, the same picture as the visualizer, whether or not the visualizer
+is open on the screen. Photo Booth, QuickTime, OBS, Zoom and FaceTime all recognize it, and the 16:9 frame fits their
+previews without cropping. The MIDI port is still called Felucca, because that's the name installers and editors
+look for.
 
 It has only been tested on macOS so far. Windows and Linux use the same standard USB video driver, so they should
 work, but nobody has tried them yet.
@@ -217,7 +223,7 @@ work, but nobody has tried them yet.
 
 ### Camera controls
 
-Webcam settings apps show the FM-1's four camera controls as sliders. You can use OBS on Windows, `v4l2-ctl` on Linux,
+Any app that adjusts a camera shows the FM-1's four camera controls as sliders. You can use OBS on Windows, `v4l2-ctl` on Linux,
 a camera settings app on macOS, or `tools/fm1_uvcctl.py` from a terminal. Each control turns one of the visualizer's
 knobs.
 
@@ -230,7 +236,7 @@ knobs.
 
 ### The overlay
 
-The overlay appears on the webcam only, never on the FM-1's screen. Set it under VJ > OVERLAY in the menu.
+The overlay appears in the video only, never on the FM-1's screen. Set it under VJ > OVERLAY in the menu.
 
 - INFO shows the tempo, the bar and beat, the mode and palette names for a moment when they change, and a LIVE tag
   that blinks on the beat.
@@ -240,7 +246,7 @@ The overlay appears on the webcam only, never on the FM-1's screen. Set it under
 The title is SYNTHESTHETIC until you change it. It can be up to 19 characters long and is saved with your settings.
 You can set it in three ways.
 
-- On the installer page, in the Webcam title section. Type a title, choose what the overlay shows and press Send.
+- On the installer page, in the Title overlay section. Type a title, choose what the overlay shows and press Send.
   You don't need the editor for this.
 - On the web editor's VJ page, which reads the title, the overlay and every other visual setting from the FM-1 and
   sends your changes back.
@@ -277,13 +283,13 @@ edits sounds, sequences, songs, kits, samples and themes, and makes full backups
 downloaded file or installed as an app. Synthesthetic adds a VJ page for every visual setting, and backups include
 them.
 
-The installer page installs and updates Synthesthetic, sets the webcam title, and can take the FM-1 back to official
+The installer page installs and updates Synthesthetic, sets the title overlay, and can take the FM-1 back to official
 V15.
 
 ## Play in the browser
 
 [The Play page](https://michaeljsmalley.github.io/synthesthetic/play/) runs Synthesthetic on a 3D model of the
-FM-1. It's the actual firmware, compiled to WebAssembly, and the webcam picture plays next to the model.
+FM-1. It's the actual firmware, compiled to WebAssembly, and the video it sends plays next to the model.
 
 On your first visit, the FM-1 has a demo song loaded in song mode, about 107 seconds of Japanese fusion at 90 BPM in
 F major, in the spirit of Himiko Kikuchi and Masayoshi Takanaka. Press PLAY to hear it.
@@ -334,7 +340,7 @@ every camera, such as Camo Studio, then unplug the FM-1 and plug it back in.
 
 That's the app's preview. See [Things to know about video apps](#things-to-know-about-video-apps).
 
-### The webcam looks choppy in ffmpeg
+### The video looks choppy in ffmpeg
 
 That's a limit of ffmpeg's camera input on macOS. Check the frame rate in OBS or QuickTime instead.
 
@@ -351,12 +357,12 @@ from there. Its screen still says SLOOP USB RESCUE, because Synthesthetic keeps 
 Some early Dinghy builds missed the key on certain units because they read the keys before setting up the screen's
 pins. Synthesthetic includes the fix.
 
-### The visualizer says NO VIDEO CORE, or the webcam shows a test card
+### The visualizer says NO VIDEO CORE, or the video shows a test card
 
-The video core has stopped. Either an update was started and didn't finish, or the firmware was built without the
-webcam. Switch the FM-1 off and on again.
+The video core has stopped. Either an update was started and didn't finish, or the firmware was built without USB
+video. Switch the FM-1 off and on again.
 
-### The webcam title doesn't show
+### The title doesn't show
 
 Set the overlay to TITLE or INFO + TITLE. SCREEN mode never shows an overlay.
 
@@ -401,7 +407,7 @@ Synthesthetic is free software under version 3 of the GNU General Public License
 - [three.js](https://threejs.org) (MIT), which draws the 3D FM-1.
 - msfa by Google and Pascal Gauthier, by way of Dexed, for the FM6 engine (Apache-2.0).
 - The Terminus font by Dimitar Toshkov Zhekov (SIL OFL 1.1), the Fukiai icon font by Hügelton Instruments (MIT), and
-  Hanken Grotesk by Alfredo Marco Pradil (SIL OFL 1.1), the website's text face.
+  the website's typefaces, Archivo by Omnibus-Type and Michroma by Vernon Adams (both SIL OFL 1.1).
 - Samples from Versilian Studios' VSCO-2 Community Edition and VCSL and from Sonic Pi (CC0), and Felucca's own drum
   sounds, the Hügelton Sample Pack by Hügelton Instruments, for the PERC set. See `LICENSING.md`.
 - Three files from JieLi's AC79 SDK, under the Apache License 2.0, in `vendor/ac79-sdk-min`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """A soak of the video build on the unit: rounds of (a Program Change on channel 1, so the project changes and
-autosaves once quiet; notes for a while; a short webcam capture; silence long enough for the autosave), with
+autosaves once quiet; notes for a while; a short video capture; silence long enough for the autosave), with
 the video core's counters read after each round; every third round on SCREEN (the display's copy changes hands
 between the cores going in and out). Watches for: parks that fail (park_fail), the stream dying
 (no distinct frames), the MIDI side not answering (--info), USB resets.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
 """Synthesthetic's camera controls from the computer (UVC processing unit 3 on the video control interface):
-brightness = AMOUNT, saturation = RATE, contrast = TRAILS, hue = COLOR, each 0..255. What OBS or a webcam
+brightness = AMOUNT, saturation = RATE, contrast = TRAILS, hue = COLOR, each 0..255. What OBS or a camera
 settings app does with its sliders, from the command line (pyusb + libusb).
     .venv/bin/python tools/fm1_uvcctl.py                 read the four
     .venv/bin/python tools/fm1_uvcctl.py hue 200         set one (brightness, saturation, contrast, hue)"""

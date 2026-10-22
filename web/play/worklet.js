@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // The Play page's audio thread is the FM-1: Synthesthetic's firmware (synthesthetic.wasm, firmware/host/web.c) runs
 // here as on the FM-1's first core. The sound a block at a time; every 16 ms of it a pass of the main loop, whose
-// screen changes and LEDs go to the page; every 33 ms a webcam frame while the page shows the webcam; once a second
+// screen changes and LEDs go to the page; every 33 ms a video frame while the page shows the video; once a second
 // the flash image, if it changed, for the page to keep (IndexedDB). The page sends the panel, the knobs, MIDI and
-// the webcam's settings. Every 5 s the project goes into the flash image as autosave keeps it (the FM-1 waits for a
+// the video's settings. Every 5 s the project goes into the flash image as autosave keeps it (the FM-1 waits for a
 // stop to save; a page can close while it plays). FM1Engine runs in Node too (tests/web_test.mjs).
 const UI_FRAMES = 706, CAM_FRAMES = 1470, SAVE_FRAMES = 44100, FLUSH_FRAMES = 5 * 44100;   // 16 ms, 33 ms, 1 s, 5 s
 
@@ -79,7 +79,7 @@ export class FM1Engine {
     }
   }
 
-  camFrame() {                                        // the webcam's picture: 160 x 90 (SCREEN: the display's copy, 180 x 180)
+  camFrame() {                                        // the video's picture: 160 x 90 (SCREEN: the display's copy, 180 x 180)
     const screen = this.w.web_cam();
     if (screen > 1) return;
     const px = this.camPx.slice(0, screen ? 180 * 180 : 160 * 90);

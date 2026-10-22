@@ -32,12 +32,12 @@ Local changes to SLOOP so far:
 - `vendor/ac79-sdk-min/`: the three Apache-2.0 JieLi SDK files the package builder needs (hashes as SLOOP/Dinghy pin
   them) plus the SDK LICENSE. Build with `AC79_SDK=$PWD/vendor/ac79-sdk-min ./build.sh`.
 - **SCREEN, the fade, the VJ settings on the web (2026-10-20, evening):** `firmware/src/mirror.c` (new: the
-  display's 3/4 copy for the webcam, hooked into `lcd.c` `lcd_fill` / `lcd_blit`; `tools/gen_mirror.py` its
+  display's 3/4 copy for the video, hooked into `lcd.c` `lcd_fill` / `lcd_blit`; `tools/gen_mirror.py` its
   palette), `vcore.c` (the frames' RAM shared with the copy, the SCREEN handshake), `vjpeg.c` (a placed frame with
   black around it; flat blocks skip the DCT, bit for bit), `vrender.c` (SCREEN, the fade between modes instead of
   the channel change), `ui_vis.c` (SCREEN's card; the autopilot and the attract mode leave it alone);
   `editor.c` protocol 13: backup object 12, the visual settings (`web/editor.html` VJ page, `tools/fm1_vj.py`);
-  `usb.c` the overlay SysEx `F0 7D 56 43 07 n F7`; `web/index_pkg.html` the webcam title section and
+  `usb.c` the overlay SysEx `F0 7D 56 43 07 n F7`; `web/index_pkg.html` the title overlay section and
   Synthesthetic's own front text; `felucca.c` sets the video defaults before `lcd.c`.
 - **The visual engine v3 (2026-10-20):** `firmware/src/vproc.c` (per-frame palettes, the warp engine, the 14
   procedural modes, overlays, the fade between modes), `firmware/src/vis_set.h` (the visual settings, names, the
@@ -48,7 +48,7 @@ Local changes to SLOOP so far:
   `lcd.c` runs the screen's SPI at 30 MHz. The host budgets (`tests/target_budget.txt`, `tests/cpu_baseline.txt`)
   were rebased with this toolchain on the audio-only build: the upstream file dated from SLOOP 2.4 and already
   flagged the 2.7.1 audio interrupt.
-- **The webcam (fm1drome's own work, 2026-10-19/20):** `firmware/src/uvc_desc.h`, the UVC function in
+- **USB video (fm1drome's own work, 2026-10-19/20):** `firmware/src/uvc_desc.h`, the UVC function in
   `firmware/src/usb.c` (`FELUCCA_UVC=1`: EP4 isochronous IN, MJPEG 320×180, the audio input moves to EP3),
   `firmware/src/vjpeg.c` + `vjpeg_tables.h` (integer JPEG encoder), `firmware/src/vcore.c` (core 1 renders and
   encodes; park/resume around flash writes; `cpu1_taken` keeps the audio render on core 0),

@@ -1,13 +1,13 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
      The Play page (web/make_site.py -> play/index.html): Synthesthetic's firmware in the page (play/worklet.js,
-     play/synthesthetic.wasm from tools/build_web.py) on a 3D FM-1 (play/fm1-3d.js), its webcam picture beside it. -->
+     play/synthesthetic.wasm from tools/build_web.py) on a 3D FM-1 (play/fm1-3d.js), the video it sends beside it. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Synthesthetic virtual FM-1</title>
-<meta name="description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1 with your mouse, computer keyboard or a MIDI keyboard, and see the webcam picture it sends.">
+<meta name="description" content="Play Synthesthetic's firmware in your browser on a 3D FM-1 with your mouse, computer keyboard or a MIDI keyboard, and see the video it sends over USB.">
 <!--OG-->
 <meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
@@ -17,7 +17,7 @@
 <style>
 /*SITE-CSS*/
   /* The Play page, split at column 9: a one-line title, then the FM-1 as large as the card allows on the left and its
-     webcam window and settings on the right, all above the fold. The stripes run behind both, their bottom edge on
+     video window and settings on the right, all above the fold. The stripes run behind both, their bottom edge on
      the window's, as on the installer. Below, how to play it with the computer keyboard drawn out, then what runs
      here. */
   .stage-panel { padding-top: 28px; }
@@ -126,7 +126,7 @@
     <header class="bar">
       <div class="grid">
         <a class="logo" href="../webapp/installer/" aria-label="Synthesthetic"><!--LOGO--></a>
-        <nav aria-label="Site"><a href="../webapp/installer/#webcam">Webcam</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="./" aria-current="page">Play</a><a class="opt" href="../handbook/">Handbook</a></nav>
+        <nav aria-label="Site"><a href="../webapp/installer/#video">Video</a><a href="../webapp/installer/#modes">Modes</a><a href="../webapp/installer/#install">Install</a><a href="./" aria-current="page">Play</a><a class="opt" href="../handbook/">Handbook</a></nav>
       </div>
     </header>
     <main>
@@ -149,12 +149,12 @@
             <p class="note" id="power-note" hidden></p>
             <p class="note" id="midi-note" hidden></p>
           </div>
-          <aside class="cam" aria-label="The webcam">
+          <aside class="cam" aria-label="USB video">
             <div class="window">
               <div class="display monitor" id="monitor">
-                <canvas id="cam" width="320" height="180" aria-label="The webcam picture"></canvas>
+                <canvas id="cam" width="320" height="180" aria-label="The video the FM-1 sends over USB"></canvas>
                 <b class="chan" id="chan" hidden></b>
-                <button class="fs" id="fs" type="button" aria-label="Show the webcam full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+                <button class="fs" id="fs" type="button" aria-label="Show the video full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
               </div>
             </div>
             <div class="vj">
@@ -186,7 +186,7 @@
             <ul>
               <li>Press PLAY for the demo song.</li>
               <li>Tap HOME on the TRACKS screen to open the visualizer, then turn SELECT.</li>
-              <li>Pick SCREEN, the last mode, to send the display to the webcam.</li>
+              <li>Pick SCREEN, the last mode, to send the display itself as the video.</li>
             </ul>
           </div>
         </div>

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Capture the FM-1 webcam while it plays: frames from the 'Felucca' camera with ffmpeg (avfoundation) into a
+"""Capture the FM-1's USB video while it plays: frames from the 'Felucca' camera with ffmpeg (avfoundation) into a
 directory, a contact sheet of them, and the count of distinct frames (the delivered rate). Meanwhile, unless
 --quiet, notes go to the FM-1 over USB-MIDI so there is something to see (a bass line on channel 1, a chord on
-channel 2, drums on channel 10); --style N first selects the webcam's picture (SLOOP's visualiser style, 0..11).
+channel 2, drums on channel 10); --style N first selects the video's picture (SLOOP's visualiser style, 0..11).
     .venv/bin/python tools/fm1_capture.py build/cap --seconds 4 --style 0
 Needs: ffmpeg on the PATH, mido + python-rtmidi + Pillow in the venv, and no other app holding the camera."""
 import argparse

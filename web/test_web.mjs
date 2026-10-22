@@ -1826,7 +1826,7 @@ async function editorVj() {
     "visuals: the VJ page (title up to 19, Send from protocol 13, a flash error said as one)");
 }
 
-/* ------------------------------------- the installer's webcam title (index_pkg.html, Synthesthetic) --- */
+/* ------------------------------------- the installer's title overlay (index_pkg.html, Synthesthetic) --- */
 async function installerVj() {
   const page = readFileSync(join(HERE, "index_pkg.html"), "utf8");
   const strip = (src) => src.replace(/^export\s+/gm, "").replace(/^import .*?;\n/gm, "");
@@ -1870,10 +1870,10 @@ async function installerVj() {
     const dev = new FakeSyn("FM-1_951", true), { els, TEXT } = run(dev);
     ok(js(Object.keys(TEXT.en).sort()) === js(Object.keys(TEXT.ja).sort()) && [...page.matchAll(/data-t="(\w+)"/g)].every((m) => m[1] in TEXT.en)
       && ["vjOv0", "vjOv1", "vjOv2", "vjOv3", "vjSent", "vjNotOurs", "vjNoVideo"].every((k) => k in TEXT.en),
-      "installer: every string in English and Japanese, the webcam title's too");
+      "installer: every string in English and Japanese, the title overlay's too");
     const prev = els.get("vj-prev");
     ok(els.get("vj-ov").kids.length === 4 && els.get("vj-ov").value === "2" && prev.kids.length === 13 && prev.textContent === "SYNTHESTHETIC",
-      "installer: webcam title: overlay choices (Title first), a rainbow preview of SYNTHESTHETIC");
+      "installer: title overlay: overlay choices (Title first), a rainbow preview of SYNTHESTHETIC");
     els.get("vj-text").value = "Night shift ✨ live!!"; els.get("vj-ov").value = "3";
     els.get("vj-text").on.input();
     await els.get("vj-go").on.click();
@@ -1881,7 +1881,7 @@ async function installerVj() {
     const t6 = sent(dev, 6), t7 = sent(dev, 7);
     ok(sent(dev, 1) && t6 && String.fromCharCode(...t6.slice(5, -1)) === "NIGHT SHIFT ? LIVE!" && t7 && t7.length === 7 && t7[5] === 3
       && /^Sent/.test(els.get("vj-status").textContent) && prev.kids.length === 19 && !els.get("vj-go").disabled,
-      "installer: webcam title: video build asked (01), title (06, capitals, ASCII, 19) and overlay (07 3) sent");
+      "installer: title overlay: video build asked (01), title (06, capitals, ASCII, 19) and overlay (07 3) sent");
   }
   {   /* step 1 of the install: what the FM-1 answers with, and what that means for installing over it */
     const cases = [["FM-1_951", /reports FM-1_951\. It's running Synthesthetic 0\.1\. Installing updates it/], ["FM-1_950", /Synthesthetic \(a development build\)/],
@@ -1903,9 +1903,9 @@ async function installerVj() {
     const c = run(null);
     await c.els.get("vj-go").on.click();
     await sleep(10);
-    ok(!sent(audio, 6) && /without the webcam/.test(a.els.get("vj-status").textContent) && !sloop.vc.length
+    ok(!sent(audio, 6) && /without USB video/.test(a.els.get("vj-status").textContent) && !sloop.vc.length
       && /different firmware \(FM-1_927\)/.test(b.els.get("vj-status").textContent) && /wasn't allowed/.test(c.els.get("vj-status").textContent),
-      "installer: webcam title: an audio-only build, another firmware, no MIDI: said so, nothing sent");
+      "installer: title overlay: an audio-only build, another firmware, no MIDI: said so, nothing sent");
   }
 }
 

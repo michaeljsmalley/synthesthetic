@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# The site's tests on every push and pull request: the web pages (web/test_web.mjs), the site build with the offline
+# editor and the link previews (tests/site_test.py), and the firmware the Play page runs (tests/web_test.mjs, on the
+# published docs/play/synthesthetic.wasm). The firmware's host tests (tests/run_tests.sh) need a device build, made
+# with the JieLi toolchain, so they stay local.
+name: Tests
+on:
+  push:
+  pull_request:
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: The published Play page firmware, where the site build looks for it
+        run: mkdir -p build/web && cp docs/play/synthesthetic.wasm build/web/
+      - name: Web pages (editor protocol, samples, packages, installer)
+        run: node web/test_web.mjs
+      - name: The site build, the offline editor and the link previews
+        run: python3 tests/site_test.py
+      - name: The firmware on the Play page (boot, keys, sound, LEDs, every video mode)
+        run: node tests/web_test.mjs docs/play/synthesthetic.wasm

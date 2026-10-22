@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-only
-"""Set the title card's text on a running Synthesthetic (the webcam's overlay, menu VJ > OVERLAY = TITLE or
+"""Set the title card's text on a running Synthesthetic (the video's overlay, menu VJ > OVERLAY = TITLE or
 INFO+TITLE): F0 7D 56 43 06 <text> F7 over USB-MIDI. Up to 19 characters; the FM-1 keeps it with its settings.
 --overlay off|info|title|both also sets the overlay (F0 7D 56 43 07 n F7). The editor's VJ page and the
 installer page set both too.

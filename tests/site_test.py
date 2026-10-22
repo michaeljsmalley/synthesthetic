@@ -117,7 +117,7 @@ try:
     # the link previews (iMessage, Facebook, Slack, X): every page names the 1200 x 630 image by its full URL
     import struct
     pages = {"root": tmp / "site" / "index.html", "installer": app / "installer" / "index.html", "play": play / "index.html",
-             "handbook": tmp / "site" / "handbook" / "index.html"}
+             "handbook": tmp / "site" / "handbook" / "index.html", "editor": app / "editor" / "index.html"}
     og = (tmp / "site" / "og.png").read_bytes() if (tmp / "site" / "og.png").exists() else b""
     check("previews: og.png at the root, 1200 x 630", og[:8] == b"\x89PNG\r\n\x1a\n" and struct.unpack(">II", og[16:24]) == (1200, 630))
     for name, f in pages.items():

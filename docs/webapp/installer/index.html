@@ -6,15 +6,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Synthesthetic installer</title>
-<meta name="description" content="Synthesthetic is the first firmware that turns the M-VAVE FM-1 into a USB webcam, with 30 audio-reactive visualizers drawn from your music. Install it from this page.">
+<meta name="description" content="Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM-1 firmware that sends video over USB, so its 30 visualizers show up as a camera in OBS, Zoom and FaceTime. Install it from this page.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Synthesthetic">
-<meta property="og:title" content="Synthesthetic turns your M-VAVE FM-1 into a USB webcam">
-<meta property="og:description" content="The first FM-1 firmware with video over USB. 30 visualizers react to your music in OBS, Zoom, FaceTime and more. Install it from Chrome or Edge.">
+<meta property="og:title" content="Synthesthetic, an audio/video synth for the M-VAVE FM-1">
+<meta property="og:description" content="The first FM-1 firmware that sends video over USB. Its 30 visualizers react to your music and show up as a camera in OBS, Zoom, FaceTime and more.">
 <meta property="og:image" content="https://michaeljsmalley.github.io/synthesthetic/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The Synthesthetic logo, the words USB video out for the M-VAVE FM-1, and a visualizer playing in a black window over rainbow stripes">
+<meta property="og:image:alt" content="The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1, and a visualizer playing in a black window over rainbow stripes">
 <meta name="twitter:card" content="summary_large_image">
 <!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#e2e2de"><link rel="icon" href="../icon-192.png"><!--/PWA-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,7 +23,7 @@
 <style>
   /* Synthesthetic's site, after a 1980s cassette inlay card. Each page is a printed card lying on a desk, with a spine
      down its left edge and panels divided by fold lines. It has Swiss typesetting, an extended face for labels, a band
-     of six color stripes, black windows onto the webcam picture and blocks of technical data. One theme, the printed
+     of six color stripes, black windows onto the FM-1's picture and blocks of technical data. One theme, the printed
      card. web/make_site.py inlines this file in every page.
      Layout: the front of the card is a 12-column grid with the same side padding in every panel, so column edges run
      unbroken from the top of the page to the bottom. A page splits its panels at one column (the installer at 7, the
@@ -175,9 +175,9 @@
     .rainbow { animation: none; }
   }
 
-  /* The installer: words in columns 1 to 5, pictures and data in 7 to 12, the same in every panel. The hero: the title and the webcam window on one band, the stripes running
+  /* The installer: words in columns 1 to 5, pictures and data in 7 to 12, the same in every panel. The hero: the title and the video window on one band, the stripes running
      behind the window to both edges of the card. Under them the words and the technical data on the left, and on the
-     right the 31 modes, right under the window that shows them. Then the webcam, the install, the instrument, the
+     right the 31 modes, right under the window that shows them. Then the video on your computer, the install, the instrument, the
      tools and the way back to V15. */
   .hero { padding-top: 32px; }
   .band { position: relative; }
@@ -315,7 +315,7 @@
 <path d="M100.0,100.0 L52.0,16.9 A96.0,96.0 0 0 1 100.0,4.0 Z" fill="#FF148A"/>
 <circle cx="100.0" cy="100.0" r="62.0" fill="#000"/>
 <polyline points="49.2,100.0 52.3,94.9 55.5,90.0 58.7,85.5 61.9,81.6 65.0,78.3 68.2,75.9 71.4,74.5 74.6,74.0 77.8,74.5 80.9,75.9 84.1,78.3 87.3,81.6 90.5,85.5 93.6,90.0 96.8,94.9 100.0,100.0 103.2,105.1 106.4,110.0 109.5,114.5 112.7,118.4 115.9,121.7 119.1,124.1 122.2,125.5 125.4,126.0 128.6,125.5 131.8,124.1 135.0,121.7 138.1,118.4 141.3,114.5 144.5,110.0 147.7,105.1 150.8,100.0" fill="none" stroke="#F2F2F2" stroke-width="7.1" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="word brand rainbow" aria-hidden="true"><span style="--o: 0">S</span><span style="--o: 20">Y</span><span style="--o: 40">N</span><span style="--o: 60">T</span><span style="--o: 80">H</span><span style="--o: 100">E</span><span style="--o: 120">S</span><span style="--o: 140">T</span><span style="--o: 160">H</span><span style="--o: 180">E</span><span style="--o: 200">T</span><span style="--o: 220">I</span><span style="--o: 240">C</span></span></a>
-        <nav aria-label="Site"><a href="#webcam" data-t="navWebcam"></a><a href="#modes" data-t="navModes"></a><a href="#install" data-t="navInstall"></a><a href="../../play/" data-t="navPlay"></a><a class="opt" href="../../handbook/" data-t="navHandbook"></a><button id="lang" type="button"></button></nav>
+        <nav aria-label="Site"><a href="#video" data-t="navVideo"></a><a href="#modes" data-t="navModes"></a><a href="#install" data-t="navInstall"></a><a href="../../play/" data-t="navPlay"></a><a class="opt" href="../../handbook/" data-t="navHandbook"></a><button id="lang" type="button"></button></nav>
       </div>
     </header>
     <main id="top">
@@ -326,7 +326,7 @@
           <div class="titles"><h1 id="hero-h" data-t="heroHead"></h1><p class="label" data-t="heroSub"></p></div>
           <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="window">
-            <div class="display monitor" role="img" aria-label="The FM-1 webcam, changing modes: WARP, KALEIDO, FIRE, SCREEN, LAVA, SPIRAL, FRESNEL, WIREFRAME, PLASMA, KIT, TUNNEL, BARS"><div class="ch" style="background-position: 0 0.0000%; animation-delay: 0s"><b>17/31 WARP</b></div><div class="ch" style="background-position: 0 9.0909%; animation-delay: 2.5s"><b>20/31 KALEIDO</b></div><div class="ch" style="background-position: 0 18.1818%; animation-delay: 5s"><b>25/31 FIRE</b></div><div class="ch" style="background-position: 0 27.2727%; animation-delay: 7.5s"><b>31/31 SCREEN</b></div><div class="ch" style="background-position: 0 36.3636%; animation-delay: 10s"><b>27/31 LAVA</b></div><div class="ch" style="background-position: 0 45.4545%; animation-delay: 12.5s"><b>07/31 SPIRAL</b></div><div class="ch" style="background-position: 0 54.5455%; animation-delay: 15s"><b>30/31 FRESNEL</b></div><div class="ch" style="background-position: 0 63.6364%; animation-delay: 17.5s"><b>29/31 WIREFRAME</b></div><div class="ch" style="background-position: 0 72.7273%; animation-delay: 20s"><b>24/31 PLASMA</b></div><div class="ch" style="background-position: 0 81.8182%; animation-delay: 22.5s"><b>09/31 KIT</b></div><div class="ch" style="background-position: 0 90.9091%; animation-delay: 25s"><b>10/31 TUNNEL</b></div><div class="ch" style="background-position: 0 100.0000%; animation-delay: 27.5s"><b>02/31 BARS</b></div></div>
+            <div class="display monitor" role="img" aria-label="The FM-1's video, changing modes: WARP, KALEIDO, FIRE, SCREEN, LAVA, SPIRAL, FRESNEL, WIREFRAME, PLASMA, KIT, TUNNEL, BARS"><div class="ch" style="background-position: 0 0.0000%; animation-delay: 0s"><b>17/31 WARP</b></div><div class="ch" style="background-position: 0 9.0909%; animation-delay: 2.5s"><b>20/31 KALEIDO</b></div><div class="ch" style="background-position: 0 18.1818%; animation-delay: 5s"><b>25/31 FIRE</b></div><div class="ch" style="background-position: 0 27.2727%; animation-delay: 7.5s"><b>31/31 SCREEN</b></div><div class="ch" style="background-position: 0 36.3636%; animation-delay: 10s"><b>27/31 LAVA</b></div><div class="ch" style="background-position: 0 45.4545%; animation-delay: 12.5s"><b>07/31 SPIRAL</b></div><div class="ch" style="background-position: 0 54.5455%; animation-delay: 15s"><b>30/31 FRESNEL</b></div><div class="ch" style="background-position: 0 63.6364%; animation-delay: 17.5s"><b>29/31 WIREFRAME</b></div><div class="ch" style="background-position: 0 72.7273%; animation-delay: 20s"><b>24/31 PLASMA</b></div><div class="ch" style="background-position: 0 81.8182%; animation-delay: 22.5s"><b>09/31 KIT</b></div><div class="ch" style="background-position: 0 90.9091%; animation-delay: 25s"><b>10/31 TUNNEL</b></div><div class="ch" style="background-position: 0 100.0000%; animation-delay: 27.5s"><b>02/31 BARS</b></div></div>
             <div class="display pick" id="mode-screen" hidden><span class="id" id="mode-id"></span></div>
           </div>
         </div>
@@ -350,10 +350,10 @@
         </div>
       </section>
 
-      <section class="panel" id="webcam" aria-labelledby="cam-h">
+      <section class="panel" id="video" aria-labelledby="cam-h">
         <div class="grid split">
           <div class="l">
-            <div class="head"><h2 id="cam-h" data-t="camHead"></h2></div>
+            <div class="head"><h2 id="cam-h" data-t="camHead"></h2><p data-t="camSub"></p></div>
             <ol class="numbered"><li><span data-t="cam1"></span></li><li><span data-t="cam2"></span></li><li><span data-t="cam3"></span></li></ol>
             <div class="titlectl">
               <h3 id="vj-h" data-t="vjHead"></h3>
@@ -407,7 +407,7 @@
                 <span class="num" aria-hidden="true">3</span>
                 <div class="step-body">
                   <h3 data-t="s3Head"></h3>
-                  <ul class="next"><li data-t="next1"></li><li data-t="next2"></li><li><a href="#webcam" data-t="next3"></a></li></ul>
+                  <ul class="next"><li data-t="next1"></li><li data-t="next2"></li><li><a href="#video" data-t="next3"></a></li></ul>
                 </div>
               </li>
             </ol>
@@ -791,9 +791,9 @@ const TEXT = {
     foreign: "FM-1 は別のファームウェア（{v}）の書き込みモードです。M-UPGRADE で書き込みを終えてから、もう一度「インストール」を押してください。",
     badpkg: "ファームウェアのファイルが壊れています。ページを再読み込みしてやり直してください。",
     leave: "書き込み中です。このページを閉じないでください。",
-    spine: "M-VAVE FM-1 用 USB ビデオファームウェア",
-    navWebcam: "Webカメラ", navModes: "モード", navInstall: "インストール", navPlay: "試奏", navHandbook: "ハンドブック",
-    heroHead: "USB ビデオ出力",
+    spine: "M-VAVE FM-1 用 音と映像のシンセ",
+    navVideo: "映像", navModes: "モード", navInstall: "インストール", navPlay: "試奏", navHandbook: "ハンドブック",
+    heroHead: "音と映像のシンセ",
     heroSub: "M-VAVE FM-1 用",
     heroLede: "Synthesthetic は音楽を映像に変えます。USB で映像を送れる初めての FM-1 ファームウェアで、お使いの FM-1 を OBS、Zoom、FaceTime などのカメラとして使えます。",
     ctaInstall: "インストール", ctaPlay: "ブラウザで試す",
@@ -802,17 +802,18 @@ const TEXT = {
     modesHint: "タップまたはホバーで、ビジュアライザーのサンプルを表示します",
     grpScopes: "スコープ", grpPatterns: "パターン", grpDrums: "ドラム", grpFeedback: "フィードバック", grpDemoscene: "デモシーン", grpScreen: "スクリーン",
     modeScreen: "FM-1 の画面をそのまま送ります。演奏や操作の解説を配信できます。",
-    camHead: "Web カメラとして使う",
+    camHead: "パソコンで映像を使う",
+    camSub: "FM-1 にカメラは付いていません。カメラとして表示されるのは、ドライバーやキャプチャーボードなしでパソコンに映像を送る標準の方法だからです。",
     cam1: "データ通信用の USB ケーブルで FM-1 をパソコンにつなぎます。",
     cam2: "OBS、Zoom、Photo Booth などのビデオアプリで「Synthesthetic」というカメラを選びます。",
     cam3: "演奏すると、映像が音楽に合わせて動きます。SELECT でモードが変わります。",
-    vjHead: "Web カメラのタイトル",
+    vjHead: "映像に重ねるタイトル",
     vjHelp: "オーバーレイがオンのとき、映像に重ねて表示されます。FM-1 の設定として保存されます。",
     vjOvLabel: "重ねて表示する内容", vjOv0: "表示しない", vjOv1: "情報（モード・BPM）", vjOv2: "タイトル", vjOv3: "情報とタイトル",
     vjGo: "FM-1 に送る", vjSent: "{v} を FM-1 に送りました。FM-1 の設定として保存されます。", vjSentNone: "送信しました。タイトルは空です。",
     vjHidden: "この設定ではタイトルは表示されません。",
     vjNotOurs: "この FM-1 には別のファームウェア（{v}）が入っています。先に Synthesthetic をインストールしてください。",
-    vjNoVideo: "この FM-1 のビルドには Web カメラ機能がありません。",
+    vjNoVideo: "この FM-1 のビルドには USB ビデオ機能がありません。",
     installHead: "インストール",
     installSub: "Chrome か Edge で約 2 分です。プロジェクト、プリセット、サンプルはそのまま残ります。",
     s1Head: "FM-1 を確認",
@@ -834,7 +835,7 @@ const TEXT = {
     s3Head: "使ってみる",
     next1: "TRACKS 画面で HOME をタップするとビジュアライザーが開きます。SELECT でモードが変わります。",
     next2: "OBS、Zoom、Photo Booth などで「Synthesthetic」というカメラを選びます。",
-    next3: "Web カメラにタイトルを付ける",
+    next3: "映像にタイトルを付ける",
     notesHead: "インストールの前に",
     careBackup: "初めてカスタムファームウェアを入れる前に、フラッシュ全体をバックアップしてください。",
     howLink: "バックアップの方法",
@@ -884,9 +885,9 @@ const TEXT = {
     foreign: "The FM-1 is in update mode for another firmware ({v}). Finish that update with M-UPGRADE, then press Install again.",
     badpkg: "The firmware file is damaged. Reload the page and try again.",
     leave: "Writing. Keep this page open.",
-    spine: "USB video firmware for the M-VAVE FM-1",
-    navWebcam: "Webcam", navModes: "Modes", navInstall: "Install", navPlay: "Play", navHandbook: "Handbook",
-    heroHead: "USB video out",
+    spine: "Audio/video synth for the M-VAVE FM-1",
+    navVideo: "Video", navModes: "Modes", navInstall: "Install", navPlay: "Play", navHandbook: "Handbook",
+    heroHead: "Audio/\u2060video synth",     /* (a word joiner: the line breaks before synth, never after the slash) */
     heroSub: "For the M-VAVE FM-1",
     heroLede: "Synthesthetic transforms your music into a visual experience. It's the first FM-1 firmware that sends video over USB, so your FM-1 shows up as a camera in OBS, Zoom, FaceTime, and more…",
     ctaInstall: "Install", ctaPlay: "Try it in the browser",
@@ -895,17 +896,18 @@ const TEXT = {
     modesHint: "Tap or hover to preview a visualization sample",
     grpScopes: "Scopes", grpPatterns: "Patterns", grpDrums: "Drums", grpFeedback: "Feedback", grpDemoscene: "Demoscene", grpScreen: "Screen",
     modeScreen: "Sends the FM-1's own display, for streaming a set or a tutorial.",
-    camHead: "Use it as a webcam",
+    camHead: "Video on your computer",
+    camSub: "There's no camera in the FM-1. It shows up as one because that's the standard way to get video onto a computer without a driver or capture card.",
     cam1: "Plug the FM-1 into your computer with a USB data cable.",
     cam2: "Choose the camera named Synthesthetic in OBS, Zoom, Photo Booth or any other video app.",
     cam3: "Play. The picture follows your music, and SELECT changes the mode.",
-    vjHead: "Webcam title",
+    vjHead: "Title overlay",
     vjHelp: "Shows over the picture when the overlay is on. The FM-1 keeps it with its settings.",
     vjOvLabel: "What the overlay shows", vjOv0: "Nothing", vjOv1: "Info (mode, BPM)", vjOv2: "Title", vjOv3: "Info and title",
     vjGo: "Send to the FM-1", vjSent: "Sent {v} to the FM-1. It's saved with the FM-1's settings.", vjSentNone: "Sent. The title is empty.",
     vjHidden: "The overlay won't show the title.",
     vjNotOurs: "This FM-1 is running a different firmware ({v}). Install Synthesthetic first.",
-    vjNoVideo: "This FM-1 is running a build without the webcam.",
+    vjNoVideo: "This FM-1 is running a build without USB video.",
     installHead: "Install",
     installSub: "It takes about two minutes in Chrome or Edge. Your projects, presets and samples are kept.",
     s1Head: "Check your FM-1",
@@ -927,7 +929,7 @@ const TEXT = {
     s3Head: "Play",
     next1: "Tap HOME on the TRACKS screen to open the visualizer. SELECT changes the mode.",
     next2: "Pick the camera named Synthesthetic in OBS, Zoom or Photo Booth.",
-    next3: "Give the webcam a title",
+    next3: "Put a title on the video",
     notesHead: "Before you install",
     careBackup: "Back up the whole flash before you install a custom firmware for the first time.",
     howLink: "How to back up",
@@ -990,10 +992,10 @@ let statusId = "status";                              /* the install's status li
 const sayK = (k, arg = "", tone = "") => show(statusId, () => fmt(k, arg), tone);
 const log = (s) => { $("log").textContent += s + "\n"; $("logbox").hidden = false; };
 
-/* Synthesthetic: the webcam's title card. The FM-1 is also a USB webcam; its overlay can show a title (and the
+/* Synthesthetic: the video's title card. The FM-1 sends its video as a USB camera; its overlay can show a title (and the
    mode / BPM). Sent as the video core's SysEx (web/EDITOR_PROTOCOL.md, v13): F0 7D 56 43 06 <text> F7 the title
    (ASCII, up to 19), 07 n the overlay (0 off, 1 info, 2 title, 3 both); both kept with the FM-1's settings.
-   01 asks the video core's counters: only a build with the webcam answers (02 ...), so it is asked first. */
+   01 asks the video core's counters: only a build with USB video answers (02 ...), so it is asked first. */
 const VJ_OURS = (id) => /^FM-1_9[5-9]\d$/i.test(id.text);   /* Synthesthetic's identities (tools/build.py PRODUCT) */
 const vjClean = (s) => String(s || "").toUpperCase().replace(/[^\x20-\x7E]/g, "?").slice(0, 19);
 const vjSay = (k, arg = "", tone = "") => show("vj-status", () => fmt(k, arg), tone);
@@ -1024,7 +1026,7 @@ function vjLang() {
 }
 $("vj-text").addEventListener("input", vjPreview);
 $("vj-ov").addEventListener("change", vjPreview);
-async function vjVideo(link) {                       /* does this build have the webcam? */
+async function vjVideo(link) {                       /* does this build have USB video? */
   link.drain();
   if (!link.send([0xF0, 0x7D, 0x56, 0x43, 0x01, 0xF7])) return false;
   const end = Date.now() + 1500;
@@ -1248,7 +1250,7 @@ $("stock-go").addEventListener("click", async () => {
   lockAll(false);
 });
 /* the 31 modes under the window: point at one (or focus it, or tap it) and the window shows its frame; move away and
-   the window goes back to the webcam's own picture. A tap keeps the frame until the next tap. */
+   the window goes back to the video's own picture. A tap keeps the frame until the next tap. */
 {
   const pick = $("mode-screen"), id = $("mode-id"), list = $("modes");
   let pinned = null;

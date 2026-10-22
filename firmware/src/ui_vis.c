@@ -231,13 +231,13 @@ static void vis_bars_draw(void)                         /* the top bar: the mode
     vis_bars_due = 0;
 }
 
-/* SCREEN: the webcam shows this display; the picture's place says so (the name's colours turning) */
+/* SCREEN: the USB video shows this display; the picture's place says so (the name's colours turning) */
 static void vis_screen_card(void)
 {
     if (!vis_card) {
         vis_card = 1;
         cv_begin(240, VIS_PH - 48u, C_BLACK);
-        cv_text(120 - text_w(&FONT_S, "THE WEBCAM SHOWS") / 2, 6, &FONT_S, "THE WEBCAM SHOWS", C_DIM);
+        cv_text(120 - text_w(&FONT_S, "USB VIDEO SHOWS") / 2, 6, &FONT_S, "USB VIDEO SHOWS", C_DIM);
         cv_text(120 - text_w(&FONT_S, "THIS DISPLAY") / 2, 26, &FONT_S, "THIS DISPLAY", C_WHITE);
         cv_text(120 - text_w(&FONT_S, "ANY PAGE STREAMS LIVE") / 2, 60, &FONT_S, "ANY PAGE STREAMS LIVE", C_AMB);
         cv_blit(0, VIS_Y + 48u);

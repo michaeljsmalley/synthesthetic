@@ -481,11 +481,11 @@ little-endian), always listed:
 | bytes | field |
 | --- | --- |
 | 0..3 | magic "VIS1" (0x31534956) |
-| 4 | mode 0..30 (`VIS_NAME`: 0..15 the classic modes, 16..29 the procedural ones, 30 SCREEN: the webcam shows the display itself; 16 WARP is the default) |
+| 4 | mode 0..30 (`VIS_NAME`: 0..15 the classic modes, 16..29 the procedural ones, 30 SCREEN: the video shows the display itself; 16 WARP is the default) |
 | 5 | palette 0..8 (SPECTRUM NEON FIRE OCEAN CRT VAPOR ACID THERMAL MONO) |
 | 6 | autopilot 0 off, 1..4 a new picture every 4, 8, 16, 32 bars |
 | 7 | attract 0 off, 1..4 the visualiser opens after 30 s, 1, 2, 5 min idle |
-| 8 | the webcam overlay: 0 off, 1 INFO, 2 TITLE, 3 both |
+| 8 | the video's overlay: 0 off, 1 INFO, 2 TITLE, 3 both |
 | 9 | the visuals' MIDI channel: 0 off, 1..16 |
 | 10..11 | reserved (0) |
 | 12..15 | the knobs AMOUNT, RATE, TRAILS, COLOR, 0..255 |
@@ -506,8 +506,8 @@ v13 answers its begin with rc 5: the editor skips it. The editor's VJ page reads
 | `F0 7D 56 43 01 F7` | the video core's counters: answered `F0 7D 56 43 02` + 40 × 32-bit values as nibbles, low first (`tools/fm1_vcdiag.py`) |
 | `F0 7D 56 43 03 F7` / `04` | stop / start the video core (before and after an install) |
 | `F0 7D 56 43 05 n F7` | show mode n (0..30) now (a test hook: not saved) |
-| `F0 7D 56 43 06 <text> F7` | the webcam title card's text: up to 19 bytes, 0x20..0x7E (others become ?); kept with the settings |
-| `F0 7D 56 43 07 n F7` | the webcam overlay: 0 off, 1 INFO, 2 TITLE, 3 both; kept with the settings |
+| `F0 7D 56 43 06 <text> F7` | the video's title card text: up to 19 bytes, 0x20..0x7E (others become ?); kept with the settings |
+| `F0 7D 56 43 07 n F7` | the video's overlay: 0 off, 1 INFO, 2 TITLE, 3 both; kept with the settings |
 
 ## Notes for the editor
 
