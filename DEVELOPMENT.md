@@ -114,6 +114,8 @@ push a firmware change.
 | Tool | What it does |
 | --- | --- |
 | `build_web.py` | Builds the browser version of the firmware (`firmware/host/web.c`) into the Play page's `synthesthetic.wasm` |
+| `songlib.py` | Writes a song for the Play page in Python, as the FM-1's own sections, steps and song mode. The demo is `tools/songs/demo.py` |
+| `song_render.mjs` | Renders a song with the browser build to a WAV file, each track on its own if you ask, with every section's level |
 | `fm1_install.py` | Installs a package over USB-MIDI. With `--info`, it shows what the FM-1 is running |
 | `fm1_vj.py` | Reads and changes every visual setting |
 | `fm1_title.py` | Sets the title and the overlay |

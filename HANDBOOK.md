@@ -291,17 +291,20 @@ V15.
 [The Play page](https://michaeljsmalley.github.io/synthesthetic/play/) runs Synthesthetic on a 3D model of the
 FM-1. It's the actual firmware, compiled to WebAssembly, and the video it sends plays next to the model.
 
-On your first visit, the FM-1 has a demo song loaded in song mode, about 107 seconds of Japanese fusion at 90 BPM in
-F major, in the spirit of Himiko Kikuchi and Masayoshi Takanaka. Press PLAY to hear it.
+On your first visit, the FM-1 has a demo song loaded in song mode, about two minutes of 80s dance pop at 116 BPM in
+D minor, in the spirit of Michael Jackson's records from the Thriller and Bad years. Press PLAY to hear it.
 
 | Section | Bars | What happens |
 | --- | --- | --- |
-| D, intro | 4 | The TINE EP plays Bbmaj9, Am11, Gm9 and C13 over a dusty hi-hat, then the bass and the beat come in and the lead leads into the verse |
-| A, verse | 8 | A breezy I-IV vamp, Fmaj9 and Bbmaj9, with FM BASS pushing into each bar, rim clicks on the clave and the G-FUNK LD theme |
-| B, chorus | 8 | City pop's "royal road" progression, Bbmaj9, C9sus4 to C9, Am11 and Dm9, with the backbeat in and the lead doubled an octave up |
+| B, chorus | 4 | The song opens on the chorus's loop, with a SYN BRASS hit on the first beat |
+| A, verse | 8 | A ROUND BASS riff holds D while the DARK STR strings move from Dm9 to G9 above it, and the brass hits the end of each phrase |
+| C, pre-chorus | 4 | Gm7, Am7, Bbmaj7 and A7sus4 to A7, with the bass climbing, a brass hit on every chord and the claps rolling into the chorus |
+| B, chorus | 8 | Dm7, C, Bb and A7, with the TINE EP's riff and four on the floor, ending with the whole band hitting together before a tom fill |
 | A, verse | 8 | |
-| C, bridge | 4 | Dbmaj9 and Ebmaj9, then Cm9 to F13 into the last chorus, in half time on the ride, under a lead solo |
-| B, chorus | 8 | After the chorus the song starts again from the intro |
+| C, pre-chorus | 4 | |
+| B, chorus | 8 | |
+| D, breakdown | 8 | The bass riff under held strings, with claps and a rim pattern, then four brass hits into the last chorus |
+| B, chorus | 8 | After the last chorus the song starts again from the top |
 
 STOP brings the tracks back to the verse, so you can edit it or play along. To loop the verse instead, hold SAVE and
 press white key 13 to switch from SONG to LOOP.

@@ -183,9 +183,12 @@ function drawCam({ screen, px, rgb }) {
     cx.drawImage(pic, 0, 0, 320, 180);
   }
 }
-const camVisible = { on: true };
-new IntersectionObserver((es) => { camVisible.on = es[0].isIntersecting; send({ t: 'cam', on: camWanted() }); }).observe($('monitor'));
-const camWanted = () => camVisible.on && !document.hidden;
+// the video core runs while its picture shows: on the monitor, or on the FM-1's own screen, whose visualiser draws
+// the same frames (with the monitor scrolled away and the FM-1 in view, it held its last frame)
+const camVisible = { monitor: true, stage: true };
+for (const k of ['monitor', 'stage'])
+  new IntersectionObserver((es) => { camVisible[k] = es[0].isIntersecting; send({ t: 'cam', on: camWanted() }); }).observe($(k));
+const camWanted = () => (camVisible.monitor || camVisible.stage) && !document.hidden;
 $('fs').addEventListener('click', () => {
   const mon = $('monitor');
   if (document.fullscreenElement) document.exitFullscreen(); else (mon.requestFullscreen || mon.webkitRequestFullscreen)?.call(mon);
@@ -255,8 +258,8 @@ function midiIn(e) {
 }
 
 // ------------------------------------------------------------------ the flash image: kept in this browser (IndexedDB)
-// (v3: the demo song in song mode; an image saved before it, while the page was being made, is left unread)
-const IMAGE = 'image-v5';
+// (a new demo song gets a new name: an image saved before it is left unread, so every visitor's FM-1 has the song)
+const IMAGE = 'image-v6';
 function db() {
   return new Promise((res, rej) => {
     const r = indexedDB.open('synthesthetic-play', 1);

@@ -5,6 +5,7 @@ WebAssembly, for the Play page (web/play/). No JieLi SDK, Docker or FM-1 needed:
 or clang with wasm-ld.
 
   python3 tools/build_web.py [--release 0.1]      -> build/web/synthesthetic.wasm
+  python3 tools/build_web.py --song tools/songs/x.py --out build/x.wasm     another song for the first visit
 """
 import argparse
 import re
@@ -16,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 GEN = ROOT / "build/gen"
 OUT = ROOT / "build/web"
+SONG = ROOT / "tools/songs/demo.py"                 # the Play page's song
 sys.path.insert(0, str(ROOT / "tools"))
 
 
@@ -35,6 +37,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--release", help="the version the boot screen shows (as tools/build.py --release)")
     ap.add_argument("--out", default=str(OUT / "synthesthetic.wasm"), help="where (the tests build their own)")
+    ap.add_argument("--song", default=str(SONG), help="the first visit's song (tools/songs/, tools/songlib.py)")
     a = ap.parse_args()
     import build
     build.generate()
@@ -47,6 +50,10 @@ def main():
         flags.append('-DFELUCCA_VERSION="SYNTHESTHETIC ' + (v if "BETA" in v else v + " BETA") + '"')
     wasm = Path(a.out).resolve()
     wasm.parent.mkdir(parents=True, exist_ok=True)
+    song_h = wasm.with_suffix(".song.h")            # (the song's tables, next to what they build)
+    subprocess.run([sys.executable, str(Path(a.song).resolve()), "--header", str(song_h), "--json",
+                    str(wasm.with_suffix(".song.json")), "--quiet"], cwd=ROOT, check=True)
+    flags.append(f'-DWEB_SONG_H="{song_h}"')
     src = str(ROOT / "firmware/host/web.c")
     if shutil.which("emcc"):
         cmd = ["emcc", src, *flags, "--no-entry", "-sSTANDALONE_WASM=1", "-sFILESYSTEM=0", "-sINITIAL_MEMORY=33554432",

@@ -86,10 +86,11 @@ for (let i = 0; i < 40; i++) { run(w, 25); const on = w.web_led(BTN.play) === 3;
 check(beats >= 1, `and PLAY lights with the beat (${beats} in a second)`);
 w.web_input(0, 1 << BTN.play); run(w, 100); w.web_input(0, 0); run(w, 100);
 check(w.web_playing() === 0, 'PLAY again stops it');
-// a first visit: the demo song (90 BPM), in song mode: INTRO 4 bars, VERSE 8, CHORUS 8, VERSE 8, BRIDGE 4, CHORUS 8, round
-// again; the chorus lifts, the bridge dips, every part sounds, nothing past the limiter's ceiling, STOP ends the song
+// a first visit: the demo song (tools/songs/demo.py, 116 BPM), in song mode: the chorus's loop 4 bars as the intro,
+// VERSE 8, PRE 4, CHORUS 8, VERSE 8, PRE 4, CHORUS 8, BREAKDOWN 8, CHORUS 8, round again; the chorus lifts over the
+// verse, the breakdown dips under the chorus, every part sounds, nothing past the limiter's ceiling, STOP ends the song
 {
-  const BAR = 44100 * 60 * 4 / 90, SCENE = { 3: 'INTRO', 0: 'VERSE', 1: 'CHORUS', 2: 'BRIDGE' };
+  const BAR = 44100 * 60 * 4 / 116, SCENE = { 0: 'VERSE', 1: 'CHORUS', 2: 'PRE', 3: 'BREAKDOWN' };
   const song = (mask, bars, watch) => {
     const d = new WebAssembly.Instance(module, {}).exports;
     d._initialize?.(); d.web_flash_erase(); d.web_boot(mask); run(d, 4500);
@@ -106,13 +107,13 @@ check(w.web_playing() === 0, 'PLAY again stops it');
     }
     return { d, bar };
   };
-  const all = song(15, 44);
+  const all = song(15, 66);
   const order = all.bar.map((b) => SCENE[b.at & 15] || '-').filter((s, i, a) => i === 0 || s !== a[i - 1]);
-  check(order.join(' ') === 'INTRO VERSE CHORUS VERSE BRIDGE CHORUS INTRO', `song mode: ${order.join(', ')}`);
+  check(order.join(' ') === 'CHORUS VERSE PRE CHORUS VERSE PRE CHORUS BREAKDOWN CHORUS VERSE', `song mode: ${order.join(', ')}`);
   const at = (from, to) => all.bar.slice(from, to).reduce((s, b) => s + 10 ** (b.db / 10), 0) / (to - from);
-  const verse = 10 * Math.log10(at(4, 12)), chorus = 10 * Math.log10(at(12, 20)), bridge = 10 * Math.log10(at(28, 32));
-  check(chorus > verse + 0.5 && bridge < verse - 0.5,
-        `the chorus lifts, the bridge dips (verse ${verse.toFixed(1)}, chorus ${chorus.toFixed(1)}, bridge ${bridge.toFixed(1)} dB)`);
+  const verse = 10 * Math.log10(at(4, 12)), chorus = 10 * Math.log10(at(16, 24)), breakdown = 10 * Math.log10(at(44, 52));
+  check(chorus > verse + 0.5 && breakdown < chorus - 0.5,
+        `the chorus lifts, the breakdown dips (verse ${verse.toFixed(1)}, chorus ${chorus.toFixed(1)}, breakdown ${breakdown.toFixed(1)} dB)`);
   check(Math.max(...all.bar.map((b) => b.peak)) < 0.6, 'under the master limiter\'s ceiling (no clipping)');
   const parts = [1, 2, 4, 8].map((m) => { const s = song(m, 20); return 10 * Math.log10(s.bar.slice(4, 20).reduce((a, b) => a + 10 ** (b.db / 10), 0) / 16); });
   const names = ['bass', 'keys', 'lead', 'drums'], lo = Math.min(...parts), hi = Math.max(...parts);
