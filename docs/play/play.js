@@ -157,6 +157,9 @@ function receive(m) {
 }
 
 // ------------------------------------------------------------------- the video's monitor
+// The picture is the video's 320 x 240, drawn k times over (each pixel k x k, no smoothing) into a canvas at least as
+// big as the monitor is on this screen, which the browser then shrinks a little to fit: sharp, even pixels, as the
+// USB video has them (one 320 x 240 canvas stretched to the monitor was blurred twice over).
 const cam = $('cam'), cx = cam.getContext('2d');
 const pic = document.createElement('canvas'), px2 = pic.getContext('2d');
 pic.width = 160; pic.height = 90;
@@ -164,24 +167,32 @@ const picImg = px2.createImageData(160, 90);
 const scr = document.createElement('canvas'), sx2 = scr.getContext('2d');
 scr.width = scr.height = 240;
 const scrImg = sx2.createImageData(240, 240);
-function noSignal() {
-  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 240);
-  cx.fillStyle = '#4a3f58'; cx.font = '16px "FM-1 Terminus", monospace'; cx.textAlign = 'center'; cx.fillText('NO SIGNAL', 160, 124);
+let camK = 0, camShows = null;                        // the canvas's scale; what it shows: null (NO SIGNAL), 'screen', 'pic'
+function camFit() {                                   // the scale for the monitor's size (and the display's density) now
+  const r = cam.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const k = Math.max(1, Math.min(8, Math.ceil(Math.min(r.width / 320, r.height / 240) * dpr)));
+  if (k === camK) return false;
+  camK = k; cam.width = 320 * k; cam.height = 240 * k;   // (a new size clears the canvas and its settings)
+  cx.setTransform(k, 0, 0, k, 0, 0); cx.imageSmoothingEnabled = false;
+  return true;
 }
+function camPaint() {
+  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 240);
+  if (camShows === 'screen') cx.drawImage(scr, 40, 0);   // SCREEN: the display's copy, 240 x 240 at 40 (mirror.c MIR_OX)
+  else if (camShows === 'pic') cx.drawImage(pic, 0, 30, 320, 180);   // 160 x 90 twice the size, black above and below
+  else { cx.fillStyle = '#4a3f58'; cx.font = '16px "FM-1 Terminus", monospace'; cx.textAlign = 'center'; cx.fillText('NO SIGNAL', 160, 124); }
+}
+function noSignal() { camShows = null; camFit(); camPaint(); }
 noSignal();
 document.fonts?.ready.then(() => { if (!powered) noSignal(); });
+new ResizeObserver(() => { if (camFit()) camPaint(); }).observe(cam);
 function drawCam({ screen, px, rgb }) {
   const img = screen ? scrImg : picImg, d = img.data;
   for (let i = 0, j = 0; i < px.length; i++, j += 4) { const k = px[i] * 3; d[j] = rgb[k]; d[j + 1] = rgb[k + 1]; d[j + 2] = rgb[k + 2]; d[j + 3] = 255; }
-  cx.imageSmoothingEnabled = true;
-  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 240);
-  if (screen) {                                       // SCREEN: the display's copy, 240 x 240 at 40 (mirror.c MIR_OX)
-    sx2.putImageData(scrImg, 0, 0);
-    cx.drawImage(scr, 40, 0);
-  } else {                                            // 160 x 90, twice the size, black above and below: the video's 320 x 240
-    px2.putImageData(picImg, 0, 0);
-    cx.drawImage(pic, 0, 30, 320, 180);
-  }
+  (screen ? sx2 : px2).putImageData(img, 0, 0);
+  camShows = screen ? 'screen' : 'pic';
+  camFit();                                           // (the window dragged to a display of another density)
+  camPaint();
 }
 // the video core runs while its picture shows: on the monitor, or on the FM-1's own screen, whose visualiser draws
 // the same frames (with the monitor scrolled away and the FM-1 in view, it held its last frame)
