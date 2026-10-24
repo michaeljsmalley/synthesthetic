@@ -20,7 +20,7 @@ export class FM1Engine {
     if (!fresh && song !== undefined) this.w.web_songmode(song ? 1 : 0);   // (song mode as the visitor left it)
     this.audio = new Float32Array(buf, this.w.web_audio_ptr(), 1024);
     this.lcd = new Uint16Array(buf, this.w.web_lcd_ptr(), 240 * 240);
-    this.camPx = new Uint8Array(buf, this.w.web_cam_ptr(), 180 * 180);
+    this.camPx = new Uint8Array(buf, this.w.web_cam_ptr(), 240 * 240);
     this.title = new Uint8Array(buf, this.w.web_title_ptr(), 20);
     this.post = post;
     this.tUi = 0; this.tCam = 0; this.tSave = 0; this.tFlush = 0; this.camOn = true;
@@ -79,10 +79,10 @@ export class FM1Engine {
     }
   }
 
-  camFrame() {                                        // the video's picture: 160 x 90 (SCREEN: the display's copy, 180 x 180)
+  camFrame() {                                        // the video's picture: 160 x 90 (SCREEN: the display's copy, 240 x 240)
     const screen = this.w.web_cam();
     if (screen > 1) return;
-    const px = this.camPx.slice(0, screen ? 180 * 180 : 160 * 90);
+    const px = this.camPx.slice(0, screen ? 240 * 240 : 160 * 90);
     const rgb = new Uint8Array(this.w.memory.buffer, this.w.web_cam_rgb_ptr(), 768).slice();
     this.post({ t: 'cam', screen, px, rgb }, [px.buffer, rgb.buffer]);
   }

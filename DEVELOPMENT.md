@@ -86,17 +86,17 @@ JieLi's download server can be slow or unreachable from some networks, so if a d
 ```sh
 # Firmware with USB video (a plain build.sh makes the audio-only build)
 AC79_SDK=$PWD/vendor/ac79-sdk-min JIELI_TOOLCHAIN=$HOME/.jieli/toolchain FELUCCA_UVC=1 sh build.sh
-# A release: identity FM-1_951, version SYNTHESTHETIC 0.1 BETA, output build/felucca-0.1.fwsc
-FELUCCA_UVC=1 sh build.sh --release 0.1
+# A release: identity FM-1_952, version SYNTHESTHETIC 0.2 BETA, output build/felucca-0.2.fwsc
+FELUCCA_UVC=1 sh build.sh --release 0.2
 # The browser version for the Play page (needs Emscripten, or clang with wasm-ld)
-python3 tools/build_web.py --release 0.1
+python3 tools/build_web.py --release 0.2
 # Tests for the instrument, the video code, the web pages and the browser version
 sh tests/run_tests.sh
 sh tests/run_video_tests.sh
 node web/test_web.mjs
 node tests/web_test.mjs
 # The website in docs/, built from a release package
-python3 web/make_site.py build/felucca-0.1.fwsc 0.1 docs
+python3 web/make_site.py build/felucca-0.2.fwsc 0.2 docs
 ```
 
 The host tests run the real firmware code on your computer. They check the UI on a framebuffer, the audio engines

@@ -47,7 +47,7 @@ web editor, comes from SLOOP. The visualizers, USB video and the video core are 
 
 The easiest way is [the web installer](https://michaeljsmalley.github.io/synthesthetic/webapp/installer/) in Chrome
 or Edge. To install from a terminal on an FM-1 running official V15, Dinghy or SLOOP, download the `.fwsc` file
-from the releases page and run `python3 tools/fm1_install.py synthesthetic-0.1.fwsc`. If the FM-1 runs any other
+from the releases page and run `python3 tools/fm1_install.py synthesthetic-0.2.fwsc`. If the FM-1 runs any other
 firmware, go back to official V15 with M-UPGRADE first, as with every Felucca-based firmware.
 
 If something goes wrong, hold OCT− while switching on to open the USB rescue updater. It also opens by itself after

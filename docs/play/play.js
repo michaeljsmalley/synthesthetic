@@ -86,7 +86,7 @@ addEventListener('blur', () => { for (const code of keysDown) { fm1.down(KEYS[co
 
 // ------------------------------------------------------------------ the audio thread
 let ctx = null, node = null, powered = false, starting = null;
-const wasmBytes = fetch(new URL('synthesthetic.wasm?v=cb40bd6068', import.meta.url)).then((r) => {
+const wasmBytes = fetch(new URL('synthesthetic.wasm?v=bbbdfc0bbc', import.meta.url)).then((r) => {
   if (!r.ok) throw new Error('the firmware did not load (' + r.status + ')');
   return r.arrayBuffer();
 });
@@ -106,7 +106,7 @@ async function powerOn() {
         try { ctx = new Ctx({ sampleRate: 44100, latencyHint: 'interactive' }); } catch (e) { ctx = new Ctx({ latencyHint: 'interactive' }); }
       }
       const resumed = ctx.resume();                    // (inside the click: the browser lets the sound start)
-      await ctx.audioWorklet.addModule(new URL('worklet.js?v=35a07aaf0d', import.meta.url));
+      await ctx.audioWorklet.addModule(new URL('worklet.js?v=81e0f55c2e', import.meta.url));
       await start(await flashSaved);
       await resumed;
       powered = true;
@@ -162,11 +162,11 @@ const pic = document.createElement('canvas'), px2 = pic.getContext('2d');
 pic.width = 160; pic.height = 90;
 const picImg = px2.createImageData(160, 90);
 const scr = document.createElement('canvas'), sx2 = scr.getContext('2d');
-scr.width = scr.height = 180;
-const scrImg = sx2.createImageData(180, 180);
+scr.width = scr.height = 240;
+const scrImg = sx2.createImageData(240, 240);
 function noSignal() {
-  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 180);
-  cx.fillStyle = '#4a3f58'; cx.font = '16px "FM-1 Terminus", monospace'; cx.textAlign = 'center'; cx.fillText('NO SIGNAL', 160, 94);
+  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 240);
+  cx.fillStyle = '#4a3f58'; cx.font = '16px "FM-1 Terminus", monospace'; cx.textAlign = 'center'; cx.fillText('NO SIGNAL', 160, 124);
 }
 noSignal();
 document.fonts?.ready.then(() => { if (!powered) noSignal(); });
@@ -174,13 +174,13 @@ function drawCam({ screen, px, rgb }) {
   const img = screen ? scrImg : picImg, d = img.data;
   for (let i = 0, j = 0; i < px.length; i++, j += 4) { const k = px[i] * 3; d[j] = rgb[k]; d[j + 1] = rgb[k + 1]; d[j + 2] = rgb[k + 2]; d[j + 3] = 255; }
   cx.imageSmoothingEnabled = true;
-  if (screen) {                                       // SCREEN: the display's copy, 180 x 180 at 72 (vcore.c MIR_OX)
+  cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 240);
+  if (screen) {                                       // SCREEN: the display's copy, 240 x 240 at 40 (mirror.c MIR_OX)
     sx2.putImageData(scrImg, 0, 0);
-    cx.fillStyle = '#000'; cx.fillRect(0, 0, 320, 180);
-    cx.drawImage(scr, 72, 0);
-  } else {                                            // 160 x 90, twice the size: the video's 320 x 180
+    cx.drawImage(scr, 40, 0);
+  } else {                                            // 160 x 90, twice the size, black above and below: the video's 320 x 240
     px2.putImageData(picImg, 0, 0);
-    cx.drawImage(pic, 0, 0, 320, 180);
+    cx.drawImage(pic, 0, 30, 320, 180);
   }
 }
 // the video core runs while its picture shows: on the monitor, or on the FM-1's own screen, whose visualiser draws

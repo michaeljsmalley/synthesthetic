@@ -185,9 +185,9 @@
   .titles { margin-bottom: 28px; }
   .titles h1 { font-size: clamp(22px, 2.4vw, 34px); }
   .stage-grid { position: relative; container-type: inline-size; align-items: start; row-gap: 28px; }
-  /* (the window's height from the grid's width: four columns and three gutters, less the frame, at 16:9, plus the frame) */
+  /* (the window's height from the grid's width: four columns and three gutters, less the frame, at 4:3, plus the frame) */
   .stage-grid > .stripes { position: absolute; left: calc(-1 * var(--pad)); right: calc(-1 * var(--pad));
-                           top: calc(((100cqw - 11 * var(--gap)) / 3 + 3 * var(--gap) - 28px) * 9 / 16 + 28px - 91px); }
+                           top: calc(((100cqw - 11 * var(--gap)) / 3 + 3 * var(--gap) - 28px) * 3 / 4 + 28px - 91px); }
   .device, .cam { position: relative; z-index: 1; }
   .device { grid-column: 1 / span 8; display: grid; gap: 14px; min-width: 0; }
   .stage { position: relative; width: 100%; aspect-ratio: 16 / 9.4; overflow: hidden; touch-action: none; user-select: none;
@@ -225,6 +225,7 @@
   .check { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--gray); cursor: pointer; }
 
   .cam { grid-column: 9 / span 4; display: grid; gap: 16px; position: sticky; top: 88px; min-width: 0; z-index: 2; }
+  .display.monitor { aspect-ratio: 4 / 3; }          /* the USB picture: 320 x 240 */
   .monitor canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   .chan { position: absolute; left: 3%; bottom: 5%; padding: 4px 6px; font: 16px/1 var(--pixel); font-weight: normal; color: #fff; background: rgb(0 0 0 / .55); }
   .fs { position: absolute; right: 3%; top: 5%; z-index: 2; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer;
@@ -282,7 +283,7 @@
 </head>
 <body>
 <div class="card">
-  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label">Virtual FM-1</span><span class="label">0.1</span></p></aside>
+  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label">Virtual FM-1</span><span class="label">0.2</span></p></aside>
   <div class="front">
     <header class="bar">
       <div class="grid">
@@ -326,7 +327,7 @@
           <aside class="cam" aria-label="USB video">
             <div class="window">
               <div class="display monitor" id="monitor">
-                <canvas id="cam" width="320" height="180" aria-label="The video the FM-1 sends over USB"></canvas>
+                <canvas id="cam" width="320" height="240" aria-label="The video the FM-1 sends over USB"></canvas>
                 <b class="chan" id="chan" hidden></b>
                 <button class="fs" id="fs" type="button" aria-label="Show the video full screen"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
               </div>
@@ -398,6 +399,6 @@
 </div>
 <script id="vj-names" type="application/json">{"modes": ["WAVE", "BARS", "HEAT", "XY", "METERS", "RING", "SPIRAL", "GRID", "KIT", "TUNNEL", "MIRROR", "STARS", "SQUARES", "SHARDS", "ORBITS", "MOIRE", "WARP", "VORTEX", "RIPPLE", "KALEIDO", "MELT", "SMOKE", "WORMHOLE", "PLASMA", "FIRE", "RIDGES", "LAVA", "CELLS", "WIREFRAME", "FRESNEL", "SCREEN"], "palettes": ["SPECTRUM", "NEON", "FIRE", "OCEAN", "CRT", "VAPOR", "ACID", "THERMAL", "MONO"]}</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script type="module" src="play.js?v=50c3f9e5c5"></script>
+<script type="module" src="play.js?v=97313805ae"></script>
 </body>
 </html>

@@ -4,9 +4,9 @@
 // https, so Web MIDI asks as usual (a downloaded file on Android opens as content://, where Chrome refuses MIDI).
 // Online the network always wins (the page as published, never an old one); the copy is only the fallback.
 // A new site (any file changed) is a new sw.js: the new copy replaces the old one.
-const STAMP = "0.1-849349af002f";                          // version + a hash of the files
+const STAMP = "0.2-547e209ab8ff";                          // version + a hash of the files
 const CACHE = "synthesthetic-site-" + STAMP;
-const FILES = ["../firmware/synthesthetic-0.1.fwsc", "editor/", "editor/FUKIAI-LICENSE.txt", "editor/fukiai.ttf", "editor/preview-worklet.js", "editor/preview.js", "editor/sloop-preview.wasm", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "installer/", "installer/channels.jpg", "installer/title-bg.jpg", "synthesthetic.webmanifest"];                          // relative to this file
+const FILES = ["../firmware/synthesthetic-0.2.fwsc", "editor/", "editor/FUKIAI-LICENSE.txt", "editor/fukiai.ttf", "editor/preview-worklet.js", "editor/preview.js", "editor/sloop-preview.wasm", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "installer/", "installer/channels.jpg", "installer/title-bg.jpg", "synthesthetic.webmanifest"];                          // relative to this file
 const KEEP = new Set(FILES.map((f) => new URL(f, self.location).href));
 
 const key = (url) => {                              // the copy's name of a request: no query, index.html = the folder

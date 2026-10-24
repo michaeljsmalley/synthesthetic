@@ -70,7 +70,7 @@ Download the `.fwsc` file from the [releases page](https://github.com/michaeljsm
 build it yourself, then run:
 
 ```sh
-python3 tools/fm1_install.py synthesthetic-0.1.fwsc
+python3 tools/fm1_install.py synthesthetic-0.2.fwsc
 ```
 
 This needs Python with `mido` and `python-rtmidi` installed.

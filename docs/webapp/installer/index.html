@@ -297,7 +297,7 @@
 </head>
 <body>
 <div class="card">
-  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label" data-t="spine"></span><span class="label">0.1</span></p></aside>
+  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label" data-t="spine"></span><span class="label">0.2</span></p></aside>
   <div class="front">
     <header class="bar">
       <div class="grid">
@@ -336,7 +336,7 @@
             <div class="cta"><a class="btn primary" href="#install" data-t="ctaInstall"></a><a class="btn" href="../../play/" data-t="ctaPlay"></a></div>
             <dl class="specs">
               <div class="top"><dt data-t="specSignal"></dt><dd data-t="specSignalV"></dd></div>
-              <div><dt data-t="specVideo"></dt><dd>USB video class · MJPEG · 320 × 180 · 30 fps</dd></div>
+              <div><dt data-t="specVideo"></dt><dd>USB video class · MJPEG · 320 × 240 · 30 fps</dd></div>
               <div><dt data-t="specAudio"></dt><dd data-t="specAudioV"></dd></div>
               <div><dt>MIDI</dt><dd data-t="specMidiV"></dd></div>
               <div><dt data-t="specDriver"></dt><dd data-t="specDriverV"></dd></div>
@@ -444,7 +444,7 @@
           <li><a class="tool" href="../../play/"><b data-t="tPlay"></b><span data-t="tPlayD"></span></a></li>
           <li><a class="tool" href="../editor/"><b data-t="tEditor"></b><span data-t="tEditorD"></span></a></li>
           <li><a class="tool" href="../../handbook/"><b data-t="tHandbook"></b><span data-t="tHandbookD"></span></a></li>
-          <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor-0.1.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
+          <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor-0.2.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
         </ul>
         <p id="app-li" hidden><button class="btn small" id="app" type="button" hidden data-t="tApp"></button> <span class="note" data-t="tAppD"></span></p>
       </section>
@@ -1087,7 +1087,7 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
   });
 }
 let image = null;
-const meta = {"version": "0.1", "product": "FM-1_951", "pkg": "../../firmware/synthesthetic-0.1.fwsc", "sha256": "981c42c8dd6a361684415594fb595016449abd3ba149777f5163f9d697a5cdf5"};
+const meta = {"version": "0.2", "product": "FM-1_952", "pkg": "../../firmware/synthesthetic-0.2.fwsc", "sha256": "5563ab139360ae58b26152cf453c04f6b19d1070bad6d87393f8d19d34826928"};
 
 let writing = false, stock = null;
 const lockAll = (on) => {
