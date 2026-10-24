@@ -6,7 +6,7 @@ Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM
 computer over USB. Plug your FM-1 in, choose it from the camera list in OBS, Zoom, FaceTime or another video app, and
 you'll see 30 visualizers that react to your music. There's no camera in the FM-1. It's in that list because a USB
 camera is the standard way to get video onto a computer, so you don't need a driver or capture card. The video is UVC,
-MJPEG, 320 × 180 at 30 fps.
+MJPEG, 320 × 240 at 30 fps.
 
 The FM-1 is still the same four-track groovebox, with its synth engines, sequencer and drum machine, and the visuals
 play on its own screen too. MIDI, audio and video share the one USB cable, and firmware updates still go over USB-MIDI.
@@ -38,7 +38,7 @@ web editor, comes from SLOOP. The visualizers, USB video and the video core are 
   autopilot, and knobs 1 to 4 are AMOUNT, RATE, TRAILS and COLOR. Tap HOME on the TRACKS screen to open the
   visualizer. The video shows the same picture either way, and attract mode opens the visualizer after a minute
   without input.
-- USB-MIDI on endpoint 1, a 16-bit 44.1 kHz stereo audio input on endpoint 3, and 320 × 180 MJPEG video at 30 fps on
+- USB-MIDI on endpoint 1, a 16-bit 44.1 kHz stereo audio input on endpoint 3, and 320 × 240 MJPEG video at 30 fps on
   endpoint 4, all on one cable. The camera's brightness, saturation, contrast and hue controls work as the four
   knobs, an overlay can show the tempo, the bar and a title, and the visuals have their own MIDI channel.
 - A VJ page in the web editor for every visual setting, and a title overlay setting on the installer page.

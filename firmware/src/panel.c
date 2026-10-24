@@ -134,6 +134,7 @@ UI_SMALL static void lights_from_word(uint32_t w)
 }
 
 static void settings_save(void);              /* project.c: flash copy (FELUCCA_FLASH) */
+static int audio_quiet(void);                  /* project.c: nothing sounds (a flash write may run) */
 static uint8_t settings_later;                 /* changed while playing: saved once stopped (project.c) */
 
 UI_SMALL static void settings_init(void)

@@ -350,8 +350,8 @@ static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 #endif
 #define USB_PID (FELUCCA_USB_PID + 2 * FELUCCA_UVC + 2 * FELUCCA_USB_ALT)   /* 0x0003: the video build, a device of its own */
 #define USB_BCD_LO (0x01 * FELUCCA_CDC + 0x10 * (FELUCCA_UAC + FELUCCA_UAC_48K) + 0x40 * FELUCCA_UVC + 0x80 * FELUCCA_VCORE)
-#define USB_BCD_HI (0x03 + FELUCCA_UVC)          /* the video build: 4.x since the camera has controls (hosts cache the
-                                                  * descriptors of a version) */
+#define USB_BCD_HI (0x03 + 2 * FELUCCA_UVC)      /* the video build: 5.x since its picture is 320 x 240 (4.x: 320 x 180,
+                                                  * the camera's controls; hosts cache the descriptors of a version) */
 #if FELUCCA_UVC && FELUCCA_CDC
 #error "FELUCCA_UVC with FELUCCA_CDC: the USB SERIAL OFF descriptor copy does not know the video block yet"
 #endif
@@ -1450,8 +1450,21 @@ static __attribute__((noinline)) void uac_tap48(const int32_t *out, uint32_t n)
                     ar += t * x[2u * RS_H];
                 }
             }
+#if FELUCCA_UAC_TONE
+            {   /* bench at 48 kHz: the triangles one a frame at the output rate (as uac_tap at 44.1), the
+                 * resampler's work and frame count unchanged, so its timing is the real build's */
+                static uint32_t tph;
+                uint32_t q = tph < 50u ? tph : 100u - tph, q2 = tph < 50u ? 50u - tph : tph - 50u;
+                ua_ring[(w + k++) & (UA_N - 1u)] = (uint32_t)(uint16_t)(int16_t)((int32_t)q * 1000 - 25000) |
+                                                   (uint32_t)(uint16_t)(int16_t)((int32_t)q2 * 1000 - 25000) << 16;
+                static volatile int32_t keep;               /* (the filter's sums still computed) */
+                tph = tph == 99u ? 0u : tph + 1u;
+                keep = al ^ ar;
+            }
+#else
             ua_ring[(w + k++) & (UA_N - 1u)] = (uint32_t)(uint16_t)uac_s16(al >> UAC_FIR_Q) |
                                                (uint32_t)(uint16_t)uac_s16(ar >> UAC_FIR_Q) << 16;
+#endif
             ph += UAC_FIR_M;
         } while (ph < UAC_FIR_L);
         ph -= UAC_FIR_L;
@@ -1463,11 +1476,28 @@ static __attribute__((noinline)) void uac_tap48(const int32_t *out, uint32_t n)
 }
 #endif
 
+/* when the stream last carried sound (above -54 dBFS). A flash write turns the interrupts off for milliseconds: the
+ * host's audio IN tokens find nothing, and macOS fills the gap by replaying the 0.25 s before it (a QuickTime movie,
+ * 2026-10-23). project.c audio_quiet holds settings saves until the stream has been silent for UAC_QUIET_MS, so what
+ * the host replays is silence. */
+#define UAC_QUIET_MS 1000u
+static volatile uint32_t uac_loud_ms;
+static void uac_level(const int32_t *out, uint32_t n)  /* audio ISR */
+{
+    uint32_t i;
+    for (i = 0; i < 2u * n; i++)
+        if (out[i] > 63 || out[i] < -63) {
+            uac_loud_ms = fm1_ms;
+            return;
+        }
+}
+
 static __attribute__((noinline)) void uac_tap(const int32_t *out, uint32_t n)   /* audio ISR: one block (Q15) */
 {
     uint32_t w = ua_w, i;
     if (!uac.feed)
         return;
+    uac_level(out, n);
 #if FELUCCA_UAC_48K
     if (uac.ring48) {
         uac_tap48(out, n);
@@ -1549,8 +1579,8 @@ static uint32_t uac_packet(uint32_t *d)
     return n;
 }
 
-/* TIMER5, 2 kHz, also nested in the render: the host takes one packet per 1 ms frame; queue the
- * next one as soon as the last has gone (TxPktRdy clear). Not paced on SOF-pending (see usb_poll).
+/* TIMER5, 10 kHz (every tick: main.c fm1_timer5_irq), also nested in the render: the host takes one packet per
+ * 1 ms frame; queue the next one as soon as the last has gone (TxPktRdy clear). Not paced on SOF-pending (see usb_poll).
  * The ring is fed only while the host reads: it often selects alt 1 long before its first IN token,
  * and a recorder may stop reading without going back to alt 0 (a packet waiting > 20 ms). */
 static void uac_service(void)
@@ -1561,7 +1591,7 @@ static void uac_service(void)
     sie_wr(S_INDEX, UAC_EP);
     csr = sie_rd(S_TXCSR1);
     if (csr & 0x01u) {                                  /* still queued */
-        if (uac.wait < 255u && ++uac.wait == 40u && uac.flowing) {
+        if (uac.wait < 255u && ++uac.wait == 200u && uac.flowing) {   /* (20 ms of 10 kHz checks) */
             uac.flowing = 0;
             uac.stalls++;
         }
@@ -1755,8 +1785,8 @@ static void usb_detach(void)
 static uint32_t cpu1_stack_free(void);                 /* cpu1.c: core 1's stack never written, bytes */
 static void vcore_diag_send(void)
 {
-    static uint8_t rep[6 + 40 * 8];
-    uint32_t v[40], i, k = 0;
+    static uint8_t rep[6 + 56 * 8];
+    uint32_t v[56] = {0}, i, k = 0;
     fm1_c1_sync();
     v[0] = vcore_running; v[1] = vc0.run; v[2] = vc0.park_req; v[3] = vc0.jpeg_busy;
     v[4] = vc1.parked; v[5] = vc1.done; v[6] = vc1.jpeg_ready; v[7] = vc1.jpeg_len[0]; v[8] = vc1.jpeg_len[1];
@@ -1767,8 +1797,13 @@ static void vcore_diag_send(void)
     v[28] = fm1_c1_on; v[29] = cpu1_taken; v[30] = vc_park_fail; v[31] = uvc.pu_gets;
     v[32] = uvc.gets; v[33] = uvc.lens; v[34] = uvc.infos; v[35] = uvc.set_if; v[36] = uvc.vc_req; v[37] = uvc.other;
     v[38] = usb.setups; v[39] = usb.resets;
+#if FELUCCA_UAC
+    v[40] = uac.alt; v[41] = uac.r48; v[42] = uac.go; v[43] = uac.flowing; v[44] = uac.starts; v[45] = uac.pkts;
+    v[46] = uac.frames; v[47] = uac.underruns; v[48] = uac.overruns; v[49] = uac.missed; v[50] = uac.stalls;
+    v[51] = uac.adj_up; v[52] = uac.adj_down; v[53] = uac.fill_lo; v[54] = uac.fill_hi; v[55] = uac.fill_min;
+#endif
     rep[k++] = 0xF0; rep[k++] = 0x7D; rep[k++] = 0x56; rep[k++] = 0x43; rep[k++] = 0x02;
-    for (i = 0; i < 40u; i++) {
+    for (i = 0; i < 56u; i++) {
         uint32_t b;
         for (b = 0; b < 4u; b++) {
             uint32_t byte = (v[i] >> (8u * b)) & 0xFFu;

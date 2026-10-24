@@ -7,16 +7,17 @@
  * (sloop-lab: the reverb lines, the second core's stacks and the render split's scratch; before this patch that
  * SRAM sat unused: Felucca kept 0x01C06000..0x01C08000 for RAM-run debug, which SLOOP has no build for). crt0.S
  * writes the SPL's state at 0x01C07F20: the region stops at 0x01C07F00. main.c proves and zeroes .lowram at boot.
- * RAM  : .data/.bss (96 KiB)
- * POOL : big zero-initialised buffers (FX lines, canvases), section .pool
+ * RAM  : .data/.bss (79 KiB)
+ * POOL : big zero-initialised buffers (FX lines, canvases), section .pool; it starts where RAM ends (2026-10-23:
+ *        17 KiB moved over from RAM for SCREEN's full-size copy, vcore.c vf_mem)
  * STACKS with 256-byte guard bands; NOINIT survives resets and UBOOT entry.
  * 0x01C7FD50.. is reserved: boot_info, boot-state mailbox, vector table. */
 MEMORY
 {
     XIP    (rx)  : ORIGIN = 0x02000120, LENGTH = 0x8DFBC
     RAMTEXT (rwx): ORIGIN = 0x01C00000, LENGTH = 0x7F00
-    RAM    (rwx) : ORIGIN = 0x01C08000, LENGTH = 96K
-    POOL   (rw)  : ORIGIN = 0x01C20000, LENGTH = 0x54000
+    RAM    (rwx) : ORIGIN = 0x01C08000, LENGTH = 79K
+    POOL   (rw)  : ORIGIN = 0x01C1BC00, LENGTH = 0x58400
     NOINIT (rw)  : ORIGIN = 0x01C7C000, LENGTH = 0x3D50
 }
 SECTIONS

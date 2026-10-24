@@ -11,7 +11,10 @@ NAMES = ["vcore_running", "vc0.run", "vc0.park_req", "vc0.jpeg_busy", "vc1.parke
          "vc1.jpeg_len[0]", "vc1.jpeg_len[1]", "vc1.frame_ready", "vc1.frames", "vc1.parks", "vc1.drops", "vc1.quality",
          "vc1.us_render", "vc1.us_encode", "uvc.alt", "uvc.starts", "uvc.frames", "uvc.pkts", "uvc.missed", "uvc.stalls",
          "uvc.sets", "uvc.pu_sets", "c1_stack_free", "src_calls", "src_live", "src_bad", "fm1_c1_on", "cpu1_taken", "park_fail", "uvc.pu_gets",
-         "uvc.gets", "uvc.lens", "uvc.infos", "uvc.set_if", "uvc.vc_req", "uvc.other", "usb.setups", "usb.resets"]
+         "uvc.gets", "uvc.lens", "uvc.infos", "uvc.set_if", "uvc.vc_req", "uvc.other", "usb.setups", "usb.resets",
+         "uac.alt", "uac.r48", "uac.go", "uac.flowing", "uac.starts", "uac.pkts", "uac.frames", "uac.underruns",
+         "uac.overruns", "uac.missed", "uac.stalls", "uac.adj_up", "uac.adj_down", "uac.fill_lo", "uac.fill_hi",
+         "uac.fill_min"]
 
 
 def main():

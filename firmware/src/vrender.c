@@ -22,7 +22,17 @@
 #define VR_N 1024u                                      /* the analyser's window: the whole ring */
 #define VR_MODES VIS_N                                  /* the mode names: ui_vis.c VIS_NAME */
 #define VR_ENT 24u                                      /* trigger modes: live shapes */
-static int16_t vr_l[VR_N], vr_r[VR_N], vr_re[VR_N], vr_im[VR_N];
+#ifdef VF_SPARE                                         /* the sound analysis' four buffers, after ui_vis.c's slice in
+                                                         * the frames' RAM (vcore.c VF_SPARE): SCREEN's copy takes it
+                                                         * all, so vrender_frame leaves them alone while SCREEN is drawn */
+#define VR_SCRATCH ((int16_t *)(void *)(VF_SPARE + VF_W * VIS_ROWS))
+_Static_assert(VF_W * VIS_ROWS % 4u == 0u && VF_W * VIS_ROWS + 4u * VR_N * 2u <= VF_SPARE_N, "the analysis fits after the frames");
+#else                                                   /* (tests/vrender_test.c: no video core around it) */
+static int16_t vr_scratch[4u * VR_N];
+#define VR_SCRATCH vr_scratch
+#endif
+static int16_t *const vr_l = VR_SCRATCH, *const vr_r = VR_SCRATCH + VR_N, *const vr_re = VR_SCRATCH + 2u * VR_N,
+               *const vr_im = VR_SCRATCH + 3u * VR_N;
 static int16_t vr_band[32], vr_cap[32], vr_capv[32];
 static int32_t vr_lvl[5], vr_hold[5], vr_holdt[5];      /* tracks 1-4 and the master, dB 0..1000; peak holds */
 static int32_t vr_peak, vr_gain = 4096;                 /* this frame's peak, the smoothed scale (Q15) */
@@ -756,13 +766,20 @@ static void vr_screen_lut(vjpeg_ycc_t *lut, uint32_t b)
  * SCREEN fades like the pictures (through lut). Into it: the old picture fades out, then the job asks core 0
  * for the copy (vcore_mirror) and stays black until it is there. Out of it: once faded, core 0 must stop
  * copying before the RAM is the frames' again (cleared: the next picture starts from black). */
-static int vrender_frame(uint8_t *dst, const uint8_t *prev, vjpeg_ycc_t *lut, uint16_t *p565)
+static void vr_analyse(void)                            /* the sound, for the visual modes */
 {
-    uint32_t mode, layout, phase, want;
     vr_snapshot();
     vcore_yield();
     vr_fft();
     vr_bands();
+}
+
+static int vrender_frame(uint8_t *dst, const uint8_t *prev, vjpeg_ycc_t *lut, uint16_t *p565)
+{
+    uint32_t mode, layout, phase, want, heard = vr_mode_last != VIS_SCREEN;
+    if (heard)                                          /* (SCREEN drawn: its copy has the frames' RAM, the analysis'
+                                                         * buffers in it, until core 0 has stopped copying) */
+        vr_analyse();
     vr_inputs();
     fm1_c1_sync();
     want = mode = vis_style % VR_MODES;
@@ -797,6 +814,8 @@ static int vrender_frame(uint8_t *dst, const uint8_t *prev, vjpeg_ycc_t *lut, ui
         vr_t++;
         return 1;
     }
+    if (!heard)
+        vr_analyse();                                   /* (back from SCREEN: the RAM given back this frame) */
     if (vr_pal_cur != vr_pal_last) {
         if (vr_pal_last != 0xFFu)
             vr_palname_t = 90;

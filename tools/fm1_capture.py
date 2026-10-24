@@ -89,7 +89,7 @@ def main():
         th.start()
         time.sleep(0.5)                                  # the first notes sound before the first frame
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "avfoundation", "-framerate", "30",
-           "-video_size", "320x180", "-pixel_format", "uyvy422", "-i", a.camera, "-t", str(a.seconds),
+           "-video_size", "320x240", "-pixel_format", "uyvy422", "-i", a.camera, "-t", str(a.seconds),
            "-fps_mode", "passthrough", os.path.join(a.out, "f-%03d.png")]   # passthrough: a file per frame delivered
     t0 = time.time()
     try:

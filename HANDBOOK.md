@@ -44,7 +44,7 @@ song sections and 27 punch-in effects. [SLOOP's guide](docs/upstream-sloop/GUIDE
 The visuals are new in Synthesthetic. There are 31 modes, nine palettes, four knobs modeled on the Critter & Guitari
 EYESY, an autopilot that changes the picture on the bar, and a short fade between modes.
 
-Over USB, the FM-1 shows up as a camera called Synthesthetic that sends 320 × 180 MJPEG at 30 frames per second. The
+Over USB, the FM-1 shows up as a camera called Synthesthetic that sends 320 × 240 MJPEG at 30 frames per second. The
 same cable carries USB-MIDI and a USB audio input with the FM-1's output (16-bit stereo at 44.1 kHz).
 
 ## Install and update
@@ -174,11 +174,11 @@ spectrum modes measure in decibels, from 0 dBFS at full height down to -60 dB at
 ## SCREEN mode
 
 With SCREEN selected, the video shows the FM-1's display as it looks, including every page, layer and menu you
-open. It appears at three-quarter size (180 × 180) in the middle of the frame, with no overlay or effects, which works
+open. It appears pixel for pixel (240 × 240) in the middle of the frame, with no overlay or effects, which works
 well for tutorials or for showing how you work during a set. The autopilot and attract mode never switch to or away
 from SCREEN.
 
-![The video on SCREEN showing the TRACKS page, and on WARP with a title](docs/images/screen-and-title-live.png)
+![The video on SCREEN showing the TRACKS page, and on WARP with a title](docs/images/screen-and-title-4x3.png)
 
 ## Autopilot and attract mode
 
@@ -200,10 +200,10 @@ The FM-1 has no camera, but it sends its video the way a USB camera does, using 
 Every computer and video app already supports UVC, so the FM-1 appears in their camera lists with no driver or
 capture card. In those lists it's called Synthesthetic.
 
-It sends 320 × 180 MJPEG at 30 frames per second, the same picture as the visualizer, whether or not the visualizer
-is open on the screen. Photo Booth, QuickTime, OBS, Zoom and FaceTime all recognize it, and the 16:9 frame fits their
-previews without cropping. The MIDI port is still called Felucca, because that's the name installers and editors
-look for.
+It sends 320 × 240 MJPEG at 30 frames per second, the same picture as the visualizer, whether or not the visualizer
+is open on the screen. Photo Booth, QuickTime, OBS, Zoom and FaceTime all recognize it. The frame is 4:3 so that
+SCREEN mode can show the display pixel for pixel, and the visualizers, which are 16:9, have a black band above and
+below. The MIDI port is still called Felucca, because that's the name installers and editors look for.
 
 It has only been tested on macOS so far. Windows and Linux use the same standard USB video driver, so they should
 work, but nobody has tried them yet.
@@ -215,6 +215,8 @@ work, but nobody has tried them yet.
   people see.
 - Only one app can use a camera at a time. Apps that take every camera, such as Camo Studio, keep the FM-1 from the
   others, so quit them first.
+- Some apps crop a camera's picture to fill a wide window, which cuts off the top and bottom of SCREEN mode. Look for a
+  setting that keeps the camera's original shape, such as Original ratio in Zoom's video settings.
 - The FM-1 is also an audio input, so apps that record sound with the video will ask for microphone access. Video
   on its own only needs camera access.
 - ffmpeg's camera input on macOS holds one frame at a time and drops frames above about 22 per second. The FM-1
@@ -356,7 +358,7 @@ or browser tab that uses MIDI.
 
 On M-VAVE's official firmware and some others, that's expected, because they don't have a rescue mode you can open
 with a key. On Synthesthetic, hold OCT− by itself before you switch on. The USB rescue opens, and the installer works
-from there. Its screen still says SLOOP USB RESCUE, because Synthesthetic keeps SLOOP's rescue updater unchanged.
+from there. Its screen says SYNTHESTHETIC USB RESCUE, or SLOOP USB RESCUE on Synthesthetic 0.1.
 Some early Dinghy builds missed the key on certain units because they read the keys before setting up the screen's
 pins. Synthesthetic includes the fix.
 

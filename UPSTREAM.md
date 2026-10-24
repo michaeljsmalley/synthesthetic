@@ -32,7 +32,7 @@ Local changes to SLOOP so far:
 - `vendor/ac79-sdk-min/`: the three Apache-2.0 JieLi SDK files the package builder needs (hashes as SLOOP/Dinghy pin
   them) plus the SDK LICENSE. Build with `AC79_SDK=$PWD/vendor/ac79-sdk-min ./build.sh`.
 - **SCREEN, the fade, the VJ settings on the web (2026-10-20, evening):** `firmware/src/mirror.c` (new: the
-  display's 3/4 copy for the video, hooked into `lcd.c` `lcd_fill` / `lcd_blit`; `tools/gen_mirror.py` its
+  display's copy for the video (3/4 size at first, pixel for pixel since 2026-10-23), hooked into `lcd.c` `lcd_fill` / `lcd_blit`; `tools/gen_mirror.py` its
   palette), `vcore.c` (the frames' RAM shared with the copy, the SCREEN handshake), `vjpeg.c` (a placed frame with
   black around it; flat blocks skip the DCT, bit for bit), `vrender.c` (SCREEN, the fade between modes instead of
   the channel change), `ui_vis.c` (SCREEN's card; the autopilot and the attract mode leave it alone);
@@ -49,7 +49,7 @@ Local changes to SLOOP so far:
   were rebased with this toolchain on the audio-only build: the upstream file dated from SLOOP 2.4 and already
   flagged the 2.7.1 audio interrupt.
 - **USB video (fm1drome's own work, 2026-10-19/20):** `firmware/src/uvc_desc.h`, the UVC function in
-  `firmware/src/usb.c` (`FELUCCA_UVC=1`: EP4 isochronous IN, MJPEG 320×180, the audio input moves to EP3),
+  `firmware/src/usb.c` (`FELUCCA_UVC=1`: EP4 isochronous IN, MJPEG 320×180, 320×240 since 2026-10-23, the audio input moves to EP3),
   `firmware/src/vjpeg.c` + `vjpeg_tables.h` (integer JPEG encoder), `firmware/src/vcore.c` (core 1 renders and
   encodes; park/resume around flash writes; `cpu1_taken` keeps the audio render on core 0),
   `firmware/src/vrender.c` (fm1drome's visualizer: analyser, 16 modes, knobs, triggers), `firmware/src/ui_vis.c`

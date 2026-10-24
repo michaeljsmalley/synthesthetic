@@ -180,14 +180,14 @@ int main(int argc, char **argv)
         snprintf(what, sizeof what, "zoom 2's folded DCT equals the plain path on the upsampled frame, byte for byte (%d B)", n1);
         check(n1 > 0 && (uint32_t)n1 == n2 && same, what);
     }
-    {   /* placement (SCREEN): a 180 x 180 frame at 72, 0 in a 320 x 180 output, black around it, gives the bytes of
+    {   /* placement (SCREEN): a 240 x 240 frame at 40, 0 in a 320 x 240 output, black around it, gives the bytes of
          * that picture composed by hand; an interface-like frame (a black ground: flat blocks skip the DCT) */
-        static uint8_t small[180 * 180], comp[320 * 180], o2[64 * 1024];
+        static uint8_t small[240 * 240], comp[320 * 240], o2[64 * 1024];
         static uint8_t prgb[256][3];
         static vjpeg_ycc_t plut[256];
         uint32_t x, yy, i2, same = 1;
         int32_t n1, n2;
-        vjpeg_src_t a = {small, plut, 180, 180, 180, 1, 0, 320, 180, 72, 0}, b = {comp, plut, 320, 180, 320, 1, 0};
+        vjpeg_src_t a = {small, plut, 240, 240, 240, 1, 0, 320, 240, 40, 0}, b = {comp, plut, 320, 240, 320, 1, 0};
         for (i2 = 0; i2 < 256u; i2++) {
             prgb[i2][0] = (uint8_t)(i2 ? (i2 * 37u) & 255u : 0u);
             prgb[i2][1] = (uint8_t)(i2 ? (i2 * 91u) & 255u : 0u);
@@ -195,23 +195,52 @@ int main(int argc, char **argv)
         }
         vjpeg_lut_from_rgb((const uint8_t (*)[3])prgb, plut, 256);
         memset(small, 0, sizeof small);
-        for (yy = 0; yy < 180u; yy++)
-            for (x = 0; x < 180u; x++) {
+        for (yy = 0; yy < 240u; yy++)
+            for (x = 0; x < 240u; x++) {
                 if (yy % 24u == 3u || (x % 30u == 7u && yy > 20u))
-                    small[yy * 180u + x] = 200;                 /* lines */
-                if (yy >= 40u && yy < 56u && x >= 10u && x < 170u && ((x * 7u + yy * 3u) % 11u) < 4u)
-                    small[yy * 180u + x] = (uint8_t)(1u + (x / 8u) % 200u);   /* "text" */
-                if (yy >= 100u && yy < 160u && x >= 60u && x < 150u)
-                    small[yy * 180u + x] = (uint8_t)(30u + (x + yy) % 120u);  /* a graph */
+                    small[yy * 240u + x] = 200;                 /* lines */
+                if (yy >= 40u && yy < 56u && x >= 10u && x < 230u && ((x * 7u + yy * 3u) % 11u) < 4u)
+                    small[yy * 240u + x] = (uint8_t)(1u + (x / 8u) % 200u);   /* "text" */
+                if (yy >= 100u && yy < 220u && x >= 60u && x < 200u)
+                    small[yy * 240u + x] = (uint8_t)(30u + (x + yy) % 120u);  /* a graph */
             }
         memset(comp, 0, sizeof comp);
-        for (yy = 0; yy < 180u; yy++)
-            memcpy(comp + yy * 320u + 72u, small + yy * 180u, 180u);
+        for (yy = 0; yy < 240u; yy++)
+            memcpy(comp + yy * 320u + 40u, small + yy * 240u, 240u);
         n1 = vjpeg_encode(&a, 80, out, sizeof out);
         n2 = vjpeg_encode(&b, 80, o2, sizeof o2);
         for (i2 = 0; n1 > 0 && i2 < (uint32_t)n1 && same; i2++)
             same = out[i2] == o2[i2];
-        snprintf(what, sizeof what, "placement: 180x180 at 72,0 in 320x180 == the composed picture, byte for byte (%d B)", n1);
+        snprintf(what, sizeof what, "placement: 240x240 at 40,0 in 320x240 == the composed picture, byte for byte (%d B)", n1);
+        check(n1 > 0 && n1 == n2 && same, what);
+    }
+    {   /* placement at zoom 2 (the visual modes, letterboxed): 160 x 90, each pixel 2 x 2, at 0, 30 in a 320 x 240
+         * output gives the bytes of that picture composed by hand (black above and below; the MCU rows across the
+         * edges half black, half picture) */
+        static uint8_t fr[160 * 90], comp2[320 * 240], o3[64 * 1024];
+        static uint8_t prgb2[256][3];
+        static vjpeg_ycc_t plut2[256];
+        uint32_t x, yy, i2, same = 1;
+        int32_t n1, n2;
+        vjpeg_src_t a = {fr, plut2, 160, 90, 160, 2, 0, 320, 240, 0, 30}, b = {comp2, plut2, 320, 240, 320, 1, 0};
+        for (i2 = 0; i2 < 256u; i2++) {
+            prgb2[i2][0] = (uint8_t)(i2 ? (i2 * 37u) & 255u : 0u);
+            prgb2[i2][1] = (uint8_t)(i2 ? (i2 * 91u) & 255u : 0u);
+            prgb2[i2][2] = (uint8_t)(i2 ? (i2 * 53u) & 255u : 0u);
+        }
+        vjpeg_lut_from_rgb((const uint8_t (*)[3])prgb2, plut2, 256);
+        for (yy = 0; yy < 90u; yy++)
+            for (x = 0; x < 160u; x++)
+                fr[yy * 160u + x] = (uint8_t)(1u + (x * 3u + yy * 5u + ((x ^ yy) & 7u) * 11u) % 255u);   /* busy, no black */
+        memset(comp2, 0, sizeof comp2);
+        for (yy = 0; yy < 180u; yy++)
+            for (x = 0; x < 320u; x++)
+                comp2[(30u + yy) * 320u + x] = fr[(yy / 2u) * 160u + x / 2u];
+        n1 = vjpeg_encode(&a, 80, out, sizeof out);
+        n2 = vjpeg_encode(&b, 80, o3, sizeof o3);
+        for (i2 = 0; n1 > 0 && i2 < (uint32_t)n1 && same; i2++)
+            same = out[i2] == o3[i2];
+        snprintf(what, sizeof what, "placement, zoom 2: 160x90 at 2x, at 0,30 in 320x240 == the composed picture, byte for byte (%d B)", n1);
         check(n1 > 0 && n1 == n2 && same, what);
     }
     /* an odd size: edges repeated, no reads past the frame (a guard page would be better; ASan covers it) */

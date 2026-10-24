@@ -24,7 +24,9 @@ static uint32_t vis_rnd(void) { vis_rnd_s = vis_rnd_s * 1103515245u + 12345u; re
 #define VIS_Y 52u                                       /* the picture: 240 x 135 at 1.5 x, between the two bars */
 #define VIS_PH 135u
 #define VIS_ROWS 30u                                    /* frame rows per pass: 45 screen rows, three passes */
-static uint8_t vis_copy[VF_W * VIS_ROWS] __attribute__((section(".pool")));
+#define vis_copy (VF_SPARE)                             /* VF_W x VIS_ROWS, after the frames (vcore.c VF_SPARE: not
+                                                         * used while SCREEN shows its card) */
+_Static_assert(VF_W * VIS_ROWS <= VF_SPARE_N, "the LCD's slice fits after the frames");
 static uint32_t vis_frames_shown;                       /* vc1.frames of the frame on the screen */
 static uint8_t vis_bars_due, vis_top_msg;               /* redraw the bars; the top bar shows a message */
 static uint8_t vis_card;                                /* SCREEN's card is on the screen */

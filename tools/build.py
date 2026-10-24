@@ -183,7 +183,7 @@ def build_app():
     flags = [*CFLAGS, "-Ifirmware/hal", "-Ifirmware/src", "-Ibuild/gen"]
     for flag in ("FELUCCA_FLASH", "FELUCCA_OTA", "FELUCCA_OTA_DRYRUN", "FELUCCA_CDC", "FELUCCA_UART",
                  "FELUCCA_ICONS", "FELUCCA_SLICE", "FELUCCA_CPU1", "FELUCCA_LOGO_TEXT", "FELUCCA_UAC", "FELUCCA_UVC", "FELUCCA_LCD_BAUD",
-                 "FELUCCA_VCORE", "FELUCCA_USB_ALT", "FELUCCA_UVC_NO_NEST", "FELUCCA_UVC_PACE"):
+                 "FELUCCA_VCORE", "FELUCCA_USB_ALT", "FELUCCA_UVC_NO_NEST", "FELUCCA_UVC_PACE", "FELUCCA_UAC_TONE"):
         v = os.environ.get(flag)    # unset: the default in firmware/src/felucca.c
         if v in ("0", "1") or (flag in ("FELUCCA_LCD_BAUD", "FELUCCA_UVC_PACE") and v and v.isdigit()):
             flags.append(f"-D{flag}={v}")
@@ -258,15 +258,23 @@ def check(img, syms, dis, rt):
     def sym(name):
         mm = re.search(r"^([0-9a-f]+) .*\s" + name + r"$", syms, re.M)
         return int(mm.group(1), 16) if mm else 0
-    bss = sym("_bss_end") - 0x01C08000
+    ld = (SRC / "firmware" / "app.ld").read_text()
+
+    def region(name):                             # (origin, length) of an app.ld MEMORY region
+        mm = re.search(name + r"\s*\([a-z]+\)\s*:\s*ORIGIN\s*=\s*(0x[0-9A-Fa-f]+),\s*LENGTH\s*=\s*(0x[0-9A-Fa-f]+|\d+K)", ld)
+        n = mm.group(2)
+        return int(mm.group(1), 16), int(n[:-1]) * 1024 if n.endswith("K") else int(n, 16)
+    ram_at, ram_len = region("RAM")
+    _, pool_len = region("POOL")
+    bss = sym("_bss_end") - ram_at
     pool = sym("_pool_end") - sym("_pool_start")
     lowram = sym("_lr_end") - sym("_lr_start")    # the SRAM below the RAM region (app.ld .lowram), up to 0x01C07F00
-    notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of 98304; lowram {lowram} B of "
-                 f"{0x01C07F00 - sym('_lr_start')}; pool {pool} B of {0x54000}")
-    if bss > 96 * 1024:
+    notes.append(f"image {len(img)} B; RAM .data+.bss {bss} B of {ram_len}; lowram {lowram} B of "
+                 f"{0x01C07F00 - sym('_lr_start')}; pool {pool} B of {pool_len}")
+    if bss > ram_len:
         errors.append("RAM region overflow")
-    if 0x54000 - pool < 8192:                     # keep >= 8 KiB of the pool spare
-        errors.append(f"pool headroom {0x54000 - pool} B < 8192 B")
+    if pool_len - pool < 8192:                    # keep >= 8 KiB of the pool spare
+        errors.append(f"pool headroom {pool_len - pool} B < 8192 B")
     return errors, notes
 
 

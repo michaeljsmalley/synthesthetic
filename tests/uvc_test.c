@@ -26,6 +26,7 @@
 #define FELUCCA_UAC T_UAC
 #define FELUCCA_UVC 1
 static void fm1_delay_ms(uint32_t ms) { (void)ms; }
+static volatile uint32_t fm1_ms;                  /* (core.h; usb.c uac_level stamps the last loud block) */
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"   /* SIE register macros (never touched here) */
 static uint32_t uvc_test_clock;                   /* half-milliseconds: one a poll */
 #define UVC_HALF_MS() (uvc_test_clock)
@@ -93,7 +94,7 @@ int main(void)
     check("camera controls: brightness AMOUNT, saturation RATE, contrast TRAILS, hue COLOR, nothing else",
           uvc_pu_knob(2) == 0 && uvc_pu_knob(7) == 1 && uvc_pu_knob(3) == 2 && uvc_pu_knob(6) == 3 && uvc_pu_knob(4) < 0 &&
           uvc_pu_knob(1) < 0);
-    check("device: bcdDevice 4.x for the camera with controls", DEV_DESC[13] == 4u);
+    check("device: bcdDevice 5.x for the 320 x 240 picture", DEV_DESC[13] == 5u);
     check("VS interface alt 0: the IF after VC, no endpoints, class 0E/02", vs0_off && d[vs0_off + 2] == UVC_VS_IF && d[vs0_off + 4] == 0u);
     if (vsh_off) {
         uint32_t t = le16(d + vsh_off + 4), s = 0, o;

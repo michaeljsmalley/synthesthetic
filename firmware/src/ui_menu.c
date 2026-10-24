@@ -241,8 +241,8 @@ UI_SMALL static void enc_drop(void)                             /* knob turns no
 
 UI_SMALL static void menu_close(void)
 {
-    if (song.playing || transport_req)
-        settings_later = 1;                            /* (a flash write stops the audio: once stopped) */
+    if (song.playing || transport_req || !audio_quiet())
+        settings_later = 1;                            /* (a flash write stops the audio: once stopped and quiet) */
     else
         settings_save();                               /* palette / panel table, if changed */
     ui.menu = 0;

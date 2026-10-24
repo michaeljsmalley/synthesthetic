@@ -771,7 +771,13 @@ static void vp_fresnel(uint8_t *dst)
 /* ---- the overlays (the webcam only): saved under, drawn, encoded, put back (vcore.c) ---- */
 #define OV_POOL 5120u
 #define OV_RECTS 8u
+#ifdef VF_SPARE                                         /* after the analysis in the frames' RAM (vcore.c VF_SPARE): used
+                                                         * within one visual-mode frame, never while SCREEN is drawn */
+#define ov_pool (VF_SPARE + VF_W * VIS_ROWS + 4u * VR_N * 2u)
+_Static_assert(VF_W * VIS_ROWS + 4u * VR_N * 2u + OV_POOL <= VF_SPARE_N, "the overlay's pool fits after the analysis");
+#else
 static uint8_t ov_pool[OV_POOL];
+#endif
 static struct { int16_t x, y, w, h; uint16_t at; } ov_rect[OV_RECTS];
 static uint32_t ov_n, ov_used;
 static uint32_t vr_name_t, vr_palname_t;                /* frames left to show the mode's / palette's name */

@@ -115,6 +115,8 @@ UI_SMALL static void draw_frame(void)
     lcd_fill(0, Y_GRAPH + H_GRAPH, 240, Y_FOOT - Y_GRAPH - H_GRAPH, C_BLACK);
     for (i = 0; i < 4u; i++)                            /* left inset of each column */
         lcd_fill(i * 60u, Y_LABEL, 4, Y_SEP_END - Y_LABEL, C_BLACK);
+    lcd_fill(239, Y_LABEL, 1, Y_SEP_END - Y_LABEL, C_BLACK);   /* the last column's right edge: no rule there, and the
+                                                         * TRACKS header's line (y 39) stayed (SCREEN's test found it) */
     lcd_fill(0, H_HEAD, 240, 1, C_LINE);
     lcd_fill(0, Y_FOOT - 2, 240, 1, C_LINE);
     for (i = 1; i < 4u; i++)

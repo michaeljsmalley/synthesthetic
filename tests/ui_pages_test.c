@@ -40,25 +40,18 @@ static void splash_step_dump(void) { static int n; char b[32]; snprintf(b, sizeo
 static void lcd_fill(uint32_t x,uint32_t y,uint32_t w,uint32_t h,uint16_t c)
 { uint32_t i,j; assert(x+w<=240&&y+h<=240); for(j=0;j<h;j++)for(i=0;i<w;i++)screen[(y+j)*240+x+i]=swap16(c);
   if (mir_px) mir_fill(x, y, w, h, c); }
-/* SCREEN's copy as it should be: every pixel of the 3/4 display from all of its 1, 2 or 4 pixels at once (the
- * stronger wins, ties to the first, as mir_blit does); -> the pixels the incremental copy has otherwise */
+/* SCREEN's copy as it should be: the display, pixel for pixel, through the palette; -> the pixels the incremental
+ * copy has otherwise */
 static uint32_t mir_wrong(const uint8_t *cp)
 {
-    static uint8_t want[MIR_N], st[MIR_N], seen[MIR_N];
-    uint32_t x, y, n = 0;
-    mir_strength();
-    memset(seen, 0, sizeof seen);
-    for (y = 0; y < 240u; y++)
-        for (x = 0; x < 240u; x++) {
-            uint32_t d = mir_my(y) * MIR_W + mir_mx(x), k = mir_idx(swap16(screen[y * 240u + x]));
-            if (!seen[d] || mir_st[k] > st[d]) { want[d] = (uint8_t)k; st[d] = mir_st[k]; seen[d] = 1; }
-        }
+    uint32_t x, n = 0;
     for (x = 0; x < MIR_N; x++) {
-        n += want[x] != cp[x];
+        uint32_t want = mir_idx(swap16(screen[x]));
+        n += want != cp[x];
 #ifdef MIR_DEBUG
-        if (want[x] != cp[x] && n <= 3u)
-            printf("mir: (%u, %u) want %u (%u %u %u) got %u (%u %u %u)\n", x % MIR_W, x / MIR_W, want[x], MIR_RGB[want[x]][0],
-                   MIR_RGB[want[x]][1], MIR_RGB[want[x]][2], cp[x], MIR_RGB[cp[x]][0], MIR_RGB[cp[x]][1], MIR_RGB[cp[x]][2]);
+        if (want != cp[x] && n <= 3u)
+            printf("mir: (%u, %u) want %u (%u %u %u) got %u (%u %u %u)\n", x % MIR_W, x / MIR_W, want, MIR_RGB[want][0],
+                   MIR_RGB[want][1], MIR_RGB[want][2], cp[x], MIR_RGB[cp[x]][0], MIR_RGB[cp[x]][1], MIR_RGB[cp[x]][2]);
 #endif
     }
     return n;
@@ -109,6 +102,7 @@ static void up_name(uint32_t k, char *b) { str_cpy(b, k ? "MY PAD" : "MY LEAD", 
 static void up_slot_label(char *b, uint32_t k) { fmt_int(b, (int32_t)k + 1); }
 static void up_ui(uint32_t op, uint32_t k) { (void)op; (void)k; }
 static void settings_save(void) {}
+static int audio_quiet(void) { return 1; }
 #include "../firmware/src/ui_song.c"
 #include "../firmware/src/ui_studio.c"
 #include "../firmware/src/icons.c"
@@ -1768,7 +1762,7 @@ int main(int argc, char **argv)
         go_home(); frames(2);
     }
     {   /* SCREEN (Synthesthetic, mirror.c): its copy starts empty, then the UI draws everything once (ui.force, as
-         * vis_tick does on vis_req_redraw): every screen whole in the copy, the exact 3/4 of the display */
+         * vis_tick does on vis_req_redraw): every screen whole in the copy, the display pixel for pixel */
         static uint8_t mb[MIR_N];
         static const uint8_t LAYER_BTN[] = {B_FX, B_SEQ, B_EDIT, B_GLO, B_SAVE, B_ARP, B_SCL};
         uint32_t fam, j, w, screens = 0, bad_n = 0, worst = 0;
@@ -1796,10 +1790,9 @@ int main(int argc, char **argv)
         #undef MIR_FRESH
         {
             char what[120];
-            snprintf(what, sizeof what, "SCREEN: a forced redraw fills the copy (%u screens; %u off by 1 px at most: %u, %s)",
+            snprintf(what, sizeof what, "SCREEN: a forced redraw fills the copy, pixel for pixel (%u screens; %u off, at most %u px: %s)",
                      screens, bad_n, worst, worst_at);
-            check(worst <= 1u, what);                   /* (the header's last pixel, 24 24 24: the black below it starts
-                                                         * between the two rows that share, one of the few such edges) */
+            check(worst == 0u, what);
         }
     }
     {   /* fuzz: 20000 frames of random buttons (held or tapped), knobs and keys, with the audio running
@@ -1831,6 +1824,7 @@ int main(int argc, char **argv)
         mir_px = 0;
         printf("ui: SCREEN copy over the fuzz: %u of %u frames off, at most %u px, %u.%02u px a frame on average (of %u)\n",
                mw_frames, mw_n, mw_max, mw_sum / mw_n, mw_sum % mw_n * 100u / mw_n, MIR_N);
+        check(mw_frames == 0u, "SCREEN: over the fuzz the copy stays the display, pixel for pixel");
         #undef R
     }
     printf("ui: %s\n", fails ? "FAILED" : "pages, layers (punch, steps, erase, roll, key, mix), layer lock, song layer, REC hold, drums, REC, 20000-frame fuzz PASS");

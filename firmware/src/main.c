@@ -93,8 +93,7 @@ void fm1_timer5_irq(void)
     if (felucca_dbg.in_audio) {
         felucca_dbg.nested++;
 #if FELUCCA_UAC
-        if (usb_due)
-            uac_service();
+        uac_service();                          /* every tick (10 kHz): see below */
 #endif
 #if FELUCCA_UVC && !FELUCCA_UVC_NO_NEST
         if (usb_due)
@@ -105,6 +104,12 @@ void fm1_timer5_irq(void)
     }
     if (owed & 1u)
         usb_poll();
+#if FELUCCA_UAC
+    else    /* the audio input's next packet on every tick, not every fifth: with video streaming, the host's audio
+             * IN comes late in a frame that carries a video packet and early in one that does not, sometimes 0.3 ms
+             * apart, and a 2 kHz check missed the next one ~27 times a second (the ring then overflowed: blips) */
+        uac_service();
+#endif
 #if FELUCCA_UART
     if (owed & 2u)
         uart_midi_poll();

@@ -601,8 +601,8 @@ WEB(web_render) uint32_t web_render(uint32_t n)
 WEB(web_audio_ptr) uint32_t web_audio_ptr(void) { return (uint32_t)(uintptr_t)web_audio; }
 
 /* the webcam: one frame of the video core's job (vcore.c vcore_job, the JPEG aside) -> web_cam_px with its palette in
- * web_cam_rgb; 0 = the picture (160 x 90, with the overlay, as the webcam sends it), 1 = SCREEN (the display's copy,
- * 180 x 180, placed at 72 in 320 x 180) */
+ * web_cam_rgb; 0 = the picture (160 x 90, with the overlay, as the webcam sends it, 2 x in the 320 x 240 picture at
+ * 0, 30), 1 = SCREEN (the display's copy, 240 x 240, placed at 40 in 320 x 240) */
 static uint8_t web_cam_px[MIR_N > VF_N ? MIR_N : VF_N];
 static uint8_t web_cam_rgb[2][256][3];
 static uint32_t web_cam_fi, web_cam_cur;

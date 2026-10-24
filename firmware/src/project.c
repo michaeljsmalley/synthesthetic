@@ -670,7 +670,8 @@ UI_SMALL static void project_load(uint32_t slot)
 
 /* ---- the working project, kept in flash by itself: saved when it changed, the transport is stopped,
  * nothing sounds and the panel was not touched for AUTOSAVE_IDLE (a flash erase stops the audio for
- * ~50 ms: never while something plays); loaded at power-on (autosave_resume) */
+ * ~50 ms: never while something plays; while USB records, not until the output has been silent for a
+ * second, usb.c uac_level); loaded at power-on (autosave_resume) */
 #define AUTOSAVE_IDLE 2500u                    /* ms without input */
 #define AUTOSAVE_GAP 20000u                    /* ms between two saves at least */
 static project_t autosave_buf __attribute__((section(".pool")));
@@ -686,6 +687,10 @@ UI_SMALL static int audio_quiet(void)
     for (i = 0; i < NDRUM; i++)
         if (drums.v[i].active)
             return 0;
+#if FELUCCA_UAC
+    if (uac.flowing && fm1_ms - uac_loud_ms < UAC_QUIET_MS)
+        return 0;                                   /* a USB recording: the effect tails too, and a moment after */
+#endif
     return 1;
 }
 

@@ -573,8 +573,8 @@ UI_SMALL static uint32_t ed_bk_commit(void)
         return 0;
     }
     if (id == 12u) {                                      /* v13 (Synthesthetic): the visual settings: checked (size, magic,
-                                                         * CRC, ranges), shown at once; written with the settings now, or
-                                                         * once stopped and quiet while the song plays (not refused: a
+                                                         * CRC, ranges), shown at once; written with the settings now if
+                                                         * nothing sounds, else once stopped and quiet (not refused: a
                                                          * title can change in the middle of a stream) */
         vis_set_t v;
         persist_t p;
@@ -589,7 +589,7 @@ UI_SMALL static uint32_t ed_bk_commit(void)
         vis_style = v.mode;
         vis_pal_live = v.palette;
         vis_var = 0;
-        if (ed_flash_busy()) {
+        if (ed_flash_busy() || !audio_quiet()) {
             vis_dirty = 1;
             settings_later = 1;
             return 0;

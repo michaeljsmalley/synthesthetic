@@ -33,7 +33,8 @@ stream, has never seen a park fail.
 
 Each frame is 160 × 90 pixels of palette indexes, one byte per pixel. Every frame builds its own 256-color palette,
 once in YCbCr for the JPEG and once in RGB565 for the screen, which makes color cycling and fades almost free. The
-USB video gets the frame doubled to 320 × 180, and the FM-1's screen shows it at one and a half times that size.
+USB video gets the frame doubled to 320 × 180, with a black band above and below in its 320 × 240 picture. The
+FM-1's screen shows the frame at one and a half times its size.
 
 The analyzer reads the mix at 22 kHz, before the MASTER knob. It runs a 1024-point FFT and measures 32 bands of about
 a quarter octave each, from 40 Hz to 10 kHz, in decibels. Note-ons for each track, drum hits by type, track levels
@@ -63,13 +64,11 @@ nobody is reading. The four camera controls come from a standard UVC processing 
 
 ### How SCREEN works
 
-While SCREEN is on, everything the FM-1 draws on its screen is also drawn into a 180 × 180 copy, one byte per pixel.
-In every group of four columns, two keep a column of their own and two share one, and the same goes for rows. Where
-two pixels share a spot, the one that stands out more from the background wins, so thin lines and text survive the
-shrinking. Which pairs share was chosen by measuring where the interface's drawings actually start and end, so a
-single drawing almost never gets split across a pair. Colors go through a 256-color palette of 216 colors and 40
-grays, with exact black and white. The copy reuses the RAM of the picture frames, so SCREEN needs almost no extra
-memory. The second core centers it in the 320 × 180 picture and encodes it like any other frame.
+While SCREEN is on, everything the FM-1 draws on its screen is also drawn into a 240 × 240 copy, one byte per pixel,
+so the video shows the display pixel for pixel. Colors go through a 256-color palette of 216 colors and 40 grays,
+with exact black and white. The copy shares one block of RAM with the picture frames. The rest of that block holds
+things only the visualizers use, the sound analysis and the overlay's scratch space among them, and those stay idle
+while SCREEN is on. The second core centers the copy in the 320 × 240 picture and encodes it like any other frame.
 
 ### Settings
 

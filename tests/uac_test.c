@@ -27,6 +27,7 @@
 #define T_RATE 0                          /* 2.7 beta: menu USB RATE (0 AUTO, 1 44.1, 2 48): what this start offers */
 #endif
 static void fm1_delay_ms(uint32_t ms) { (void)ms; }
+static volatile uint32_t fm1_ms;                  /* (core.h; usb.c uac_level stamps the last loud block) */
 #pragma GCC diagnostic ignored "-Wint-to-pointer-cast"   /* SIE register macros (never touched here) */
 #include "../firmware/src/vis_set.h"                  /* (Synthesthetic: the visual settings) */
 #include "../firmware/src/usb.c"
@@ -512,6 +513,40 @@ static void test_ring48(void)
 
 #endif
 
+/* a flash write (interrupts off) misses packets and macOS replays the 0.25 s before the gap: project.c audio_quiet
+ * waits for UAC_QUIET_MS of silence on the stream, from the last block uac_level saw above -54 dBFS */
+static void test_level(void)
+{
+    int32_t b[64];
+    usb.config = 1;
+    memset(&uac, 0, sizeof uac);
+    uac_stream(1);
+    uac.flowing = 1;
+    uac.feed = 1;
+    uac_loud_ms = 0;
+    memset(b, 0, sizeof b);
+    fm1_ms = 5000;
+    uac_tap(b, 32);
+    b[17] = 63;
+    b[40] = -63;
+    uac_tap(b, 32);
+    check("level: silence and -54 dBFS (63) leave the stamp", uac_loud_ms == 0);
+    fm1_ms = 6000;
+    b[17] = 64;
+    uac_tap(b, 32);
+    check("level: a block above it stamps the time", uac_loud_ms == 6000);
+    fm1_ms = 7000;
+    b[17] = 0;
+    b[41] = -64;
+    uac_tap(b, 32);
+    check("  the right channel, below zero, too", uac_loud_ms == 7000);
+    fm1_ms = 8000;
+    uac.feed = 0;
+    uac_tap(b, 32);
+    check("  not fed (nobody records): no stamp", uac_loud_ms == 7000);
+    uac_stream(0);
+}
+
 int main(void)
 {
     printf("-- USB audio input, CDC %s\n", T_CDC == 2 ? "built in, USB SERIAL OFF" : T_CDC ? "on" : "off");
@@ -525,6 +560,7 @@ int main(void)
     test_resampler();
     test_ring48();
 #endif
+    test_level();
     printf(fails ? "UAC TEST FAILED (%d)\n" : "uac: all ok\n", fails);
     return fails != 0;
 }

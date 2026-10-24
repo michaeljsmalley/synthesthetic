@@ -8,8 +8,9 @@
  *       -> bytes written, or -1 when the file would not fit in cap (out is then incomplete; the caller
  *          lowers the quality for the next frame or drops this one)
  *   src->zoom = 1 or 2: a 120 x 120 frame encodes as 240 x 240 with each source pixel 2 x 2 (no RAM copy).
- *   src->ow (zoom 1, a palette): the output is ow x oh with the frame at ox, oy and black around it (SCREEN:
- *   the display's 180 x 180 copy in the 320 x 180 picture); 0: the output is the frame.
+ *   src->ow (a palette): the output is ow x oh with the frame (w x h at its zoom; at zoom 2, ox and oy even) at
+ *   ox, oy and black around it (SCREEN: the display's 240 x 240 copy at 40, 0 in the 320 x 240 picture; the visual
+ *   modes: 160 x 90 at 2 x, at 0, 30); 0: the output is the frame.
  *
  * The DCT is the IJG accurate integer one (jfdctint: Loeffler, Ligtenberg and Moschytz, 13-bit constants); the
  * coefficients it gives are 8 x the DCT, so the quantiser divides by 8 q through a 16-bit reciprocal. A 16 x 16
@@ -30,8 +31,8 @@ typedef struct {
     uint32_t w, h, pitch;        /* source size and row pitch in pixels */
     uint32_t zoom;               /* 1 or 2: the output is w*zoom x h*zoom */
     void (*yield)(void);         /* called once per MCU row, or 0 (the video core parks for flash writes there) */
-    uint32_t ow, oh, ox, oy;     /* zoom 1 with a palette: the output's size and the frame's place in it, black
-                                  * around; ow 0: the output is the frame */
+    uint32_t ow, oh, ox, oy;     /* with a palette: the output's size and the frame's place in it (output pixels,
+                                  * even at zoom 2), black around; ow 0: the output is the frame */
 } vjpeg_src_t;
 
 typedef struct {
@@ -386,8 +387,8 @@ static int32_t vjpeg_encode(const vjpeg_src_t *src, uint32_t quality, uint8_t *o
     int32_t (*y)[64] = vj_y, *cb = vj_cb, *cr = vj_cr;
     uint32_t zoom = src->zoom == 2u ? 2u : 1u, ow = src->w * zoom, oh = src->h * zoom, mx, my, bx, by, px, py;
     static const vjpeg_ycc_t VJ_BLACK = {0, 128, 128, 0};
-    uint32_t placed = zoom == 1u && src->lut && src->ow, fx = 0, fy = 0;
-    if (placed) {                                           /* the frame at fx, fy in a bigger, black output */
+    uint32_t placed = src->lut && src->ow, fx = 0, fy = 0, fw = ow, fh = oh;
+    if (placed) {                                           /* the frame (fw x fh) at fx, fy in a bigger, black output */
         ow = src->ow; oh = src->oh; fx = src->ox; fy = src->oy;
     }
     j->out = out; j->cap = cap; j->pos = 0; j->bitbuf = 0; j->nbits = 0; j->overflow = 0;
@@ -398,7 +399,7 @@ static int32_t vjpeg_encode(const vjpeg_src_t *src, uint32_t quality, uint8_t *o
         if (src->yield)
             src->yield();
         for (mx = 0; mx < ow; mx += 16u) {
-            if (placed && (mx + 16u <= fx || mx >= fx + src->w || my + 16u <= fy || my >= fy + src->h)) {
+            if (placed && (mx + 16u <= fx || mx >= fx + fw || my + 16u <= fy || my >= fy + fh)) {
                 vj_flat(j, -128 * 64, 0, VJ_YDC, VJ_YAC);  /* wholly outside the placed frame: six black blocks */
                 vj_flat(j, -128 * 64, 0, VJ_YDC, VJ_YAC);
                 vj_flat(j, -128 * 64, 0, VJ_YDC, VJ_YAC);
@@ -409,7 +410,7 @@ static int32_t vjpeg_encode(const vjpeg_src_t *src, uint32_t quality, uint8_t *o
                     return -1;
                 continue;
             }
-            if (placed) {
+            if (placed && zoom == 1u) {
                 /* the placed frame (zoom 1, a palette): 2 x 2 pixels at a time, the chroma their average; black
                  * outside it, the output's last row and column repeated (as the general path below, bit for bit) */
                 for (by = 0; by < 16u; by += 2u) {
@@ -444,21 +445,25 @@ static int32_t vjpeg_encode(const vjpeg_src_t *src, uint32_t quality, uint8_t *o
             }
             if (zoom == 2u && src->lut) {
                 /* zoom 2 from a palette: the MCU is 8 x 8 source pixels, each 2 x 2 in the output; the chroma
-                 * block is those pixels themselves (the 2 x 2 average of one pixel), edges repeated */
+                 * block is those pixels themselves (the 2 x 2 average of one pixel), edges repeated; placed (fx, fy
+                 * even: whole pixels), black outside the frame instead */
                 for (by = 0; by < 8u; by++) {
-                    uint32_t sy = (my >> 1) + by, yrow;
+                    uint32_t sy = (my >> 1) + by - (fy >> 1);    /* (above the frame: wraps, past h) */
+                    const uint8_t *row;
                     int32_t *yb, *cbrow = cb + by * 8u, *crrow = cr + by * 8u;
-                    if (sy >= src->h)
-                        sy = src->h - 1u;
-                    yrow = sy * src->pitch;
+                    if (placed)
+                        row = sy < src->h ? src->px + sy * src->pitch : 0;
+                    else
+                        row = src->px + (sy < src->h ? sy : src->h - 1u) * src->pitch;
                     yb = y[(by >> 2) << 1] + (by & 3u) * 16u;      /* the block row pair's first row */
                     for (bx = 0; bx < 8u; bx++) {
-                        uint32_t sx = (mx >> 1) + bx;
+                        uint32_t sx = (mx >> 1) + bx - (fx >> 1);
                         const vjpeg_ycc_t *c;
                         int32_t Y, *q4;
-                        if (sx >= src->w)
-                            sx = src->w - 1u;
-                        c = &src->lut[src->px[yrow + sx]];
+                        if (placed)
+                            c = row && sx < src->w ? &src->lut[row[sx]] : &VJ_BLACK;
+                        else
+                            c = &src->lut[row[sx < src->w ? sx : src->w - 1u]];
                         Y = (int32_t)c->y - 128;
                         q4 = yb + (bx >> 2) * 64u + (bx & 3u) * 2u;
                         q4[0] = q4[1] = q4[8] = q4[9] = Y;

@@ -49,16 +49,26 @@ function ppm(w, name) {
   fs.writeFileSync(new URL(`build/web/test-${name}.ppm`, root), Buffer.concat([Buffer.from('P6\n240 240\n255\n'), out]));
 }
 function cam(w) {
-  const screen = w.web_cam(), n = screen === 1 ? 180 * 180 : 160 * 90;
+  const screen = w.web_cam(), n = screen === 1 ? 240 * 240 : 160 * 90;
   const px = new Uint8Array(w.memory.buffer, w.web_cam_ptr(), n), rgb = new Uint8Array(w.memory.buffer, w.web_cam_rgb_ptr(), 768);
   let bright = 0;
   for (const i of px) bright += rgb[3 * i] + rgb[3 * i + 1] + rgb[3 * i + 2] > 120;
   return { screen, bright, px, rgb };
 }
 function camPpm(c, name) {
-  const W = c.screen === 1 ? 180 : 160, H = c.screen === 1 ? 180 : 90, out = Buffer.alloc(W * H * 3);
+  const W = c.screen === 1 ? 240 : 160, H = c.screen === 1 ? 240 : 90, out = Buffer.alloc(W * H * 3);
   for (let i = 0; i < W * H; i++) out.set(c.rgb.subarray(3 * c.px[i], 3 * c.px[i] + 3), 3 * i);
   fs.writeFileSync(new URL(`build/web/test-${name}.ppm`, root), Buffer.concat([Buffer.from(`P6\n${W} ${H}\n255\n`), out]));
+}
+function camVsLcd(w, c) {                                 // SCREEN: the copy against the display, pixel for pixel
+  const px = lcd(w);                                      // (the palette's rounding is small: a far-off pixel is a wrong one)
+  let off = 0;
+  for (let i = 0; i < 240 * 240; i++) {
+    const v = px[i], a = (v >> 11) * 255 / 31 + ((v >> 5) & 63) * 255 / 63 + (v & 31) * 255 / 31;
+    const k = 3 * c.px[i], b = c.rgb[k] + c.rgb[k + 1] + c.rgb[k + 2];
+    off += Math.abs(a - b) > 150;
+  }
+  return off;
 }
 let fails = 0;
 function check(ok, what) { console.log(`web: ${what.padEnd(72)} ${ok ? 'ok' : 'FAIL'}`); fails += !ok; }
@@ -137,7 +147,11 @@ for (let mode = 0; mode < 31; mode++) {
   w.web_input(0, 0);
   const c = cam(w);
   modeCost.push([(t.cam - t0.cam) / Math.max(1, t.nc - t0.nc), mode]);
-  if (mode === 30) check(c.screen === 1 && c.bright > 300, `SCREEN: the webcam shows the display's copy (${c.bright} bright pixels)`);
+  if (mode === 30) {
+    check(c.screen === 1 && c.bright > 300, `SCREEN: the webcam shows the display's copy (${c.bright} bright pixels)`);
+    const off = camVsLcd(w, c);
+    check(off === 0, `SCREEN: the copy is the display, pixel for pixel (${off} pixels differ)`);
+  }
   else check(c.screen === 0 && w.web_vj_get(0) === mode, `mode ${mode}: the webcam draws (${c.bright} bright pixels)`);
   if ([0, 5, 16, 23, 24, 28, 30].includes(mode)) camPpm(c, `cam-${mode}`);
   if (mode === 16) ppm(w, 'vis');

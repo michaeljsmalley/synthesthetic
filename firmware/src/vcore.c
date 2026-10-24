@@ -2,8 +2,8 @@
 /* The video core: the FM-1's second core renders the picture and encodes it for USB.
  *
  * Core 1 runs vcore_job() as one long job (cpu1.h cpu1_run): frame after frame into one of two 8-bit
- * VF_W x VF_H (160 x 90) buffers through a 256-entry palette, each encoded as a 2 x zoomed JPEG (vjpeg.c) into one of two
- * output buffers, then published. On core 0, the USB poll takes the latest complete JPEG for the webcam stream
+ * VF_W x VF_H (160 x 90) buffers through a 256-entry palette, each encoded as a 2 x zoomed JPEG (vjpeg.c), letterboxed in
+ * the 320 x 240 picture (uvc_desc.h), into one of two output buffers, then published. On core 0, the USB poll takes the latest complete JPEG for the webcam stream
  * (usb.c uvc_source) and the main loop may paint the latest frame on the LCD. While the job runs the audio
  * render keeps to core 0 (cpu1_taken: cpu1_on() says no), so no audio job is ever handed to a busy core.
  *
@@ -15,16 +15,26 @@
  * Shared state is split by writer, each on cache lines of its own, with csync around every hand-over, as
  * hal/fm1_cpu1.h does for its mailbox (the cores share the caches, but a line written by both would lose
  * updates). The buffers are written by core 1 and read by core 0 after the flag that publishes them. */
+#include "uvc_desc.h"                                  /* UVC_W x UVC_H: the picture */
 #define VF_W 160u                                       /* the frame: 16:9, as webcams and the EYESY are */
 #define VF_H 90u
 #define VF_N (VF_W * VF_H)
+#define VF_OY ((UVC_H - 2u * VF_H) / 2u)                /* its first row in the picture (2 x): black above and below */
+_Static_assert(UVC_W == 2u * VF_W && VF_OY % 2u == 0u, "the frame at 2 x spans the picture, on whole chroma pairs");
+_Static_assert(UVC_H >= MIR_W && MIR_OX + MIR_W <= UVC_W && MIR_OX % 8u == 0u, "SCREEN's copy fits the picture");
 #define VJ_CAP 16384u                                   /* a JPEG output buffer; the quality follows the size */
 #define VC_PARK_US 20000u                               /* core 0 waits this long for the job to park */
 #define VC_WORK_US 31000u                               /* a frame's render + encode for 30 fps (33.3 ms, a margin) */
 
-/* the two frames, or (SCREEN) the display's 180 x 180 copy (mirror.c): never both, so one block of RAM */
-static uint8_t vf_mem[MIR_N > 2u * VF_N ? MIR_N : 2u * VF_N] __attribute__((section(".pool"), aligned(64)));
+/* the two frames, or (SCREEN) the display's 240 x 240 copy (mirror.c): never both, so one block of RAM. After the
+ * frames it holds what only the visual modes use (VF_SPARE): the LCD's slice of a frame (ui_vis.c vis_copy), the
+ * renderer's sound analysis (vrender.c vr_l .. vr_im) and the overlay's save-under pool (vproc.c ov_pool), each
+ * written anew before each use and left alone while SCREEN is drawn. (2026-10-23: the copy grew from 180 x 180, and these moved in from the RAM's .bss and the pool.) */
+static uint8_t vf_mem[MIR_N] __attribute__((section(".pool"), aligned(64)));
+_Static_assert(MIR_N >= 2u * VF_N, "the copy's RAM holds the two frames");
 static uint8_t *const vf_px[2] = {vf_mem, vf_mem + VF_N};
+#define VF_SPARE (vf_mem + 2u * VF_N)                   /* the visual modes' own, after the frames (see above) */
+#define VF_SPARE_N (MIR_N - 2u * VF_N)
 static uint8_t vj_out[2][VJ_CAP] __attribute__((section(".pool"), aligned(64)));
 static vjpeg_ycc_t vf_lut[2][256];                      /* each frame's palette (vproc.c builds it), in Y Cb Cr */
 static uint16_t vf_pal565[2][256];                      /* and in RGB565, byte-swapped for the LCD (ui_vis.c) */
@@ -137,11 +147,11 @@ static void vcore_job(uint32_t arg)
         }
         if (screen) {                                   /* SCREEN: the display's copy, centred, as it is (no overlay) */
             src.px = vf_mem; src.w = MIR_W; src.h = MIR_W; src.pitch = MIR_W; src.zoom = 1;
-            src.ow = 2u * VF_W; src.oh = 2u * VF_H; src.ox = MIR_OX; src.oy = 0;
+            src.ow = UVC_W; src.oh = UVC_H; src.ox = MIR_OX; src.oy = 0;
         } else {
             vr_overlay(vf_px[fi]);                      /* the overlay for the webcam only */
             src.px = vf_px[fi]; src.w = VF_W; src.h = VF_H; src.pitch = VF_W; src.zoom = 2;
-            src.ow = 0; src.oh = 0; src.ox = 0; src.oy = 0;
+            src.ow = UVC_W; src.oh = UVC_H; src.ox = 0; src.oy = VF_OY;
         }
         src.lut = vf_lut[fi];
         src.yield = vcore_yield;
