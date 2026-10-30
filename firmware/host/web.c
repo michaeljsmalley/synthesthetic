@@ -54,6 +54,8 @@ static void reset_restart(void) { web_restart = 1; }
 #define FM1_NCOL 11u
 #define FM1_NKEY 41u                             /* ids: 0..13 buttons, 14..40 note keys */
 #define FM1_NENC 7u
+#define FM1_NBTN 14u                             /* (the SMK-37 layer counts the panel with these: 18 buttons and 8
+                                                  * knobs there; the browser's FM-1 has the FM-1's) */
 #include "web_hal.h"                             /* FM1_KEYMAP and the flash map, from hal/fm1_input.h and
                                                   * hal/fm1_flash.h (tools/build_web.py) */
 enum { FM1_BTN_OCT_DOWN = 0, FM1_BTN_OCT_UP = 1 };
@@ -280,6 +282,7 @@ void isr_alnk0(void) {}
 #define FELUCCA_FLASH 1
 static uint8_t flash_ok = 1;
 #define FL_FAR(f) f                              /* (fm1_flash.h: the RAM driver's calls) */
+#define FL_JEDEC_OK(id) ((id) == 0x856014u)      /* (hal/fm1_flash_map.h, the FM-1 half: the expected 1 MiB part) */
 static uint32_t fl_jedec_ram(void) { return 0x856014u; }   /* the FM-1's part: persist_boot keeps flash_ok */
 static void fl_plain_window_init(void) {}
 static int web_flash_in(uint32_t off, uint32_t n)

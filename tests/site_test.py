@@ -49,14 +49,25 @@ try:
         pkg[i * make_site.BLK + make_site.KEEP] = 0x7D
     pkg[2000:2016] = b"FELUCCA-LOADER-1"
     (tmp / "p.fwsc").write_bytes(bytes(pkg))
-    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site")
+    smk = bytearray(pkg)                                   # the same, as an SMK-37 Pro package: served next to the FM-1's
+    for i, ch in enumerate("SMK-37 Pro_900"):
+        smk[i * make_site.BLK + make_site.KEEP] = (ord(ch) + i + 1) & 0xFF
+    for i in range(len("SMK-37 Pro_900"), 8):
+        smk[i * make_site.BLK + make_site.KEEP] = 0x7D
+    (tmp / "s.fwsc").write_bytes(bytes(smk))
+    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site", [tmp / "s.fwsc"])
     app = tmp / "site" / "webapp"
+    inst = (app / "installer" / "index.html").read_text(encoding="utf-8")
+    check("installer: a package per board in its meta (the FM-1's and the SMK-37 Pro's), both in firmware/",
+          '"SMK-37 Pro": {"product": "SMK-37 Pro_900", "pkg": "../../firmware/synthesthetic-9.9-smk37.fwsc"' in inst and
+          (tmp / "site" / "firmware" / "synthesthetic-9.9-smk37.fwsc").is_file() and
+          (tmp / "site" / "firmware" / "synthesthetic-9.9.fwsc").is_file())
     sw = (app / "sw.js").read_text(encoding="utf-8")
     files = json.loads(re.search(r"const FILES = (\[.*?\]);", sw).group(1))
     path = lambda f: (app / f / "index.html") if f.endswith("/") else (app / f)   # noqa: E731
     check("sw.js: stamped with the version", 'const STAMP = "9.9-' in sw and "/*" + "FILES*/" not in sw)
     check("sw.js keeps the installer, the editor, its font, the firmware",
-          {"installer/", "editor/", "editor/fukiai.ttf", "../firmware/synthesthetic-9.9.fwsc"} <= set(files))
+          {"installer/", "editor/", "editor/fukiai.ttf", "../firmware/synthesthetic-9.9.fwsc", "../firmware/synthesthetic-9.9-smk37.fwsc"} <= set(files))
     check("sw.js: every file it keeps is in the site", all(path(f).is_file() for f in files))
     m = json.loads((app / "synthesthetic.webmanifest").read_text(encoding="utf-8"))
     check("manifest: standalone, starts at the editor, icons 192 and 512 (+ maskable)",
@@ -127,11 +138,11 @@ try:
               and 'property="og:description" content="' in h and '<meta name="twitter:card" content="summary_large_image">' in h)
     stamp = sw.split('const STAMP = "')[1].split('"')[0]
     (tmp / "site2").mkdir()
-    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site2")
+    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site2", [tmp / "s.fwsc"])
     same = (tmp / "site2" / "webapp" / "sw.js").read_text(encoding="utf-8").split('const STAMP = "')[1].split('"')[0]
     pkg[3000] ^= 1
     (tmp / "p.fwsc").write_bytes(bytes(pkg))
-    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site2")
+    make_site.main(tmp / "p.fwsc", "9.9", tmp / "site2", [tmp / "s.fwsc"])
     other = (tmp / "site2" / "webapp" / "sw.js").read_text(encoding="utf-8").split('const STAMP = "')[1].split('"')[0]
     check("sw.js: the same site, the same stamp; a file changed, a new one", stamp == same and stamp != other)
 finally:

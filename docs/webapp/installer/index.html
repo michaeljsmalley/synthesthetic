@@ -9,12 +9,12 @@
 <meta name="description" content="Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM-1 firmware that sends video over USB, so its 30 visualizers show up as a camera in OBS, Zoom and FaceTime. Install it from this page.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Synthesthetic">
-<meta property="og:title" content="Synthesthetic, an audio/video synth for the M-VAVE FM-1">
-<meta property="og:description" content="The first FM-1 firmware that sends video over USB. Its 30 visualizers react to your music and show up as a camera in OBS, Zoom, FaceTime and more.">
+<meta property="og:title" content="Synthesthetic, an audio/video synth for the M-VAVE FM-1 and SMK-37">
+<meta property="og:description" content="The first firmware for the FM-1 and the SMK-37 that sends video over USB. Its 30 visualizers react to your music and show up as a camera in OBS, Zoom, FaceTime and more.">
 <meta property="og:image" content="https://michaeljsmalley.github.io/synthesthetic/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1, and a visualizer playing in a black window over rainbow stripes">
+<meta property="og:image:alt" content="The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1 and SMK-37, and a visualizer playing in a black window over rainbow stripes">
 <meta name="twitter:card" content="summary_large_image">
 <!--PWA--><link rel="manifest" href="../synthesthetic.webmanifest"><meta name="theme-color" content="#e2e2de"><link rel="icon" href="../icon-192.png"><!--/PWA-->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -297,7 +297,7 @@
 </head>
 <body>
 <div class="card">
-  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label" data-t="spine"></span><span class="label">0.2</span></p></aside>
+  <aside class="spine" aria-hidden="true"><p><span class="brand">Synthesthetic</span><span class="label" data-t="spine"></span><span class="label">0.3</span></p></aside>
   <div class="front">
     <header class="bar">
       <div class="grid">
@@ -444,7 +444,7 @@
           <li><a class="tool" href="../../play/"><b data-t="tPlay"></b><span data-t="tPlayD"></span></a></li>
           <li><a class="tool" href="../editor/"><b data-t="tEditor"></b><span data-t="tEditorD"></span></a></li>
           <li><a class="tool" href="../../handbook/"><b data-t="tHandbook"></b><span data-t="tHandbookD"></span></a></li>
-          <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor-0.2.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
+          <li><a class="tool" href="../editor/synthesthetic-editor.html" download="synthesthetic-editor-0.3.html"><b data-t="tOffline"></b><span data-t="tOfflineD"></span></a></li>
         </ul>
         <p id="app-li" hidden><button class="btn small" id="app" type="button" hidden data-t="tApp"></button> <span class="note" data-t="tAppD"></span></p>
       </section>
@@ -482,29 +482,94 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
 //
-// FM-1 .fwsc packages in the browser: the package identity and the image the
+// FM-1 (and M-Vave SMK-37 Pro) .fwsc packages in the browser: the package identity and the image the
 // device reads during an update.
 
-const BLOCKS = 20, BLK = 0x30, KEEP = 0x2F;
+const BLOCKS = 20, BLK = 0x30, KEEP = 0x2F, MAX_BLOCKS = 64;
 
-// the package identity ("FM-1_904"): one marker byte after each of the first 20 blocks
+const printable = (m, i) => { const c = (m - i - 1) & 0xFF; return c >= 0x20 && c < 0x7F; };
+
+// the identity blocks: 20, or more when the identity is longer (the Starrykey 37 Play V016's "STARRYKEY-37 PLAY_016"
+// takes 21): further identity markers count only when unused 0x7D markers follow them (the 36-block layout)
+function identityBlocks(fwsc) {
+  let n = BLOCKS;
+  while (n < MAX_BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] !== 0x7D && printable(fwsc[n * BLK + KEEP], n)) n++;
+  return n > BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] === 0x7D ? n : BLOCKS;
+}
+
+// interleave blocks: the identity blocks, then more while the marker is the unused 0x7D (the stock SMK-37 Pro,
+// MKE-P37 and Starrykey 37 Play V016 have 36)
+function blockCount(fwsc) {
+  let n = identityBlocks(fwsc);
+  while (n < MAX_BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] === 0x7D) n++;
+  return n;
+}
+
+// the package identity ("FM-1_904", "SMK-37 Pro_016"): one marker byte after each identity block (0x7D: none);
+// past the first 20 only when the package really has those blocks (logicalImage's count)
 function productOf(fwsc) {
   if (fwsc.length < BLOCKS * BLK) throw new Error("not an FM-1 package (too short)");
+  const ib = identityBlocks(fwsc), n = ib === BLOCKS ? BLOCKS : Math.min(ib, layout(fwsc).blocks);
   let s = "";
-  for (let i = 0; i < BLOCKS; i++) {
+  for (let i = 0; i < n; i++) {
     const m = fwsc[i * BLK + KEEP];
     if (m !== 0x7D) s += String.fromCharCode((m - i - 1) & 0xFF);
   }
   return s;
 }
 
-// the image the device addresses during an update: the .fwsc without the 20 marker bytes
-function logicalImage(fwsc) {
-  const out = new Uint8Array(fwsc.length - BLOCKS);
-  for (let i = 0; i < BLOCKS; i++) out.set(fwsc.subarray(i * BLK, i * BLK + KEEP), i * KEEP);
-  out.set(fwsc.subarray(BLOCKS * BLK), BLOCKS * KEEP);
+function deinterleave(fwsc, blocks) {
+  const out = new Uint8Array(fwsc.length - blocks);
+  for (let i = 0; i < blocks; i++) out.set(fwsc.subarray(i * BLK, i * BLK + KEEP), i * KEEP);
+  out.set(fwsc.subarray(blocks * BLK), blocks * KEEP);
   return out;
 }
+
+function crc16(d, c = 0) {                 // CRC-16/XMODEM, as the package and the device use
+  for (const b of d) {
+    c ^= b << 8;
+    for (let k = 0; k < 8; k++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+  }
+  return c;
+}
+
+function jlDec(b) {                        // JieLi ENC stream cipher (its own inverse)
+  const out = Uint8Array.from(b);
+  let key = 0xFFFF;
+  for (let i = 0; i < out.length; i++) {
+    out[i] ^= key & 0xFF;
+    key = ((key << 1) ^ (key & 0x8000 ? 0x1021 : 0)) & 0xFFFF;
+  }
+  return out;
+}
+
+// the logical image's flash.bin (type 0) and ota.bin (type 100) match their CRCs (as fm1_install.py)
+function filesOk(img) {
+  if (img.length < 0x40) return false;
+  const h = jlDec(img.subarray(0, 0x40)), rd = (a, o, n) => a.slice(o, o + n).reduce((v, x, i) => v + x * 2 ** (8 * i), 0);
+  if (crc16(h.subarray(2, 0x40)) !== rd(h, 0, 2)) return false;
+  const count = rd(h, 8, 2);
+  if (count < 1 || count > 8 || img.length < 0x40 + 0x50 * count) return false;
+  for (let i = 0; i < count; i++) {
+    const e = jlDec(img.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    const typ = rd(e, 0, 2), off = rd(e, 8, 4), size = rd(e, 12, 4);
+    if (off + size > img.length) return false;
+    if ((typ === 0 || typ === 100) && crc16(img.subarray(off, off + size)) !== rd(e, 4, 2)) return false;
+  }
+  return true;
+}
+
+// the image the device addresses during an update: the .fwsc without the marker bytes (20 blocks, or the
+// detected count when the files' CRCs agree: a 20-block package can have 0x7D after block 20 by chance)
+function layout(fwsc) {
+  const n = blockCount(fwsc);
+  if (n !== BLOCKS) {
+    const img = deinterleave(fwsc, n);
+    if (filesOk(img) || !filesOk(deinterleave(fwsc, BLOCKS))) return { blocks: n, image: img };
+  }
+  return { blocks: BLOCKS, image: deinterleave(fwsc, BLOCKS) };
+}
+function logicalImage(fwsc) { return layout(fwsc).image; }
 
 // The official FM-1 V15 (M-VAVE Downloads -> PC Firmware -> FM-1 V15, FM-1.fwsc), for the return to the
 // official firmware: only that exact file is accepted (its SHA-256 pins every byte: the loader, the app, the
@@ -512,16 +577,68 @@ function logicalImage(fwsc) {
 const STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a";
 const STOCK_V15_SIZE = 699956;
 const STOCK_V15_PRODUCT = "FM-1_015";
+// The official SMK-37 Pro V016 (SMK-37_Pro_016.fwsc, 36 interleave blocks), for the return of an SMK-37 Pro.
+const STOCK_SMK016_SHA256 = "2d98ce72530e71d617384963423820536f094501299e2cfec0a8d3c3fb6bcfb0";
+const STOCK_SMK016_SIZE = 705252;
+const STOCK_SMK016_PRODUCT = "SMK-37 Pro_016";
 
 async function sha256hex(bytes) {
   const d = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
+// The official SMK-37 range packages known here (M-Vave Downloads -> PC Firmware): informational only (the page
+// tags them "known"); M-Vave's next release is accepted by its structure (identifyStockPackage). The files
+// themselves are never shipped, the user downloads them from M-Vave. product: the identity the keyboard reports
+// once it runs the package (the Starrykey's 21 characters do not fit the 20 identity blocks of its V015 package:
+// that one carries "STARRYKEY-37 PLAY_01", so it is accepted only as this known file).
+const STOCK_SMK = [
+  { name: "SMK-37 Pro", version: "016", product: "SMK-37 Pro_016", size: 705252, sha256: STOCK_SMK016_SHA256 },
+  { name: "SMK-37 Pro", version: "015", product: "SMK-37 Pro_015", size: 701140, sha256: "f7f1831cd7c9ad8b4831b6e71ea0bdbcdff9ae4c4077276b3c965511bf4d4fff" },
+  { name: "SMK-37 Elite", version: "016", product: "SMK-37 Elite_016", size: 705236, sha256: "b2ee38abfef3ae922e4eecdb8a551e14345300ae6f270265feacd33b6ef99cb6" },
+  { name: "SMK-37 Elite", version: "015", product: "SMK-37 Elite_015", size: 701140, sha256: "6cb061bda6fc4a285a1a1014e4fc30782278fa62bdc3add75d14b29d4d76253e" },
+  { name: "MKE-P37", version: "016", product: "MKE-P37_016", size: 705252, sha256: "4306ae5b765ab9afb790edf6d02fa75e872897dbd319049e3956ddd283a51429" },
+  { name: "MKE-P37", version: "015", product: "MKE-P37_015", size: 701140, sha256: "280ee7aae59a17c38bc2e854802c7d08f076e51afff13eb5315ad3748476491f" },
+  { name: "Starrykey 37 Play", version: "016", product: "STARRYKEY-37 PLAY_016", size: 705252, sha256: "3cd57cdd90ee60501c549b9dde53503ef468122e2f34dc110876eefdaf9be3b3" },
+  { name: "Starrykey 37 Play", version: "015", product: "STARRYKEY-37 PLAY_015", size: 701140, sha256: "3ef5d835e88324a925593e1e6959106e16abeabbabf824263803bb236b09224b" },
+];
+
+// the SMK-37 range's model names in a stock identity, and the names the page shows
+const STOCK_MODELS = { "SMK-37 PRO": "SMK-37 Pro", "SMK-37 ELITE": "SMK-37 Elite", "MKE-P37": "MKE-P37", "STARRYKEY-37 PLAY": "Starrykey 37 Play" };
+
+function badPackage(code, msg) { const e = new Error(msg); e.code = code; return e; }
+
+// an M-Vave stock package for the SMK-37 range -> { name, version, product, model, image, known } (image: the
+// logical image the loader writes, as fm1_install.py --force: the detected block count). Accepted by structure, so
+// M-Vave's next release works too: the package parses, its files' CRCs agree, its identity is an SMK-37 range model
+// with a stock version (_000.._099); known: the SHA-256 is one of STOCK_SMK (informational). Refused (code):
+// "fm1" (an FM-1 package, another device), "ours" (one of our firmwares, _7xx/_8xx/_9xx: installed above),
+// "damaged" (the files' CRCs disagree), "unknown" (anything else)
+async function identifyStockPackage(bytes) {
+  const sha = await sha256hex(bytes);
+  if (bytes.length === STOCK_V15_SIZE && sha === STOCK_V15_SHA256)
+    throw badPackage("fm1", "this is the official FM-1 firmware: it is for the FM-1, not for an SMK-37 keyboard");
+  let product, image;
+  try { product = productOf(bytes); image = logicalImage(bytes); }
+  catch (_) { throw badPackage("unknown", "not an M-Vave firmware package for the SMK-37 range"); }
+  const k = STOCK_SMK.find((x) => x.size === bytes.length && x.sha256 === sha);
+  const m = /^(.+)_(\d{3})$/.exec(product);
+  if (/^FM-1(_|$)/i.test(product))
+    throw badPackage("fm1", "this is an FM-1 firmware: it is for the FM-1, not for an SMK-37 keyboard");
+  if (m && /^[789]\d\d$/.test(m[2]) && (STOCK_MODELS[m[1].toUpperCase()] || /^SMK-37/i.test(m[1])))
+    throw badPackage("ours", "this is one of our firmwares (" + product + "): install it above, not here");
+  const known = k && k.product.startsWith(product), name = m && STOCK_MODELS[m[1].toUpperCase()];
+  if (!known && (!name || Number(m[2]) > 99)) throw badPackage("unknown", "not an M-Vave firmware package for the SMK-37 range");
+  if (!filesOk(image)) throw badPackage("damaged", "the package is damaged (its CRCs do not match)");
+  if (known) return { ...k, model: k.product.split("_")[0], image, known: true };
+  return { name, version: m[2], product, model: m[1], image, known: false };
+}
+
 async function validateStockPackage(bytes) {
-  if (bytes.length !== STOCK_V15_SIZE || await sha256hex(bytes) !== STOCK_V15_SHA256 || productOf(bytes) !== STOCK_V15_PRODUCT)
-    throw new Error("select the unmodified official FM-1 V15 file (FM-1.fwsc)");
-  return { product: STOCK_V15_PRODUCT, image: logicalImage(bytes) };
+  if (bytes.length === STOCK_V15_SIZE && await sha256hex(bytes) === STOCK_V15_SHA256 && productOf(bytes) === STOCK_V15_PRODUCT)
+    return { product: STOCK_V15_PRODUCT, image: logicalImage(bytes) };
+  try { const k = await identifyStockPackage(bytes); return { product: k.product, image: k.image }; } catch (_) { /* below */ }
+  throw new Error("select the unmodified official FM-1 V15 file (FM-1.fwsc) or an official SMK-37 firmware (.fwsc) from M-Vave");
 }
 
 // SPDX-License-Identifier: GPL-3.0-only
@@ -537,13 +654,33 @@ const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
 const MAXDATA = 512;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const IS_OTA = (id) => /^ota-/i.test(id.model);
-// the update loader of SLOOP / Felucca packages ("ota-FM-1_9XX"). A device left in the update mode of another
-// firmware (the stock updater's loader) is never written: its loader may lay the image out differently.
-const OUR_LOADER = (id) => /^ota-FM-1_9\d\d$/i.test(id.text);
-// the MIDI ports the installer may probe (never other gear): the FM-1 under SLOOP / Felucca ("Felucca"), under
-// CLIPPER ("Clipper", its sister firmware), under a firmware named after itself ("SLOOP"), the update loaders, and
-// the names Windows / macOS give the stock firmware
-const FM1_PORT = /fm-1|synthesthetic|felucca|sloop|clipper|ota|composite|sinco|usb-midi/i;
+// the update loader of SLOOP / Felucca packages ("ota-FM-1_9XX", "ota-SMK-37 Pro_9XX"; the SMK ports also under the
+// Elite's and the MKE-P37's model name, Makkuro37 _7XX). A device left in the update mode of another firmware (the
+// stock updater's loader) is never written: its loader may lay the image out differently. The bare "SMK-37" name
+// ("ota-SMK-37_931") is ChanceTheMaker's SMK firmwares' RAM updater: another package format, so not ours.
+const OUR_LOADER = (id) => /^ota-(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_[789]\d\d$/i.test(id.text);
+// ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom): "SMK-37_9NN", their own updater
+const OTHER_SMK = (id) => /^(ota-)?SMK-37_9\d\d$/i.test(id.text);
+// the SMK-37 Pro, SMK-37 Elite, MKE-P37, Starrykey 37 Play and the SMK-37+VA mod: one keyboard under several model
+// names, so a package for one runs on all of them (also "SMK-37", the name other firmwares report); an FM-1 is
+// another device
+const SMK_FAMILY = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;
+const sameKeyboard = (a, b) => a === b || (SMK_FAMILY.test(a) && SMK_FAMILY.test(b));   // two models
+// an official package on the connected keyboard (the return to the M-Vave firmware): "same" (its model), "other"
+// (another model of the same keyboard: allowed, the page warns), "unknown" (the keyboard does not name its model,
+// as "SMK-37" or "SMK-37+VA": allowed, the page warns), "refuse" (another device: FM-1 and SMK never mix)
+const NAMED = /^(SMK-37 Pro|SMK-37 Elite|MKE-P37|STARRYKEY-37 PLAY)$/i;
+function stockFit(deviceModel, product) {
+  const dm = deviceModel.replace(/^ota-/i, ""), pm = product.split("_")[0];
+  if (!sameKeyboard(dm, pm)) return "refuse";
+  if (dm.toLowerCase() === pm.toLowerCase()) return "same";
+  return NAMED.test(dm) ? "other" : "unknown";
+}
+// the MIDI ports find() probes: the FM-1 / SMK models' and the firmwares' names; other gear is never sent anything
+const PORT_RE = /fm-1|synthesthetic|smk|elite|mke-p37|starry|felucca|sloop|clipper|melodee|fomni|x0x|makkuro|maku|rainbow|snoop|vector|vox|ota|composite|sinco|usb-midi/i;
+// a port name without its in / out part (Windows names a device's second port pair "MIDIIN2 (X)" / "MIDIOUT2 (X)")
+const portBase = (n) => n.replace(/^MIDI(?:IN|OUT)(\d*) \((.*)\)$/i, "$2 $1").replace(/[ -](?:in|out|input|output)$/i, "").trim().toLowerCase();
+const FM1_PORT = PORT_RE;   // (the name Synthesthetic's pages and tests use)
 
 // errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
 // mismatch (detail: the identity the device reports), badreq, foreign (detail: the loader's identity)
@@ -592,7 +729,7 @@ function parseRequest(pkt) {
 function parseIdentity(pkt) {
   const d = unpack7(pkt.slice(1, -1));
   if (d.length !== 34 || d[0] !== 0 || d[1] !== 0x59 || d[2] !== 0x11) return null;
-  const txt = String.fromCharCode(...d.slice(6, 33)).replace(/\0+$/, "");
+  const txt = String.fromCharCode(...d.slice(6, 33)).split("\0")[0];   // (some firmwares end the text early)
   const m = /^([^_]+)_(\d+)$/.exec(txt);
   return m ? { text: txt, model: m[1], version: parseInt(m[2], 10) } : null;
 }
@@ -622,6 +759,11 @@ class Link {
     }
     return this.q.shift() || null;
   }
+  // detach the callback only; do NOT close the MIDI ports. find()/probe() reuse the same input across
+  // several output candidates (e.g. the always-present "Microsoft GS Wavetable Synth" is probed before
+  // the FM-1's own output), and closing the input between candidates raced its re-open and broke the
+  // handshake with a device that is present ("FM-1 not found" with the port listed). Leaving ports open
+  // is the long-standing behaviour.
   close() { this.input.onmidimessage = null; }
 }
 
@@ -641,25 +783,59 @@ async function handshake(link, tries = 3) {
 }
 
 class Updater {
-  constructor(access, log) {
+  // opts.all: probe every MIDI port, not only PORT_RE's (the handshake query is harmless to other gear)
+  constructor(access, log, opts = {}) {
     this.access = access;
     this.log = log || (() => {});
+    this.all = !!opts.all;
+    this.said = new Set();
   }
 
-  // every in/out pair with the same port name that answers the handshake
-  async find(filter) {
-    const outs = [...this.access.outputs.values()];
-    for (const input of this.access.inputs.values()) {
-      if (input.state === "disconnected") continue;
-      if (!FM1_PORT.test(input.name || "")) continue;   // never probe other gear
-      const output = outs.find((o) => o.name === input.name) || (outs.length === 1 ? outs[0] : null);
-      if (!output) continue;
-      try { await input.open(); await output.open(); } catch (_) { continue; }
+  say(t) { if (!this.said.has(t)) { this.said.add(t); this.log(t); } }   // each port line once
+
+  // one input against its candidate outputs: the matching port first (same name, or one name contains
+  // the other, so input "Felucca" pairs with output "MIDIOUT2 (Felucca)" without probing unrelated
+  // outputs like "Microsoft GS Wavetable Synth"), then (the fallback) any live output. A pair counts
+  // only when it answers the FM-1 handshake and passes the filter.
+  async probe(input, outs, filter) {
+    if (input.state === "disconnected") return null;
+    const live = outs.filter((o) => o.state !== "disconnected");
+    const name = input.name || "";
+    const named = live.filter((o) => o.name === name || (name && o.name && (o.name.includes(name) || name.includes(o.name))));
+    for (const output of (named.length ? named : live)) {
+      try { await input.open(); await output.open(); } catch (_) { this.say(`port "${name}" / "${output.name}": cannot open (in use?)`); continue; }
       const link = new Link(input, output);
       const id = await handshake(link, 2);
+      this.say(`port "${name}" / "${output.name}": ${id ? id.text : "no answer"}`);
       if (id && (!filter || filter(id))) return { link, id, name: input.name };
       link.close();
     }
+    return null;
+  }
+
+  // the FM-1 (or its update loader) among the MIDI ports. Named ports first (fast, and other gear is
+  // never touched). With deep=true (hunting the re-enumerated update loader only), if no named port
+  // matched, the remaining ports are probed too and accepted SOLELY when they answer the FM-1 handshake
+  // (other gear returns no valid identity). Windows often names the update loader generically (e.g.
+  // "USB MIDI Device"), so a name filter alone misses it and the loader seems to "not appear": this
+  // handshake fallback is what makes the loader reliably found, without probing other gear when looking
+  // for the running firmware (which always names itself).
+  async find(filter, deep = false) {
+    const outs = [...this.access.outputs.values()];
+    const inputs = [...this.access.inputs.values()].filter((i) => i.state !== "disconnected");
+    for (const input of inputs)
+      if (this.all || FM1_PORT.test(input.name || "")) {
+        const dev = await this.probe(input, outs, filter);
+        if (dev) return dev;
+      } else {
+        this.say(`port "${input.name || ""}": not probed`);   // never probe other gear (opts.all: every port)
+      }
+    if (deep && !this.all)
+      for (const input of inputs)
+        if (!FM1_PORT.test(input.name || "")) {
+          const dev = await this.probe(input, outs, filter);
+          if (dev) return dev;
+        }
     return null;
   }
 
@@ -669,10 +845,10 @@ class Updater {
     return names.length ? ` (MIDI: ${names.join(", ")})` : " (MIDI: none)";
   }
 
-  async waitFor(filter, ms) {
+  async waitFor(filter, ms, deep = false) {
     const end = Date.now() + ms;
     while (Date.now() < end) {
-      const dev = await this.find(filter);
+      const dev = await this.find(filter, deep);
       if (dev) return dev;
       await sleep(1000);
     }
@@ -708,28 +884,39 @@ class Updater {
     }
   }
 
-  // full install: running firmware -> loader -> new firmware
-  async install(image, product, onStep) {
+  // full install: running firmware -> loader -> new firmware. anyModel: the package may be for another model of the
+  // same keyboard (an SMK-37 Elite package on a unit that reports SMK-37 Pro); never an FM-1 one on an SMK, nor back
+  async install(image, product, onStep, anyModel = false, opts = {}) {
     const step = onStep || (() => {});
     const dev = await this.find((id) => !IS_OTA(id));
     if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)", this.seen());
+    if (OTHER_SMK(dev.id)) { dev.link.close(); throw fail("other", `the keyboard runs a firmware with its own updater (${dev.id.text}): nothing was sent`, dev.id.text); }
     const [model] = product.split("_");
-    if (dev.id.model !== model) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
+    const refusal = boardRefusal(dev.id.model, image, opts.fm1Confirmed);   // (the package's board, before anything)
+    if (refusal) { dev.link.close(); throw refusal; }
+    if (dev.id.model !== model && !(anyModel && sameKeyboard(dev.id.model, model))) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
     step("start", dev.id.text);
     dev.link.send(UPGRADE);
     await sleep(2000);
     const s1 = await this.serve(dev.link, image, 0xE0000000, 8000, (n) => step("verify", n));
     dev.link.close();
-    if (!s1.finished) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    // some firmwares restart into their loader at once, without step 1: such a loader (ours, of this keyboard) goes on
+    const jumped = !s1.finished && s1.lost && s1.served === 0;
+    if (!s1.finished && !jumped) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
     step("loader");
     await sleep(3000);
-    const ota = await this.waitFor(IS_OTA, 30000);
-    if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
+    const ota = await this.waitFor(IS_OTA, jumped ? 15000 : 60000, true);
+    if (jumped && !(ota && OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
+      if (ota) ota.link.close();
+      throw fail(ota ? "foreign" : "lost", ota ? `the device restarted into the update mode of another firmware (${ota.id.text}): nothing was written`
+        : "the device was disconnected after 0 requests: nothing was written", ota ? ota.id.text : "");
+    }
+    if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.", this.seen());
     const s2 = await this.write(ota, image, step);
     if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
     step("reboot");
     await sleep(3000);
-    const back = await this.waitFor((id) => !IS_OTA(id), 40000);
+    const back = await this.waitFor((id) => !IS_OTA(id), 60000);
     if (!back) throw fail("noreturn", "the device did not come back: power-cycle it");
     back.link.close();
     if (back.id.text !== product) throw fail("mismatch", `installed, but the device reports ${back.id.text}`, back.id.text);
@@ -749,20 +936,30 @@ class Updater {
   // resume: the device is already in update mode (loader) -> true when the write finished. Only SLOOP's
   // own loader is resumed, except for the return to the official firmware (opts.product: the official
   // package, its identity checked once the FM-1 is back, after Felucca 1.0): that one is the official
-  // loader's own image, as M-UPGRADE would write it
+  // loader's own image, as M-UPGRADE would write it. opts.package: the identity of the package being
+  // written; the loader's model must match it (or opts.product's) by install()'s rule (the same model, or with
+  // opts.anyModel another model of the same keyboard), and without either identity nothing is written
   async resume(image, onStep, opts = {}) {
-    const ota = await this.find(IS_OTA);
+    const ota = await this.find(IS_OTA, true);
     if (!ota) return false;
     if (!OUR_LOADER(ota.id) && !opts.product) {
       ota.link.close();
       throw fail("foreign", `the FM-1 is in the update mode of another firmware (${ota.id.text}): finish that update with its own updater`, ota.id.text);
+    }
+    const want = opts.product || opts.package || "";
+    const refusal = boardRefusal(ota.id.model, image, opts.fm1Confirmed);
+    if (refusal) { ota.link.close(); throw refusal; }
+    const [lm, pm] = [ota.id.model.replace(/^ota-/i, ""), want.split("_")[0]];
+    if (!want || (lm !== pm && !(opts.anyModel && sameKeyboard(lm, pm)))) {
+      ota.link.close();
+      throw fail("model", `the device is in the update mode of ${ota.id.text}, the package is for ${want || "an unknown model"}`, ota.id.text);
     }
     const step = onStep || (() => {});
     if (!(await this.write(ota, image, step)).finished) return false;
     if (opts.product) {
       step("reboot");
       await sleep(3000);
-      const back = await this.waitFor((id) => !IS_OTA(id), 40000);
+      const back = await this.waitFor((id) => !IS_OTA(id), 60000);
       if (!back) throw fail("noreturn", "the FM-1 did not come back after the write: power-cycle it");
       back.link.close();
       if (back.id.text !== opts.product) throw fail("mismatch", `written, but the FM-1 reports ${back.id.text}`, back.id.text);
@@ -772,62 +969,146 @@ class Updater {
   }
 }
 
+// ---- the package's board: read from the package itself, never from an identity ----
+// The FM-1's and the SMK-37's official packages share the head (0x0-0x3FFF) and the update loader, and a third-party
+// FM-1 firmware running on an SMK-37 reports an FM-1 identity: no identity tells the board. Installed on an SMK-37,
+// the FM-1's stock package erases the factory calibration (BTIF / USRTRIM 0xC0000-0xC1FFF) and writes the FM-1's
+// USR image over the SMK's (0xF4000). So the board comes from the package: flash.bin's length (SMK-37 0x9D000,
+// FM-1 0x93000), its region table (app offset 0x60 = flash 0x4060-0x411F, SFC-enciphered with the chip key 0x980F:
+// BTIF and USR at 0xC0000 / 0xF4000 on the SMK-37, 0xE9000 / 0xEA000 on the FM-1) and a USR image's place (UFW
+// entry 50).
+const FM1_STOCK_MSG = "This is the FM-1 firmware. Your keyboard is an SMK-37? Don't install it.";
+const FM1_CONFIRM_MSG = FM1_STOCK_MSG + " On an SMK-37 it erases the keyboard's calibration. Install it only on an FM-1." +
+  " SMK-37 owners whose keyboard runs an FM-1 firmware (it then reports an FM-1): use the SMK-37 package from M-Vave, never this one.";
+const LAYOUT = { smk: { len: 0x9D000, btif: 0xC0000, usr: [0xF4000, 0xA000] }, fm1: { len: 0x93000, btif: 0xE9000, usr: [0xEA000, 0x12000] } };
+const LOADER_MARK = [..."FELUCCA-LOADER-1"].map((c) => c.charCodeAt(0));   // our update loaders (crt0_ldr.S)
+const SMK_MODEL = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;      // an identity of the SMK-37 keyboard
+const le = (a, o, n) => { let v = 0; for (let i = n - 1; i >= 0; i--) v = v * 256 + a[o + i]; return v; };
+function ufwCipher(b) {                    // the UFW header cipher (key 0xFFFF, its own inverse)
+  const out = Uint8Array.from(b);
+  for (let i = 0, k = 0xFFFF; i < out.length; i++) { out[i] ^= k & 0xFF; k = ((k << 1) ^ (k & 0x8000 ? 0x1021 : 0)) & 0xFFFF; }
+  return out;
+}
+function sfcCipher(b, base, key = 0x980F) {   // the JieLi SFC cipher of the app area (32-byte blocks, its own inverse)
+  const out = Uint8Array.from(b);
+  for (let i = 0; i < out.length; i += 32) {
+    let k = (key ^ ((base + i) >>> 2)) & 0xFFFF;
+    for (let j = i; j < i + 32 && j < out.length; j++) { out[j] ^= k & 0xFF; k = ((k << 1) ^ (k & 0x8000 ? 0x1021 : 0)) & 0xFFFF; }
+  }
+  return out;
+}
+// the package's files: { type, off, size, at, len } (at / len: where a USR image goes)
+function packageFiles(image) {
+  if (image.length < 0x40) return [];
+  const h = ufwCipher(image.subarray(0, 0x40)), n = le(h, 8, 2), out = [];
+  for (let i = 0; i < n && i < 11 && 0x90 + i * 0x50 <= image.length; i++) {
+    const e = ufwCipher(image.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    out.push({ type: le(e, 0, 2), off: le(e, 8, 4), size: le(e, 12, 4), at: le(e, 0x1C, 4), len: le(e, 0x20, 4) });
+  }
+  return out;
+}
+// flash.bin's region table: { VM: [address, size], PRCT, BTIF, USR, ... }
+function regionTable(flash) {
+  const t = {};
+  if (flash.length < 0x4120) return t;
+  const d = sfcCipher(flash.subarray(0x4060, 0x4120), 0x60);
+  for (let r = 0; r < 0xC0; r += 32) {
+    let name = "";
+    for (let i = 16; i < 32 && d[r + i] > 0x20 && d[r + i] < 0x7F; i++) name += String.fromCharCode(d[r + i]);
+    if (name) t[name] = [le(d, r + 4, 4), le(d, r + 8, 4)];
+  }
+  return t;
+}
+// "smk", "fm1" (any sign of the FM-1's layout) or null (not a package, or another layout)
+function packageBoard(image) {
+  const files = packageFiles(image), fl = files.find((f) => f.type === 0);
+  if (!fl || fl.off + fl.size > image.length) return null;
+  const rt = regionTable(image.subarray(fl.off, fl.off + fl.size)), usr = files.filter((f) => f.type === 50);
+  const S = LAYOUT.smk, F = LAYOUT.fm1;
+  if (fl.size === S.len && rt.BTIF && rt.BTIF[0] === S.btif && rt.USR && rt.USR[0] === S.usr[0] && rt.USR[1] === S.usr[1] &&
+      usr.every((u) => u.at === S.usr[0] && u.len === S.usr[1])) return "smk";
+  if (fl.size === F.len || (rt.BTIF && rt.BTIF[0] === F.btif) || (rt.USR && rt.USR[0] === F.usr[0]) || usr.some((u) => u.at === F.usr[0])) return "fm1";
+  return null;
+}
+function hasOurLoader(image) {
+  const m = LOADER_MARK;
+  for (let i = image.indexOf(m[0]); i >= 0 && i + m.length <= image.length; i = image.indexOf(m[0], i + 1)) {
+    let j = 1;
+    while (j < m.length && image[i + j] === m[j]) j++;
+    if (j === m.length) return true;
+  }
+  return false;
+}
+// a stock package (M-Vave's, or any without our update loader): one with flash.bin whose loader is not ours
+const isStockPackage = (image) => packageFiles(image).some((f) => f.type === 0) && !hasOurLoader(image);
+// null, or why image must not be written to a device that reports model (an Error with a code, nothing sent yet):
+// "fm1pkg" an FM-1 layout for an SMK-37; "board" a stock package not laid out for the SMK-37 on one; "fm1confirm" a
+// stock package not laid out for the SMK-37 on a device that reports another model (an FM-1, or an SMK-37 under an
+// FM-1 firmware): only when the user confirmed the device is an FM-1 (fm1Confirmed)
+function boardRefusal(model, image, fm1Confirmed = false) {
+  const board = packageBoard(image), smk = SMK_MODEL.test(model);
+  if (smk && board === "fm1") return fail("fm1pkg", `${FM1_STOCK_MSG} (The device reports ${model}.) Nothing was sent.`);
+  if (!isStockPackage(image) || board === "smk") return null;
+  if (smk) return fail("board", `this package is not laid out for the SMK-37 (flash.bin, region table): nothing was sent`);
+  return fm1Confirmed ? null : fail("fm1confirm", FM1_CONFIRM_MSG);
+}
+
 const $ = (id) => document.getElementById(id);
 const TEXT = {
   ja: {
     warn: "書き込み中は USB ケーブルを抜かないでください。",
     install: "インストール", other: "English",
-    nomidi: "このブラウザは FM-1 と通信できません。Chrome か Edge で開いてください。", loadfail: "ファームウェアを読み込めませんでした（{v}）。",
+    nomidi: "このブラウザは FM-1 / SMK-37 と通信できません。Chrome か Edge で開いてください。", loadfail: "ファームウェアを読み込めませんでした（{v}）。",
     start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
     reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB ケーブルを挿し直して、もう一度「インストール」を押してください。",
     error: "エラー: ",
     denied: "MIDI の使用が許可されませんでした。アドレスバー横のサイト設定で MIDI を許可してから、もう一度お試しください。",
-    notfound: "FM-1 が見つかりません。データ通信用のケーブルでつながっているか確かめ、MIDI を使う他のアプリを閉じてから、もう一度お試しください。",
-    model: "接続されている機器は FM-1 ではありません。",
+    notfound: "FM-1 / SMK-37 が見つかりません。データ通信用のケーブルでつながっているか確かめ、MIDI を使う他のアプリを閉じてから、もう一度お試しください。",
+    model: "接続されている機器は FM-1 でも SMK-37 でもありません。",
     lost: "USB の接続が切れました。ケーブルを挿し直して、もう一度お試しください。",
-    noloader: "書き込みモードの FM-1 が見つかりません。USB ケーブルを挿し直して、もう一度「インストール」を押してください。インストールが終わるまで、FM-1 は書き込みモードのままです。",
-    noreturn: "再起動後に FM-1 が応答しません。電源を入れ直してください。",
-    mismatch: "書き込みは終わりましたが、FM-1 は {v} と報告しています。",
-    foreign: "FM-1 は別のファームウェア（{v}）の書き込みモードです。M-UPGRADE で書き込みを終えてから、もう一度「インストール」を押してください。",
+    noloader: "書き込みモードの機器が見つかりません。USB ケーブルを挿し直して、もう一度「インストール」を押してください。インストールが終わるまで、機器は書き込みモードのままです。",
+    noreturn: "再起動後に機器が応答しません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、機器は {v} と報告しています。",
+    foreign: "機器は別のファームウェア（{v}）の書き込みモードです。M-UPGRADE で書き込みを終えてから、もう一度「インストール」を押してください。",
     badpkg: "ファームウェアのファイルが壊れています。ページを再読み込みしてやり直してください。",
     leave: "書き込み中です。このページを閉じないでください。",
-    spine: "M-VAVE FM-1 用 音と映像のシンセ",
+    spine: "M-VAVE FM-1 / SMK-37 用 音と映像のシンセ",
     navVideo: "映像", navModes: "モード", navInstall: "インストール", navPlay: "試奏", navHandbook: "ハンドブック",
     heroHead: "音と映像のシンセ",
-    heroSub: "M-VAVE FM-1 用",
-    heroLede: "Synthesthetic は音楽を映像に変えます。USB で映像を送れる初めての FM-1 ファームウェアで、お使いの FM-1 を OBS、Zoom、FaceTime などのカメラとして使えます。",
+    heroSub: "M-VAVE FM-1 / SMK-37 用",
+    heroLede: "Synthesthetic は音楽を映像に変えます。USB で映像を送れる初めての FM-1 / SMK-37 ファームウェアで、お使いの楽器を OBS、Zoom、FaceTime などのカメラとして使えます。",
     ctaInstall: "インストール", ctaPlay: "ブラウザで試す",
     specSignal: "信号", specSignalV: "USB ケーブル 1 本", specVideo: "映像", specAudio: "音声", specAudioV: "USB オーディオ · 16 ビット · 44.1 kHz ステレオ",
     specMidiV: "USB MIDI と TRS 入力", specDriver: "ドライバー", specDriverV: "不要", specApps: "対応アプリ",
     modesHint: "タップまたはホバーで、ビジュアライザーのサンプルを表示します",
     grpScopes: "スコープ", grpPatterns: "パターン", grpDrums: "ドラム", grpFeedback: "フィードバック", grpDemoscene: "デモシーン", grpScreen: "スクリーン",
-    modeScreen: "FM-1 の画面をそのまま送ります。演奏や操作の解説を配信できます。",
+    modeScreen: "楽器の画面をそのまま送ります。演奏や操作の解説を配信できます。",
     camHead: "パソコンで映像を使う",
-    camSub: "FM-1 にカメラは付いていません。カメラとして表示されるのは、ドライバーやキャプチャーボードなしでパソコンに映像を送る標準の方法だからです。",
-    cam1: "データ通信用の USB ケーブルで FM-1 をパソコンにつなぎます。",
+    camSub: "FM-1 にも SMK-37 にもカメラは付いていません。カメラとして表示されるのは、ドライバーやキャプチャーボードなしでパソコンに映像を送る標準の方法だからです。",
+    cam1: "データ通信用の USB ケーブルで FM-1 か SMK-37 をパソコンにつなぎます。",
     cam2: "OBS、Zoom、Photo Booth などのビデオアプリで「Synthesthetic」というカメラを選びます。",
     cam3: "演奏すると、映像が音楽に合わせて動きます。SELECT でモードが変わります。",
     vjHead: "映像に重ねるタイトル",
-    vjHelp: "オーバーレイがオンのとき、映像に重ねて表示されます。FM-1 の設定として保存されます。",
+    vjHelp: "オーバーレイがオンのとき、映像に重ねて表示されます。楽器の設定として保存されます。",
     vjOvLabel: "重ねて表示する内容", vjOv0: "表示しない", vjOv1: "情報（モード・BPM）", vjOv2: "タイトル", vjOv3: "情報とタイトル",
-    vjGo: "FM-1 に送る", vjSent: "{v} を FM-1 に送りました。FM-1 の設定として保存されます。", vjSentNone: "送信しました。タイトルは空です。",
+    vjGo: "楽器に送る", vjSent: "{v} を送りました。楽器の設定として保存されます。", vjSentNone: "送信しました。タイトルは空です。",
     vjHidden: "この設定ではタイトルは表示されません。",
-    vjNotOurs: "この FM-1 には別のファームウェア（{v}）が入っています。先に Synthesthetic をインストールしてください。",
-    vjNoVideo: "この FM-1 のビルドには USB ビデオ機能がありません。",
+    vjNotOurs: "この機器には別のファームウェア（{v}）が入っています。先に Synthesthetic をインストールしてください。",
+    vjNoVideo: "この機器のビルドには USB ビデオ機能がありません。",
     installHead: "インストール",
     installSub: "Chrome か Edge で約 2 分です。プロジェクト、プリセット、サンプルはそのまま残ります。",
-    s1Head: "FM-1 を確認",
+    s1Head: "FM-1 / SMK-37 を確認",
     s1Help: "データ通信用の USB ケーブルでパソコンに直接つなぎ、電源を入れてください。MIDI を使う他のアプリは閉じておきます。",
-    browserOk: "このブラウザは FM-1 と通信できます。",
+    browserOk: "このブラウザは FM-1 / SMK-37 と通信できます。",
     checkGo: "確認する",
-    checking: "FM-1 を探しています…",
-    idRuns: "FM-1 の識別名は {v} です。",
+    checking: "FM-1 / SMK-37 を探しています…",
+    idRuns: "機器の識別名は {v} です。",
     idSyn: "Synthesthetic {v} が入っています。インストールすると更新され、作業内容はそのまま残ります。",
     idSynDev: "（開発版）",
     idRescue: "USB レスキューで起動しています。インストールすると Synthesthetic に戻ります。",
-    idFelucca: "Dinghy、Felucca、SLOOP、またはその派生ファームウェアが入っています。Dinghy か SLOOP からはそのままインストールできます。その他の派生からは、先に公式 V15 に戻してください。",
+    idFelucca: "Dinghy、Felucca、SLOOP、またはその派生ファームウェアが入っています。Dinghy か SLOOP からはそのままインストールできます。その他の派生からは、先に公式 V15 に戻してください。SMK-37 の場合は genkigenki の移植版なので、そのままインストールできます。",
     idOta: "書き込みモードで待っています。「インストール」を押すと書き込みを完了します。",
-    idOther: "別のファームウェアが入っています。M-VAVE 公式の V15 ならそのままインストールできます。他のカスタムファームウェアなら、先に M-UPGRADE で公式 V15 に戻してください。",
+    idOther: "別のファームウェアが入っています。M-VAVE 公式のファームウェア（FM-1 は V15、SMK-37 は V016）ならそのままインストールできます。他のカスタムファームウェアなら、先に M-UPGRADE で公式に戻してください。",
     s2Head: "Synthesthetic をインストール",
     ready: "Synthesthetic {v} をインストールできます。",
     phVerify: "ファイル確認", phLoader: "書き込みモード", phWrite: "書き込み", phReboot: "再起動", phDone: "完了",
@@ -839,11 +1120,11 @@ const TEXT = {
     notesHead: "インストールの前に",
     careBackup: "初めてカスタムファームウェアを入れる前に、フラッシュ全体をバックアップしてください。",
     howLink: "バックアップの方法",
-    careFamily: "他のカスタムファームウェアからは、先に M-UPGRADE で公式 V15 に戻してください。",
+    careFamily: "別系統のカスタムファームウェアからは、先に M-UPGRADE で公式ファームウェアに戻してください。",
     careRescue: "インストールが途中で止まったら、OCT− を押しながら電源を入れて、もう一度インストールしてください。",
     careBeta: "ベータ版です。自己責任でお使いください。",
     instHead: "楽器として",
-    instText: "FM-1 でできたことは、すべてそのまま使えます。シンセ、シーケンサー、ドラムは SLOOP のものです。",
+    instText: "楽器でできたことは、すべてそのまま使えます。シンセ、シーケンサー、ドラムは SLOOP のものです。",
     instLink: "SLOOP のガイド（英語）",
     instRow: "楽器", instRowV: "マルチトラック・グルーヴボックス",
     instTracks: "トラック", instTracksV: "4（シンセ 3 + ドラムマシン 1）",
@@ -855,7 +1136,7 @@ const TEXT = {
     tOffline: "オフライン版エディタ", tOfflineD: "1 ファイルのエディタ。インターネットなしで使えます。",
     tApp: "アプリとしてインストール", tAppD: "エディタとインストーラーをオフラインで使えます。",
     stockTitle: "公式ファームウェア（V15）に戻す",
-    stockHelp: "M-VAVE のサイトから V15 をダウンロードし、中にある FM-1.fwsc を変更せずに選んでください。ファイルはこのブラウザの中で確認され、アップロードはされません。",
+    stockHelp: "M-VAVE のサイトから V15 をダウンロードし、中にある FM-1.fwsc を変更せずに選んでください。ファイルはこのブラウザの中で確認され、アップロードはされません。SMK-37 の場合は、お使いのモデルの公式ファームウェアと M-UPGRADE を使ってください。",
     stockBackup: "公式ファームウェアでは Synthesthetic のプロジェクトを開けないので、先にエディタでバックアップを保存してください（Projects → Backup）。",
     stockEditor: "エディタを開く", stockSaved: "バックアップを保存しました",
     stockFile: "公式の FM-1.fwsc", stockGo: "公式 V15 をインストール",
@@ -866,62 +1147,62 @@ const TEXT = {
     footSource: "ソースコード",
     footCredits: "クレジット",
     footBased: "SLOOP（isod89）と Felucca（Hügelton Instruments の Leo Kuroshita）をもとにしています。",
-    footTrademark: "M-VAVE と FM-1 は各社の商標です。Synthesthetic は各社とは関係ありません。",
+    footTrademark: "M-VAVE、FM-1、SMK-37 は各社の商標です。Synthesthetic は各社とは関係ありません。",
   },
   en: {
     warn: "Don't unplug the USB cable while it's writing.",
     install: "Install", other: "日本語",
-    nomidi: "This browser can't talk to the FM-1. Open this page in Chrome or Edge.", loadfail: "Couldn't load the firmware ({v}).",
+    nomidi: "This browser can't talk to the FM-1 or SMK-37. Open this page in Chrome or Edge.", loadfail: "Couldn't load the firmware ({v}).",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
     reboot: "Restarting", done: "Done", stopped: "It stopped. Unplug the USB cable, plug it back in and press Install again.",
     error: "Error: ",
     denied: "MIDI access wasn't allowed. Allow MIDI in the site settings next to the address bar, then try again.",
-    notfound: "Couldn't find the FM-1. Check that it's connected with a data cable, close other apps that use MIDI and try again.",
-    model: "The connected device isn't an FM-1.",
+    notfound: "Couldn't find the FM-1 or SMK-37. Check that it's connected with a data cable, close other apps that use MIDI and try again.",
+    model: "The connected device isn't an FM-1 or an SMK-37.",
     lost: "The USB connection dropped. Plug the cable back in and try again.",
-    noloader: "Couldn't find the FM-1 in update mode. Unplug the USB cable, plug it back in and press Install again. The FM-1 stays in update mode until the install finishes.",
-    noreturn: "The FM-1 didn't come back after restarting. Switch it off and on again.",
-    mismatch: "The install finished, but the FM-1 reports {v}.",
-    foreign: "The FM-1 is in update mode for another firmware ({v}). Finish that update with M-UPGRADE, then press Install again.",
+    noloader: "Couldn't find the device in update mode. Unplug the USB cable, plug it back in and press Install again. It stays in update mode until the install finishes.",
+    noreturn: "The device didn't come back after restarting. Switch it off and on again.",
+    mismatch: "The install finished, but the device reports {v}.",
+    foreign: "The device is in update mode for another firmware ({v}). Finish that update with M-UPGRADE, then press Install again.",
     badpkg: "The firmware file is damaged. Reload the page and try again.",
     leave: "Writing. Keep this page open.",
-    spine: "Audio/video synth for the M-VAVE FM-1",
+    spine: "Audio/video synth for the M-VAVE FM-1 and SMK-37",
     navVideo: "Video", navModes: "Modes", navInstall: "Install", navPlay: "Play", navHandbook: "Handbook",
     heroHead: "Audio/\u2060video synth",     /* (a word joiner: the line breaks before synth, never after the slash) */
-    heroSub: "For the M-VAVE FM-1",
-    heroLede: "Synthesthetic transforms your music into a visual experience. It's the first FM-1 firmware that sends video over USB, so your FM-1 shows up as a camera in OBS, Zoom, FaceTime, and more…",
+    heroSub: "For the M-VAVE FM-1 and SMK-37",
+    heroLede: "Synthesthetic transforms your music into a visual experience. It's the first firmware for the FM-1 and the SMK-37 that sends video over USB, so your instrument shows up as a camera in OBS, Zoom, FaceTime, and more…",
     ctaInstall: "Install", ctaPlay: "Try it in the browser",
     specSignal: "Signal", specSignalV: "One USB cable", specVideo: "Video", specAudio: "Audio", specAudioV: "USB audio · 16-bit · 44.1 kHz stereo",
     specMidiV: "USB MIDI, plus the TRS input", specDriver: "Driver", specDriverV: "None needed", specApps: "Works in",
     modesHint: "Tap or hover to preview a visualization sample",
     grpScopes: "Scopes", grpPatterns: "Patterns", grpDrums: "Drums", grpFeedback: "Feedback", grpDemoscene: "Demoscene", grpScreen: "Screen",
-    modeScreen: "Sends the FM-1's own display, for streaming a set or a tutorial.",
+    modeScreen: "Sends the instrument's own display, for streaming a set or a tutorial.",
     camHead: "Video on your computer",
-    camSub: "There's no camera in the FM-1. It shows up as one because that's the standard way to get video onto a computer without a driver or capture card.",
-    cam1: "Plug the FM-1 into your computer with a USB data cable.",
+    camSub: "There's no camera in the FM-1 or the SMK-37. It shows up as one because that's the standard way to get video onto a computer without a driver or capture card.",
+    cam1: "Plug the FM-1 or SMK-37 into your computer with a USB data cable.",
     cam2: "Choose the camera named Synthesthetic in OBS, Zoom, Photo Booth or any other video app.",
     cam3: "Play. The picture follows your music, and SELECT changes the mode.",
     vjHead: "Title overlay",
-    vjHelp: "Shows over the picture when the overlay is on. The FM-1 keeps it with its settings.",
+    vjHelp: "Shows over the picture when the overlay is on. The instrument keeps it with its settings.",
     vjOvLabel: "What the overlay shows", vjOv0: "Nothing", vjOv1: "Info (mode, BPM)", vjOv2: "Title", vjOv3: "Info and title",
-    vjGo: "Send to the FM-1", vjSent: "Sent {v} to the FM-1. It's saved with the FM-1's settings.", vjSentNone: "Sent. The title is empty.",
+    vjGo: "Send to the instrument", vjSent: "Sent {v}. It's saved with the instrument's settings.", vjSentNone: "Sent. The title is empty.",
     vjHidden: "The overlay won't show the title.",
-    vjNotOurs: "This FM-1 is running a different firmware ({v}). Install Synthesthetic first.",
-    vjNoVideo: "This FM-1 is running a build without USB video.",
+    vjNotOurs: "This device is running a different firmware ({v}). Install Synthesthetic first.",
+    vjNoVideo: "This device is running a build without USB video.",
     installHead: "Install",
     installSub: "It takes about two minutes in Chrome or Edge. Your projects, presets and samples are kept.",
-    s1Head: "Check your FM-1",
+    s1Head: "Check your FM-1 or SMK-37",
     s1Help: "Connect it directly to this computer with a USB data cable and switch it on. Close other apps that use MIDI.",
-    browserOk: "This browser can talk to the FM-1.",
+    browserOk: "This browser can talk to the FM-1 and the SMK-37.",
     checkGo: "Check",
-    checking: "Looking for the FM-1…",
-    idRuns: "Your FM-1 reports {v}. ",
+    checking: "Looking for the FM-1 or SMK-37…",
+    idRuns: "Your device reports {v}. ",
     idSyn: "It's running Synthesthetic {v}. Installing updates it and keeps your work.",
     idSynDev: "(a development build)",
     idRescue: "It's in USB rescue mode. Installing puts Synthesthetic back.",
-    idFelucca: "It's running Dinghy, Felucca, SLOOP or a fork of one of them. From Dinghy or SLOOP you can install directly. From any other fork, go back to the official V15 first.",
+    idFelucca: "It's running Dinghy, Felucca, SLOOP or a fork of one of them. From Dinghy or SLOOP you can install directly. From any other fork, go back to the official V15 first. On an SMK-37, that's one of genkigenki's ports, and you can install directly.",
     idOta: "It's in update mode. Press Install to finish the update.",
-    idOther: "It's running a different firmware. If that's M-VAVE's official V15, you can install directly. If it's another custom firmware, use M-UPGRADE to go back to V15 first.",
+    idOther: "It's running a different firmware. If that's M-VAVE's official firmware, V15 on the FM-1 or V016 on the SMK-37, you can install directly. If it's another custom firmware, use M-UPGRADE to go back to the official one first.",
     s2Head: "Install Synthesthetic",
     ready: "Ready to install Synthesthetic {v}.",
     phVerify: "Check file", phLoader: "Update mode", phWrite: "Write", phReboot: "Restart", phDone: "Done",
@@ -933,11 +1214,11 @@ const TEXT = {
     notesHead: "Before you install",
     careBackup: "Back up the whole flash before you install a custom firmware for the first time.",
     howLink: "How to back up",
-    careFamily: "If the FM-1 runs another custom firmware, go back to official V15 with M-UPGRADE first.",
+    careFamily: "If the instrument runs another custom firmware family, go back to the official firmware with M-UPGRADE first.",
     careRescue: "If an install stops partway, hold OCT− while switching on and install again.",
     careBeta: "This is a beta. Use it at your own risk.",
     instHead: "The instrument",
-    instText: "Everything the FM-1 did before still works. The synths, the sequencer and the drums come from SLOOP.",
+    instText: "Everything the instrument did before still works. The synths, the sequencer and the drums come from SLOOP.",
     instLink: "Read SLOOP's guide",
     instRow: "Instrument", instRowV: "Multitrack groovebox",
     instTracks: "Tracks", instTracksV: "4 (3 synths + 1 drum machine)",
@@ -949,7 +1230,7 @@ const TEXT = {
     tOffline: "Offline editor", tOfflineD: "The editor as one file that works without internet.",
     tApp: "Install the app", tAppD: "The editor and installer, available offline.",
     stockTitle: "Go back to the official firmware (V15)",
-    stockHelp: "Download V15 from M-VAVE and choose the FM-1.fwsc file inside it, unmodified. It's checked here in your browser and isn't uploaded anywhere.",
+    stockHelp: "Download V15 from M-VAVE and choose the FM-1.fwsc file inside it, unmodified. It's checked here in your browser and isn't uploaded anywhere. For an SMK-37, use M-UPGRADE with your model's own official firmware instead.",
     stockBackup: "The official firmware can't open Synthesthetic's projects, so save a backup in the editor first (Projects → Backup).",
     stockEditor: "Open the editor", stockSaved: "I've saved a backup",
     stockFile: "The official FM-1.fwsc", stockGo: "Install official V15",
@@ -960,7 +1241,7 @@ const TEXT = {
     footSource: "Source code",
     footCredits: "Credits",
     footBased: "Based on SLOOP by isod89 and Felucca by Leo Kuroshita of Hügelton Instruments.",
-    footTrademark: "M-VAVE and FM-1 are trademarks of their owners. Synthesthetic isn't affiliated with them.",
+    footTrademark: "M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Synthesthetic isn't affiliated with them.",
   },
 };
 let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
@@ -996,7 +1277,8 @@ const log = (s) => { $("log").textContent += s + "\n"; $("logbox").hidden = fals
    mode / BPM). Sent as the video core's SysEx (web/EDITOR_PROTOCOL.md, v13): F0 7D 56 43 06 <text> F7 the title
    (ASCII, up to 19), 07 n the overlay (0 off, 1 info, 2 title, 3 both); both kept with the FM-1's settings.
    01 asks the video core's counters: only a build with USB video answers (02 ...), so it is asked first. */
-const VJ_OURS = (id) => /^FM-1_9[5-9]\d$/i.test(id.text);   /* Synthesthetic's identities (tools/build.py PRODUCT) */
+const MODEL_RE = "(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)";   /* the FM-1, and the SMK-37 under its three names (SMK37.md) */
+const VJ_OURS = (id) => new RegExp(`^${MODEL_RE}_9[5-9]\\d$`, "i").test(id.text);   /* Synthesthetic's identities (tools/build.py PRODUCT) */
 const vjClean = (s) => String(s || "").toUpperCase().replace(/[^\x20-\x7E]/g, "?").slice(0, 19);
 const vjSay = (k, arg = "", tone = "") => show("vj-status", () => fmt(k, arg), tone);
 function vjPreview() {
@@ -1087,7 +1369,7 @@ if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
   });
 }
 let image = null;
-const meta = {"version": "0.2", "product": "FM-1_952", "pkg": "../../firmware/synthesthetic-0.2.fwsc", "sha256": "5563ab139360ae58b26152cf453c04f6b19d1070bad6d87393f8d19d34826928"};
+const meta = {"version": "0.3", "product": "FM-1_953", "pkg": "../../firmware/synthesthetic-0.3.fwsc", "sha256": "993e4e45f660db226d5e2703cf5ee1928b09893184a68b73397b459ea0be0bda", "boards": {"FM-1": {"product": "FM-1_953", "pkg": "../../firmware/synthesthetic-0.3.fwsc", "sha256": "993e4e45f660db226d5e2703cf5ee1928b09893184a68b73397b459ea0be0bda"}, "SMK-37 Pro": {"product": "SMK-37 Pro_953", "pkg": "../../firmware/synthesthetic-0.3-smk37.fwsc", "sha256": "7c0c09e3c1a7618127b4c74d78dd1267a8bdda4119718627f1f8fe984699b2d2"}, "SMK-37 Elite": {"product": "SMK-37 Elite_953", "pkg": "../../firmware/synthesthetic-0.3-smk37-elite.fwsc", "sha256": "008d3f1ace40128800240e3781ed89f3ff48bfbba132765f68d3561873449b68"}, "MKE-P37": {"product": "MKE-P37_953", "pkg": "../../firmware/synthesthetic-0.3-smk37-mke.fwsc", "sha256": "200d73bfbcd2484bc15cea8b15c5620bd6d5d8fc53967ddbd7b99608a26c7f01"}}};
 
 let writing = false, stock = null;
 const lockAll = (on) => {
@@ -1101,38 +1383,56 @@ const lockAll = (on) => {
 lockAll(false);
 window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
 
-(async () => {
-  if (!hasMidi) return;
+/* the packages the site carries, one per board (make_site.py: the FM-1's, and the SMK-37's under its three names); the
+   FM-1's is loaded first, the device's own once a device has said what it is (Check, or Install itself) */
+const BOARDS = meta.boards || { "FM-1": { product: meta.product, pkg: meta.pkg, sha256: meta.sha256 } };
+let board = null;                                      /* the board whose package is in `image` */
+const boardTag = (b) => (b === "FM-1" ? "" : ` (${b})`);
+function boardFor(model) {                             /* a device's model (its loader's "ota-" taken off) -> a board's name;
+                                                          every SMK-37 name takes the Pro package unless its own is here */
+  const m = String(model || "").replace(/^ota-/i, "");
+  if (!m || /^FM-1/i.test(m)) return "FM-1";
+  if (/^SMK-37 Elite/i.test(m) && BOARDS["SMK-37 Elite"]) return "SMK-37 Elite";
+  if (/^MKE-P37/i.test(m) && BOARDS["MKE-P37"]) return "MKE-P37";
+  return BOARDS["SMK-37 Pro"] ? "SMK-37 Pro" : null;
+}
+async function loadPkg(b) {                            /* true: the package for board b is in `image` */
+  const info = BOARDS[b];
+  if (!info) return false;
+  if (board === b && image) return true;
   try {
     /* (2.7) never the browser's old copy: a new build keeps the file's name (sloop-2.7.fwsc), and a copy kept from the
        build before is "damaged" here. no-cache asks the server first; a mismatch is fetched once more, bypassing the cache */
-    const sha = async (pkg) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", pkg))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const sha = async (pkg) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", pkg))].map((x) => x.toString(16).padStart(2, "0")).join("");
     const get = async (cache) => {
-      const r = await fetch(meta.pkg, { cache });
-      if (!r.ok) throw new Error(`${meta.pkg}: HTTP ${r.status}`);
+      const r = await fetch(info.pkg, { cache });
+      if (!r.ok) throw new Error(`${info.pkg}: HTTP ${r.status}`);
       return new Uint8Array(await r.arrayBuffer());
     };
-    const check = meta.sha256 && self.crypto && crypto.subtle;
+    const check = info.sha256 && self.crypto && crypto.subtle;
     let pkg = await get("no-cache");
-    if (check && (await sha(pkg)) !== meta.sha256) pkg = await get("reload");
-    if (productOf(pkg) !== meta.product) { sayK("badpkg", "", "bad"); return; }
+    if (check && (await sha(pkg)) !== info.sha256) pkg = await get("reload");
+    if (productOf(pkg) !== info.product) { sayK("badpkg", "", "bad"); return false; }
     if (check) {                                       /* a damaged download is never offered (the loader checks its CRC too) */
       const h = await sha(pkg);
-      if (h !== meta.sha256) { sayK("badpkg", "", "bad"); log(`sha256 ${h}, expected ${meta.sha256}`); return; }
+      if (h !== info.sha256) { sayK("badpkg", "", "bad"); log(`sha256 ${h}, expected ${info.sha256}`); return false; }
     }
     image = logicalImage(pkg);
-    sayK("ready", meta.version);
+    board = b;
+    sayK("ready", meta.version + boardTag(b));
     lockAll(writing);
-  } catch (e) { sayK("loadfail", e.message, "bad"); }
-})();
+    return true;
+  } catch (e) { sayK("loadfail", e.message, "bad"); return false; }
+}
+if (hasMidi) loadPkg("FM-1");
 
 /* step 1: what the FM-1 runs, from the identity its firmware answers with, and whether installing over it is safe */
 function describe(id) {
-  const x = String(id.text || ""), m = /^FM-1_9([5-9])(\d)$/i.exec(x);
+  const x = String(id.text || ""), m = new RegExp(`^${MODEL_RE}_9([5-9])(\\d)$`, "i").exec(x);
   if (/^ota-/i.test(id.model)) return { k: "idOta", tone: "warn" };
-  if (m) return { k: "idSyn", v: () => (/^FM-1_950$/i.test(x) ? t("idSynDev") : `${+m[1] - 5}.${m[2]}`), tone: "good" };
-  if (/^FM-1_000$/i.test(x)) return { k: "idRescue", tone: "good" };
-  if (/^FM-1_9\d\d$/i.test(x)) return { k: "idFelucca", tone: "warn" };
+  if (m) return { k: "idSyn", v: () => (/_950$/i.test(x) ? t("idSynDev") : `${+m[2] - 5}.${m[3]}`), tone: "good" };
+  if (new RegExp(`^${MODEL_RE}_000$`, "i").test(x)) return { k: "idRescue", tone: "good" };
+  if (new RegExp(`^${MODEL_RE}_[79]\\d\\d$`, "i").test(x)) return { k: "idFelucca", tone: "warn" };   /* (SMK ports: 7xx too) */
   return { k: "idOther", tone: "warn" };
 }
 const stepState = (id, s) => { $(id).classList.toggle("now", s === "now"); $(id).classList.toggle("ok", s === "ok"); };
@@ -1155,6 +1455,8 @@ $("check").addEventListener("click", async () => {
       show("check-result", () => fmt("idRuns", x) + fmt(d.k, d.v ? d.v() : ""), d.tone);
       stepState("s1", "ok");
       stepState("s2", "now");
+      const b = boardFor(dev.id.model);                /* the device's own package from here (an SMK-37: not the FM-1's) */
+      if (b && b !== board) await loadPkg(b);
     }
   } catch (e) { show("check-result", () => fmt(e && e.code && TEXT[lang][e.code] ? e.code : "error", (e && (e.detail || e.message)) || ""), "bad"); }
   lockAll(false);
@@ -1204,13 +1506,20 @@ $("go").addEventListener("click", async () => {
   catch (e) { sayK("denied", "", "bad"); lockAll(false); return; }
   try {
     const up = new Updater(midi, log);
+    const dev0 = await up.find(() => true);            /* whatever answers: the firmware or its loader says the board */
+    if (dev0) {
+      dev0.link.close();
+      const b = boardFor(dev0.id.model);
+      if (b && b !== board && !(await loadPkg(b))) { lockAll(false); return; }
+    }
+    const product = BOARDS[board].product;
     const ota = await up.find((id) => /^ota-/i.test(id.model));
     if (ota) {
       ota.link.close();
       phase("write");
-      if (await up.resume(image, step)) step("done"); else sayK("stopped", "", "bad");
+      if (await up.resume(image, step, { package: product, anyModel: true })) step("done"); else sayK("stopped", "", "bad");   /* (the loader's model against the package: never an FM-1 package on an SMK-37, nor back) */
     } else {
-      await up.install(image, meta.product, step);
+      await up.install(image, product, step, true);
     }
   } catch (e) { failed(e); }
   lockAll(false);
@@ -1244,7 +1553,7 @@ $("stock-go").addEventListener("click", async () => {
       if (OUR_LOADER(ota.id)) sayK("stockFinish", "", "warn");    /* Synthesthetic's loader: finish that first (Install) */
       else if (!(await up.resume(stock.image, step, { product: stock.product }))) sayK("stopped", "", "bad");   /* (it says done) */
     } else {
-      await up.install(stock.image, stock.product, step);
+      await up.install(stock.image, stock.product, step, false, { fm1Confirmed });
     }
   } catch (e) { failed(e); }
   lockAll(false);

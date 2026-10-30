@@ -325,6 +325,9 @@ static volatile uint8_t midi_in_lost;               /* (2.8.3) a note message di
                                                      * (a lost note-off must not leave a note stuck; after Melodee 1.5) */
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
+#if BOARD_SMK37 && !defined(FELUCCA_LOADER)      /* (the update loader: no TRS) */
+    smo_put(pkt);                                   /* SMK-37: the TRS jack too, with or without a computer */
+#endif
     if (usb.config && mo_w - mo_r < MQ) {
         midi_out_q[mo_w % MQ] = pkt;
         RING_PUBLISH();
@@ -1796,10 +1799,16 @@ static void usb_detach(void)
 /* the video diagnostics: F0 7D 56 43 02 then 40 values of 32 bits, each byte as two nibbles (low first), F7.
  * From the main loop (main.c), as the OTA replies are. tools/fm1_vcdiag.py names the fields. */
 static uint32_t cpu1_stack_free(void);                 /* cpu1.c: core 1's stack never written, bytes */
+#if BOARD_SMK37
+#define DIAG_N 60u                                     /* + the screen's traffic (lcd.c, ui_fbank.c) */
+static uint32_t fb_blits;
+#else
+#define DIAG_N 56u
+#endif
 static void vcore_diag_send(void)
 {
-    static uint8_t rep[6 + 56 * 8];
-    uint32_t v[56] = {0}, i, k = 0;
+    static uint8_t rep[6 + DIAG_N * 8];
+    uint32_t v[DIAG_N] = {0}, i, k = 0;
     fm1_c1_sync();
     v[0] = vcore_running; v[1] = vc0.run; v[2] = vc0.park_req; v[3] = vc0.jpeg_busy;
     v[4] = vc1.parked; v[5] = vc1.done; v[6] = vc1.jpeg_ready; v[7] = vc1.jpeg_len[0]; v[8] = vc1.jpeg_len[1];
@@ -1814,9 +1823,12 @@ static void vcore_diag_send(void)
     v[40] = uac.alt; v[41] = uac.r48; v[42] = uac.go; v[43] = uac.flowing; v[44] = uac.starts; v[45] = uac.pkts;
     v[46] = uac.frames; v[47] = uac.underruns; v[48] = uac.overruns; v[49] = uac.missed; v[50] = uac.stalls;
     v[51] = uac.adj_up; v[52] = uac.adj_down; v[53] = uac.fill_lo; v[54] = uac.fill_hi; v[55] = uac.fill_min;
+#if BOARD_SMK37
+    v[56] = lcd_full_fills; v[57] = lcd_blits; v[58] = padled_frames; v[59] = fb_blits;
+#endif
 #endif
     rep[k++] = 0xF0; rep[k++] = 0x7D; rep[k++] = 0x56; rep[k++] = 0x43; rep[k++] = 0x02;
-    for (i = 0; i < 56u; i++) {
+    for (i = 0; i < DIAG_N; i++) {
         uint32_t b;
         for (b = 0; b < 4u; b++) {
             uint32_t byte = (v[i] >> (8u * b)) & 0xFFu;

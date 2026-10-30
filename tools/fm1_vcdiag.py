@@ -14,7 +14,8 @@ NAMES = ["vcore_running", "vc0.run", "vc0.park_req", "vc0.jpeg_busy", "vc1.parke
          "uvc.gets", "uvc.lens", "uvc.infos", "uvc.set_if", "uvc.vc_req", "uvc.other", "usb.setups", "usb.resets",
          "uac.alt", "uac.r48", "uac.go", "uac.flowing", "uac.starts", "uac.pkts", "uac.frames", "uac.underruns",
          "uac.overruns", "uac.missed", "uac.stalls", "uac.adj_up", "uac.adj_down", "uac.fill_lo", "uac.fill_hi",
-         "uac.fill_min"]
+         "uac.fill_min",
+         "lcd_full_fills", "lcd_blits", "padled_frames", "fb_blits"]
 
 
 def main():

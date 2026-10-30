@@ -2,14 +2,15 @@
 
 <p align="center"><img src="assets/logo/synthesthetic-logo.svg" alt="Synthesthetic" width="590"></p>
 
-Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM-1 firmware that sends video to a
-computer over USB. Plug your FM-1 in, choose it from the camera list in OBS, Zoom, FaceTime or another video app, and
-you'll see 30 visualizers that react to your music. There's no camera in the FM-1. It's in that list because a USB
+Synthesthetic turns the M-VAVE FM-1 and the M-Vave SMK-37 into an audio/video synth. It's the first firmware for
+them that sends video to a computer over USB. Plug the instrument in, choose it from the camera list in OBS, Zoom,
+FaceTime or another video app, and you'll see 30 visualizers that react to your music. There's no camera in either. It's in that list because a USB
 camera is the standard way to get video onto a computer, so you don't need a driver or capture card. The video is UVC,
 MJPEG, 320 × 240 at 30 fps.
 
 The FM-1 is still the same four-track groovebox, with its synth engines, sequencer and drum machine, and the visuals
-play on its own screen too. MIDI, audio and video share the one USB cable, and firmware updates still go over USB-MIDI.
+play on its own screen too. On the SMK-37 the same groovebox gets the keyboard's velocity, pads, faders and wheels,
+with a VISUAL fader bank for the visualizer; [SMK37.md](SMK37.md) has the controls. MIDI, audio and video share the one USB cable, and firmware updates still go over USB-MIDI.
 
 - Website: [michaeljsmalley.github.io/synthesthetic](https://michaeljsmalley.github.io/synthesthetic/), with the web
   installer, the web editor and the handbook.
@@ -55,10 +56,13 @@ two crashes at startup. The handbook's [Recovery and safety](HANDBOOK.md#recover
 recovery steps, and [DEVELOPMENT.md](DEVELOPMENT.md#rules) lists the rules to follow before you change USB, flash or
 boot code.
 
+**M-Vave SMK-37:** see [SMK-37 instructions](SMK37.md).
+
 ## Building
 
 ```sh
 AC79_SDK=$PWD/vendor/ac79-sdk-min JIELI_TOOLCHAIN=$HOME/.jieli/toolchain FELUCCA_UVC=1 sh build.sh
+BOARD=smk37 MODEL=elite FELUCCA_UVC=1 sh build.sh     # the SMK-37 (MODEL pro, elite or mke): build/felucca-smk37-elite.fwsc
 ```
 
 The JieLi toolchain runs in Docker (linux/amd64). `FELUCCA_UVC=1` adds USB video. Without it you get the audio-only

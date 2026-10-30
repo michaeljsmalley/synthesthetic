@@ -86,7 +86,7 @@ addEventListener('blur', () => { for (const code of keysDown) { fm1.down(KEYS[co
 
 // ------------------------------------------------------------------ the audio thread
 let ctx = null, node = null, powered = false, starting = null;
-const wasmBytes = fetch(new URL('synthesthetic.wasm?v=bbbdfc0bbc', import.meta.url)).then((r) => {
+const wasmBytes = fetch(new URL('synthesthetic.wasm?v=af8c946966', import.meta.url)).then((r) => {
   if (!r.ok) throw new Error('the firmware did not load (' + r.status + ')');
   return r.arrayBuffer();
 });
@@ -106,7 +106,7 @@ async function powerOn() {
         try { ctx = new Ctx({ sampleRate: 44100, latencyHint: 'interactive' }); } catch (e) { ctx = new Ctx({ latencyHint: 'interactive' }); }
       }
       const resumed = ctx.resume();                    // (inside the click: the browser lets the sound start)
-      await ctx.audioWorklet.addModule(new URL('worklet.js?v=81e0f55c2e', import.meta.url));
+      await ctx.audioWorklet.addModule(new URL('worklet.js?v=72127b105d', import.meta.url));
       await start(await flashSaved);
       await resumed;
       powered = true;
