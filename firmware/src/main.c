@@ -187,7 +187,9 @@ static void smk_faders(void)
             *pv = (int16_t)v;
             break;
         }
-        ui.force = 1;
+        if (!fb_shown())                                  /* (the FADER BANK screen follows the values by itself, half a
+                                                           * screen at a time: a forced full redraw a step flickered) */
+            ui.force = 1;
     }
 }
 
