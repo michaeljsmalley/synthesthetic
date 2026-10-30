@@ -705,6 +705,10 @@ WEB(web_vj) void web_vj(uint32_t kind, uint32_t v)
     else if (kind == 3u)
         vis_req_hud = (uint8_t)((v & 3u) + 1u);
 }
+/* what this build of the firmware has, for the tests of the Play page (tests/web_test.mjs runs on the published
+ * docs/play/synthesthetic.wasm, a release, which can be older than the sources): bit 0 SYSTEM > RESET (2026-10-26).
+ * A build without this export is older than all of them */
+WEB(web_features) uint32_t web_features(void) { return 1u; }
 WEB(web_vj_get) uint32_t web_vj_get(uint32_t kind)
 {
     return kind == 0u ? vis_style : kind == 1u ? vis_pal_live : kind == 2u ? vis_set.autopilot : kind == 3u ? vis_set.hud

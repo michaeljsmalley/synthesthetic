@@ -204,7 +204,9 @@ check(w2.web_vj_get(0) === 16 && w2.web_vj_get(3) === 2, 'and come back at the n
   check(e3.stopped === true, 'engine: stops when a new FM-1 takes its place (Start over)');
   const e4 = new FM1Engine(bytes, new ArrayBuffer(100), (m) => { seen2.ready4 = m; });
   check(seen2.ready4.fresh === true, 'engine: an image of the wrong size is not loaded: a new FM-1, with the demo');
-  {   // SYSTEM > RESET (Synthesthetic), through the menu as on the FM-1: it restarts on the flash image the reset left
+  if (!(typeof e4.w.web_features === "function" && (e4.w.web_features() & 1))) {
+    console.log("web: (SYSTEM > RESET: not in this firmware, a build from before it: skipped)");   // the published wasm
+  } else {   // SYSTEM > RESET (Synthesthetic), through the menu as on the FM-1: it restarts on the flash image the reset left
     const msgs = [], er = new FM1Engine(bytes, null, (m) => msgs.push(m));   // a first visit: the demo song
     const ENC_SELECT = 0, ENC_K3 = 4, readies = () => msgs.filter((m) => m.t === 'ready').length;
     const btn = (b, ms) => { er.message({ t: 'input', notes: 0, buttons: 1 << b }); go(er, ms); er.message({ t: 'input', notes: 0, buttons: 0 }); go(er, 150); };
