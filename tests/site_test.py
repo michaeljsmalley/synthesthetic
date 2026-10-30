@@ -134,7 +134,7 @@ try:
     for name, f in pages.items():
         h = f.read_text(encoding="utf-8")
         check(f"previews: {name} has its title, description, image and card",
-              f'<meta property="og:image" content="{make_site.ONLINE}og.png">' in h and 'property="og:title" content="' in h
+              f'<meta property="og:image" content="{make_site.ONLINE}og.png?v=9.9">' in h and 'property="og:title" content="' in h
               and 'property="og:description" content="' in h and '<meta name="twitter:card" content="summary_large_image">' in h)
     stamp = sw.split('const STAMP = "')[1].split('"')[0]
     (tmp / "site2").mkdir()
