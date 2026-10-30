@@ -57,6 +57,7 @@ assets, is entirely governed by the GPL.
 
 | What | Licence | Where |
 | --- | --- | --- |
+| The SMK-37 board layer (keybed, pads, faders, wheels, knobs, display and pad LEDs, flash map, update path, installer, DAW mode) by M. Geisler (genkigenki), from the SMK-37 port of SLOOP (<https://github.com/genkigenki/sloop-fm1>, branch smk37), merged 2026-10-30 | GPL-3.0-only | `firmware/hal/smk_*.h`, `firmware/src/smk_*.h`, `firmware/src/ui_fbank.c`, `ui_pick.c`, `ui_padgrid.c`, `ui_daw.c`, `editor_daw.c`, the `BOARD_SMK37` parts elsewhere |
 | Instrument and drum samples (Versilian Studios VSCO-2 CE, VCSL; Sonic Pi: SCRCH) | CC0 1.0 | `assets/samples-cc0/`, provenance in `ATTRIBUTION.txt` there |
 | Terminus font 8x16: the FM-1's screen (Terminus Bold, ter-u16b, SLOOP 2.6), and the web editor's font (the regular ter-u16n; `tools/gen_webfont.py` makes it a TrueType font inlined in `web/editor.html`) | SIL OFL 1.1 | `assets/fonts/ter-u16b.bdf`, `assets/fonts/ter-u16n.bdf`, `assets/fonts/Terminus-LICENSE.txt` |
 | Fukiai icon font (Hügelton Instruments), web editor only | MIT | `web/fukiai.ttf`, `web/FUKIAI-LICENSE.txt` |

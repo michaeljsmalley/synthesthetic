@@ -1,7 +1,10 @@
-# SLOOP on the M-Vave SMK-37
+# Synthesthetic on the M-Vave SMK-37
 
-The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so SLOOP runs on it as a target board: `BOARD=smk37`.
-Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is unchanged, byte for byte.
+The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so Synthesthetic runs on it as a target board: `BOARD=smk37`.
+Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is unchanged, byte for byte. The board layer
+(keybed, pads, faders, wheels, knobs, display, LEDs, flash map, installer, DAW mode) is M. Geisler's (genkigenki), from
+the SMK-37 port of SLOOP (isod89/sloop-fm1 pull request 112); Synthesthetic adds the video core, the visualizer and a
+VISUAL fader bank on top. **Status: builds and passes the host tests; not yet tried on a unit.**
 
 > Unofficial firmware for the SMK-37, not affiliated with or endorsed by M-Vave. No warranty: install at your own
 > risk and read [Safety](#safety) first.
@@ -10,49 +13,50 @@ Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is unchange
 
 | Model | Build | Package identity |
 |---|---|---|
-| SMK-37 Pro | `BOARD=smk37 ./build.sh` | `SMK-37 Pro_900` (`build/sloop-smk37.fwsc`) |
-| SMK-37 Elite | `BOARD=smk37 MODEL=elite ./build.sh` | `SMK-37 Elite_900` (`build/sloop-smk37-elite.fwsc`) |
-| MKE-P37 | `BOARD=smk37 MODEL=mke ./build.sh` | `MKE-P37_900` (`build/sloop-smk37-mke.fwsc`) |
-| Starrykey 37 Play | the SMK-37 Pro build | `SMK-37 Pro_900` |
+| SMK-37 Pro | `BOARD=smk37 FELUCCA_UVC=1 ./build.sh` | `SMK-37 Pro_950` (`build/felucca-smk37.fwsc`; releases `SMK-37 Pro_95Y`) |
+| SMK-37 Elite | `BOARD=smk37 MODEL=elite FELUCCA_UVC=1 ./build.sh` | `SMK-37 Elite_950` (`build/felucca-smk37-elite.fwsc`) |
+| MKE-P37 | `BOARD=smk37 MODEL=mke FELUCCA_UVC=1 ./build.sh` | `MKE-P37_950` (`build/felucca-smk37-mke.fwsc`) |
+| Starrykey 37 Play | the SMK-37 Pro build | `SMK-37 Pro_950` |
 
 They are one keyboard under several names. The `MODEL` builds differ only in the name the keyboard reports
 (its identity, its update loader's, the update record's), so M-Vave's updater still recognises the unit for the way
-back to the stock firmware. A release build: `--release X.Y` (identity `SMK-37 Pro_9XY`). See
-[BUILDING.md](BUILDING.md) for the toolchain.
+back to the stock firmware. A release build: `--release X.Y` (identity `SMK-37 Pro_95Y`, as the FM-1's `FM-1_95Y`). `FELUCCA_UVC=1` adds the USB
+video, as on the FM-1 (without it: the audio-only build). See [DEVELOPMENT.md](DEVELOPMENT.md) for the toolchain.
 
 ## Install
 
 Connect the keyboard over USB (a data cable) and use this repository's installer, as for the FM-1:
 
 ```sh
-python3 tools/fm1_install.py build/sloop-smk37.fwsc        # Python 3 with mido and python-rtmidi
+python3 tools/fm1_install.py build/felucca-smk37.fwsc      # Python 3 with mido and python-rtmidi
 ```
 
 It finds the keyboard's MIDI port, checks the model and the package, asks the running firmware (the stock one or
-SLOOP) to start the update loader and writes the package; then the keyboard restarts and the installed identity is
+Synthesthetic) to start the update loader and writes the package; then the keyboard restarts and the installed identity is
 checked. The web installer (`web/index_pkg.html`, built by `web/make_site.py`) does the same in Chrome or Edge.
 Updating later works the same way; projects, presets, samples and settings are kept. A package never goes to the
 other device (FM-1 / SMK-37), and a keyboard running another firmware with its own updater is left alone.
 
-Until this project's releases include SMK-37 packages, unofficial builds can be installed with the web installer: <https://genkigenki.github.io/smk37/>.
+Until a release includes SMK-37 packages, build one as above and install it with `tools/fm1_install.py`; the web
+installer on the site serves the FM-1 package only for now.
 
 **Back to the stock firmware:** install the official package for your model with M-Vave's own updater (M-UPGRADE),
 or give it to the installer: `python3 tools/fm1_install.py --force SMK-37_Pro_016.fwsc` (the installer reads the
-stock package format). The SLOOP build keeps the stock update protocol, so the stock tools see the keyboard as usual.
+stock package format). The Synthesthetic build keeps the stock update protocol, so the stock tools see the keyboard as usual.
 The user sample slots USR1 / USR2 (0xC2000–0xE9FFF) are where the stock firmware keeps its key, knob and fader
-mapping; it trusts that area while its end marker `usrdata` (0xEAFF8) is there. SLOOP erases the marker's sector
+mapping; it trusts that area while its end marker `usrdata` (0xEAFF8) is there. Synthesthetic erases the marker's sector
 (0xEA000, the only sector it may touch there) before it first stores a sample in USRFLASH, and at power-on when the
 marker sits over sample data, so the stock firmware rebuilds its factory mapping; an untouched stock mapping (with
 your MIDI Suite presets) stays as it is. The web editor's Settings tab has **Prepare the return to M-Vave** to erase
 the marker on request.
 
-**If it does not start:** after two failed starts SLOOP opens its USB recovery screen (identity `SMK-37 Pro_000`,
+**If it does not start:** after two failed starts Synthesthetic opens its USB recovery screen (identity `SMK-37 Pro_000`,
 or the model's), where the installer can write a package again; after a third it drops into the chip's mask-ROM
 update mode (UBOOT).
 
 ## Knobs, faders, wheels
 
-| FM-1 printed | SLOOP function | SMK-37 printed | on the SMK-37 |
+| FM-1 printed | Synthesthetic function | SMK-37 printed | on the SMK-37 |
 |---|---|---|---|
 | MASTER (pot, top left) | output volume | K1 | master volume (virtual pot, 24 steps a click; its curve: HOME menu > AUDIO > LIMITER) |
 | SELECT (big encoder) | tempo (TRACKS), page ◀▶, visualiser style, menu section | K2 | SELECT: tempo / pages |
@@ -63,8 +67,8 @@ update mode (UBOOT).
 | KNOB 3 | dial 3 on screen (yellow) | K7 | dial 3 |
 | KNOB 4 | dial 4 on screen (orange) | K8 | dial 4 |
 | — | — | KNOB LAYOUT = SMK | HOME menu > SCREEN > KNOB LAYOUT (K7): K1–K4 the dials 1–4, K5 master volume, K6 SELECT, K7 PRESETS, K8 ALGORITHM (track); FM-1 (default) as above |
-| — | — | FADER 1–4 | tracks 1–4 (4 = drums), by FADER BANK: A level, B filter (low-pass ◀ open ▶ high-pass), C reverb, D delay; a fader takes over once moved |
-| — (no wheels used by SLOOP) | — | PITCH wheel | pitch bend, selected synth track: HOME menu > PLAY > BEND UP (K6) / BEND DOWN (K7), OFF, 1, 2, 3, 4, 5, 7, 12 semitones each; default 7 / 7 |
+| — | — | FADER 1–4 | tracks 1–4 (4 = drums), by FADER BANK: A level, B filter (low-pass ◀ open ▶ high-pass), C reverb, D delay; **E VISUAL** (Synthesthetic): the visualizer's AMOUNT, RATE, TRAILS and COLOR, as its own knobs set them, on the video and the screen alike; a fader takes over once moved |
+| — (no wheels on the FM-1) | — | PITCH wheel | pitch bend, selected synth track: HOME menu > PLAY > BEND UP (K6) / BEND DOWN (K7), OFF, 1, 2, 3, 4, 5, 7, 12 semitones each; default 7 / 7 |
 | — | — | MOD wheel | vibrato 10 Hz, up to ±1 semitone (up = more) |
 | — | — | PEDAL jack | — |
 
@@ -74,7 +78,7 @@ update mode (UBOOT).
 |---|---|---|---|---|
 | PLAY | start / stop (LED flashes on every beat) | — | SEQ PLAY | PLAY |
 | REC | record / arm | 2 s: clear track | SEQ REC | REC |
-| HOME | TRACKS screen, again: visualiser | menu | PATCH | HOME |
+| HOME | TRACKS screen, again: the visualizer (SELECT: the mode, PRESETS: the palette, ALGORITHM: the autopilot, K5–K8 its knobs) | menu | PATCH | HOME |
 | ENV | envelope pages (amp/filter shape) | — | CHORD | ENV |
 | LFO | LFO pages (modulation) | — | NOTE REPEAT | LFO |
 | FX | effect pages | punch-in FX on pads | FX | FX |
@@ -87,10 +91,10 @@ update mode (UBOOT).
 | OCT− | octave down | drums: ghost hits | OCTAVE− | OCT− |
 | OCT+ | octave up | drums: hard hits | OCTAVE+ | OCT+ |
 | — | — | — | KNOB BANK | pins the pad sound picker open / closes it (lit while pinned or while K4 turns) |
-| — | — | — | FADER BANK | the fader bank screen; pressed again, < > or SELECT: the next bank A→B→C→D (closes after 4 s; lit while up; closes the pad picker) |
+| — | — | — | FADER BANK | the fader bank screen; pressed again, < > or SELECT: the next bank A→B→C→D→E (closes after 4 s; lit while up; closes the pad picker) |
 | — | — | — | KNOB BANK + FADER BANK | the pads on the PLAY screen: DRUM KIT (default) ↔ STEPS (as the stock PAD BANK combo) |
-| — | — | — | < | page back (as SELECT, never tempo); SEQ held or pads on STEPS: step page back; visualiser: style |
-| — | — | — | > | page forward; SEQ held or pads on STEPS: step page forward; visualiser: style |
+| — | — | — | < | page back (as SELECT, never tempo); SEQ held or pads on STEPS: step page back; the visualizer: the mode before |
+| — | — | — | > | page forward; SEQ held or pads on STEPS: step page forward; the visualizer: the next mode |
 | — | — | — | < + > | SYNTH ↔ DAW mode ([DAW mode](#daw-mode)) |
 
 ## Keys and pads
@@ -100,7 +104,7 @@ update mode (UBOOT).
 | 27 keys F3–G5 | notes; in layers: tiles (steps, FX, mix…) | keys F3–G5 (middle 27) | same, with velocity |
 | — | — | keys C3–E3 (lowest 5) | synth tracks: notes; drum track: C3 kick, D3 snare, E3 hat (black keys = left white key) |
 | — | — | keys G#5–C6 (highest 5) | synth tracks: notes; drum track: G#5 cowbell, A5 open hat, B5 crash, C6 ride |
-| LEDs under 27 keys | what is on / playing | 16 RGB pads | PLAY screen: DRUM KIT (default; a pad a drum sound whatever track is selected, velocity, recorded into the drum track while recording; orange, dim / bright while it sounds) or STEPS (KNOB BANK + FADER BANK; the selected track's 16 steps of the page, top row 1–8: empty dim white, set in the track's colour, playhead white; tap sets / clears; drums: the sound last played). Layers: SEQ / FX / GLO / SAVE tiles, SCALE piano, EDIT / ARP held the white keys |
+| LEDs under 27 keys | what is on / playing (Synthesthetic: the visualizer leaves them to the music) | 16 RGB pads | PLAY screen: DRUM KIT (default; a pad a drum sound whatever track is selected, velocity, recorded into the drum track while recording; orange, dim / bright while it sounds) or STEPS (KNOB BANK + FADER BANK; the selected track's 16 steps of the page, top row 1–8: empty dim white, set in the track's colour, playhead white; tap sets / clears; drums: the sound last played). Layers: SEQ / FX / GLO / SAVE tiles, SCALE piano, EDIT / ARP held the white keys |
 
 ## Velocity
 
@@ -118,13 +122,14 @@ notes, their MIDI out and the drum levels; OCT− / OCT+ held still play ghost /
 
 ## HOME menu: the SMK-37 settings
 
-HOME menu (PATCH held; sections SCREEN, LIGHTS, AUDIO, PLAY, MIDI, DAW, SYSTEM); SELECT walks the sections, the knobs set the rows (K5–K8, or K1–K4 with KNOB LAYOUT = SMK;
+HOME menu (PATCH held; sections SCREEN, LIGHTS, AUDIO, SEQ, PLAY, MIDI, DAW, SYSTEM, VJ: the tab row shows the ones
+that fit around the current one, < > at its ends); SELECT walks the sections, the knobs set the rows (K5–K8, or K1–K4 with KNOB LAYOUT = SMK;
 the screen names them), OCT+ steps the row under the cursor; SEQ PLAY and SEQ REC still start / stop and arm:
 
 | Section | Row | Knob | Setting |
 |---|---|---|---|
 | SCREEN | KNOB LAYOUT | K7 | FM-1 (default): K1 MASTER, K2 SELECT, K3 ALGORITHM, K4 PRESETS, K5–K8 the dials. SMK: K1–K4 the dials, K5 MASTER, K6 SELECT, K7 PRESETS, K8 ALGORITHM. The knobs are endless: the new layout works at once. Switched to SMK, the menu's rows move to K1–K4 (K3 switches back) |
-| AUDIO | LIMITER | K8 | SOFT (default): 9 dB more headroom at the power-on MASTER position, the limiter only near full scale, so a held chord keeps its level; MASTER's top as loud as before (turn it up for loudness). CLASSIC: SLOOP's limiter and MASTER curve |
+| AUDIO | LIMITER | (the fifth row: PRESETS moves the cursor to it, OCT+ steps it) | SOFT (default): 9 dB more headroom at the power-on MASTER position, the limiter only near full scale, so a held chord keeps its level; MASTER's top as loud as before (turn it up for loudness). CLASSIC: SLOOP's limiter and MASTER curve |
 | PLAY | KEY VELOCITY | K5 | see [Velocity](#velocity) |
 | PLAY | BEND UP | K6 | the pitch wheel up, on the internal sounds (the selected synth track): OFF, 1, 2, 3, 4, 5, 7 or 12 semitones, default 7. MIDI IN's pitch bend has its own (GLO > MIDI 2 > BEND) |
 | PLAY | BEND DOWN | K7 | the same, down (default 7; e.g. +2 up, −12 down). The earlier BEND RANGE is read as both |
@@ -132,7 +137,7 @@ the screen names them), OCT+ steps the row under the cursor; SEQ PLAY and SEQ RE
 | MIDI | TRS MIDI OUT | K5 | ON (default) / OFF. The 3.5 mm jack sends what goes out over USB MIDI: the keys and pads (and the sequencer with GLO > SYSTEM > MIDI = SEQ, or DAW mode), on each track's MIDI channel, with or without a computer. NOT SENDING: the UART did not answer; set it again to retry |
 | MIDI | MODE | K6 | SYNTH (default) / DAW ([DAW mode](#daw-mode); also `<` + `>`) |
 | MIDI | CHANNEL | K7 | 1–16 (default 1): DAW mode's keys and every map entry on MAIN |
-| MIDI | LOCAL | K8 | DAW mode: OFF (default; SLOOP silent) / ON (the keys play the selected track, NOTE pads the drum kit); also PATCH tapped |
+| MIDI | LOCAL | K8 | DAW mode: OFF (default; the synth silent) / ON (the keys play the selected track, NOTE pads the drum kit); also PATCH tapped |
 | DAW | CC MAP | K5 | DEFAULT / USER (the map edited on the keyboard or in the web editor) |
 | DAW | KNOBS | K6 | ABSOLUTE (0–127) / RELATIVE (64 ± the detents) |
 | DAW | EDIT MAP | K7 | OCT+: the map editor (also PATCH held + OCTAVE+) |
@@ -147,7 +152,8 @@ adapter.
 
 **< + >** (the second pressed while the first is held) switches **SYNTH ↔ DAW**; so does HOME menu > MIDI > MODE.
 A full screen says which. In DAW mode the keyboard is a MIDI controller (USB, and the TRS jack with TRS MIDI OUT on):
-SLOOP's sequencer stops and the controls leave SLOOP alone. MIDI IN still plays SLOOP (a sound module for the DAW).
+Synthesthetic's sequencer stops and the controls leave it alone. MIDI IN still plays it (a sound module for the DAW); the
+video keeps following the sound.
 
 - **Keys:** notes on CHANNEL (HOME menu > MIDI, default 1), the lowest key C3 (48) at octave 0, velocity as KEY
   VELOCITY. OCTAVE− / OCTAVE+: the octave (±3; both: 0).
@@ -156,7 +162,7 @@ SLOOP's sequencer stops and the controls leave SLOOP alone. MIDI IN still plays 
   Knobs ABSOLUTE (0–127, kept per knob) or RELATIVE (64 ± the detents): HOME menu > DAW > KNOBS. `<` `>` send when
   let go. A knob, fader or wheel sends at most every 8 ms (the last value always); a CC TOGGLE flips once a press.
 - **PATCH** tapped: **LOCAL** ON / OFF (PATCH lit: ON). ON: the keys also play the selected track, NOTE pads the drum
-  kit (GM drum notes). OFF (default): SLOOP stays silent. PATCH held: the menu.
+  kit (GM drum notes). OFF (default): the synth stays silent. PATCH held: the menu.
 - **Screen:** DAW, CHANNEL, LOCAL; the last control touched (its name and bank, its message, the value, a bar); the
   fader and pad banks, the octave; the eight knobs as bars with their CCs.
 - **Pads:** NOTE bank A blue, bank B green (dim, bright while held); CC yellow (dim, bright while held; a CC TOGGLE
@@ -219,7 +225,7 @@ PRESETS order, 16 a page, then the user presets; on the drum track the drum kits
 short preview; < > step the pages. It closes by itself a moment after the last turn, unless KNOB BANK pinned it.
 FADER BANK closes it (one screen at a time).
 
-## Power-on and special combos (same as SLOOP on FM-1)
+## Power-on and special combos (as on the FM-1)
 
 | Combo | Does |
 |---|---|
@@ -233,7 +239,8 @@ FADER BANK closes it (one screen at a time).
 ## Safety
 
 - **Back up the whole 1 MiB flash first**, over the chip's mask-ROM UBOOT mode (e.g. with `jl-uboot-tool`). The stock
-  firmware has no way into UBOOT, so you need a USB_KEY dongle (as for the FM-1); with SLOOP installed, hold
+  firmware has no way into UBOOT, so you need a USB_KEY dongle (as for the FM-1), or M-Flasher's download mode; with
+  Synthesthetic installed, hold
   OCTAVE− and OCTAVE+ for 5 seconds while stopped. Keep the dump private: it holds data unique to your unit.
 - **Never write 0xC0000–0xC1FFF** (Bluetooth pairing and the factory key / pad calibration, "trimdata") **or key_mac
   (0xFF000–0xFFFFF)**, and leave the stock resources (0xF4000–0xFDFFF) alone: they are unique to each unit and cannot

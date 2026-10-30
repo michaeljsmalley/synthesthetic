@@ -139,7 +139,8 @@ UI_SMALL static void hexs(char *b, uint32_t v)
 }
 
 #if BOARD_SMK37
-/* the SMK-37 Pro's 4 faders, tracks 1..4 (4 = drums), by FADER BANK (ui_input.c smk_fbank): A level, B the
+/* the SMK-37 Pro's 4 faders, tracks 1..4 (4 = drums), by FADER BANK (ui_input.c smk_fbank; E VISUAL, Synthesthetic: the
+ * visualizer's knobs): A level, B the
  * track's filter (P_TFLT: low-pass left, open in the middle, high-pass right), C reverb send, D delay send.
  * A fader takes over only once it moves (also after a bank change), so nothing jumps. */
 static void smk_faders(void)
@@ -166,6 +167,10 @@ static void smk_faders(void)
             continue;
         last[i] = (uint8_t)v;
         switch (smk_fbank) {
+        case FB_VIS:                                      /* Synthesthetic: AMOUNT, RATE, TRAILS, COLOR (0..255, as the
+                                                           * visuals' MIDI CCs set them; ui_vis.c vis_tick sees the change) */
+            vis_knob[i] = (uint8_t)(v * 2u + (v >> 6));
+            break;
         case 1:
             trk[i].p[P_TFLT] = (int16_t)((int32_t)v - 64);
             break;

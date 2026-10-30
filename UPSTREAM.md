@@ -89,3 +89,12 @@ Local changes to SLOOP so far:
   video through every mode with the video job on core 1 under the new stack guard (`fm1_c1_main` limits core 1's
   stack to its 2816 bytes less 256), USB audio, the rescue. Still only on paper: the bar (a crash while the video
   core runs leaves the FM-1 on one core, so no USB video, until a power-off).
+- **The SMK-37 (branch smk37, 2026-10-30):** genkigenki's board layer for the M-Vave SMK-37 (sloop-fm1 branch `smk37`,
+  isod89/sloop-fm1#112, on SLOOP 2.7) merged with git (shared history: a later state of the branch, or the layer on
+  SLOOP's main once the pull request lands, merges the same way). Everything is behind `BOARD_SMK37`; the FM-1 build
+  stays byte-identical (checked after every step). Synthesthetic's own: the identities (`SMK-37 Pro_950`, releases
+  `95Y`), the nine-section menu (SEQ and VJ among the layer's PLAY, MIDI, DAW), the VISUAL fader bank (E: the
+  visualizer's knobs, `ui_fbank.c`, `main.c smk_faders`), the LCD HAL split (2.8.3's backlight helper FM-1 only), the
+  4 KiB pool margin on the SMK video build (`build.py`), the installer library keeping 2.8.3's port search with the
+  layer's model rules, and the tests on Synthesthetic's names and sample sets. See `SMK37.md`.
+
