@@ -166,6 +166,9 @@ static void smk_faders(void)
         if (v == last[i])
             continue;
         last[i] = (uint8_t)v;
+        ui_input_ms = fm1_ms;                             /* a fader is input too: the autosave waits for quiet (it wrote
+                                                           * the project on every step, 22 flash writes in 5 s, each with
+                                                           * the interrupts off: the screen and the sound stalled) */
         switch (smk_fbank) {
         case FB_VIS:                                      /* Synthesthetic: AMOUNT, RATE, TRAILS, COLOR (0..255, as the
                                                            * visuals' MIDI CCs set them; ui_vis.c vis_tick sees the change) */

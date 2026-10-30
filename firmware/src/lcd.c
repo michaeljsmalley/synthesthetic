@@ -13,6 +13,9 @@
 #define LCD_BAUD 1u                /* lsb/(BAUD+1): 1 = 30 MHz (Synthesthetic, 2026-10-20: clean on the FM-1's panel; SLOOP
                                     * ran 4 = 12 MHz; the ST7789's own spec says 15) */
 #endif
+#if BOARD_SMK37
+static uint32_t lcd_full_fills, lcd_blits, padled_frames;   /* (the video diagnostics, usb.c: the screen's traffic) */
+#endif
 
 static uint8_t lcd_small[64];
 static uint8_t lcd_busy;           /* a lcd_data DMA may still run; CS is low */
@@ -71,6 +74,10 @@ static uint16_t lcd_fillbuf[240];
 
 static void lcd_fill(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint16_t c)
 {
+#if BOARD_SMK37
+    if (w == 240u && h == 240u)
+        lcd_full_fills++;
+#endif
     uint32_t i, n, k, sw;
     sw = (uint16_t)((c >> 8) | (c << 8));
     if (!w || !h || x >= 240u || y >= 240u)
@@ -99,6 +106,9 @@ static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 {
     if (!w || !h)
         return;
+#if BOARD_SMK37
+    lcd_blits++;
+#endif
 #if FELUCCA_VCORE
     if (mir_px)
         mir_blit(x, y, w, h, px);           /* SCREEN: the webcam's copy too (mirror.c) */
@@ -202,6 +212,7 @@ static void padled_flush(void)
     if (!padled_dirty)
         return;
     padled_dirty = 0;
+    padled_frames++;
     for (p = 0; p < PADLED_N; p++) {
         uint8_t *o = padled_buf + PADLED_LATCH + PADLED_SLOT[p] * 24u;
         for (i = 0; i < 24u; i++)

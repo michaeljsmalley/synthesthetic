@@ -10,7 +10,8 @@
 static const char *const FB_NAME[FB_N] = {"LEVEL", "FILT", "REV", "DLY", "VISUAL"};   /* (SLOOP's short names: five boxes of 48 px) */
 #define FB_SHOW_MS 4000u                           /* up this long after the last change */
 static uint8_t fb_open;
-static uint32_t fb_t, fb_frame;                    /* last action (ms); the frame drawn last */
+static uint32_t fb_t, fb_frame;
+static uint32_t fb_blits;                          /* (the video diagnostics) */                    /* last action (ms); the frame drawn last */
 
 static int fb_shown(void)
 {
@@ -122,6 +123,7 @@ static void fb_draw(void)
             }
         }
         cv_blit(0, half * 120u);
+        fb_blits++;
     }
     shown = sig;
     shown_bank = b;
