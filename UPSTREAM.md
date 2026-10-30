@@ -85,6 +85,7 @@ Local changes to SLOOP so far:
   (VIBES, SCRATCH and the GM kit changed upstream: the sample retrigger fade and `gen_samples.py`). `web/index_pkg.html`
   and `docs/webapp/` are Synthesthetic's own and were kept whole: upstream removed its in-browser return to V15 as
   unreliable on some systems; ours stays, see the handbook. Upstream's documents refreshed in `docs/upstream-sloop/`.
-  Not checked on hardware yet: the video job on core 1 under the new stack guard (`fm1_c1_main` limits core 1's stack
-  to its 2816 bytes less 256), and the bar (a crash while the video core runs leaves the FM-1 on one core, so no USB
-  video, until a power-off).
+  Checked on the unit the same day (the local installer, identity FM-1_950): boot, the six-section menu, 2 CORES, USB
+  video through every mode with the video job on core 1 under the new stack guard (`fm1_c1_main` limits core 1's
+  stack to its 2816 bytes less 256), USB audio, the rescue. Still only on paper: the bar (a crash while the video
+  core runs leaves the FM-1 on one core, so no USB video, until a power-off).
