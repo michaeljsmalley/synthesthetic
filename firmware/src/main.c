@@ -190,8 +190,10 @@ static void smk_faders(void)
             *pv = (int16_t)v;
             break;
         }
-        if (!fb_shown())                                  /* (the FADER BANK screen follows the values by itself, half a
-                                                           * screen at a time: a forced full redraw a step flickered) */
+        if (!fb_shown() && !vis_shown())                  /* (the FADER BANK screen follows the values by itself, half a
+                                                           * screen at a time; the visualizer clears the whole screen on a
+                                                           * forced redraw: a step at a time, it flickered black. Its bars
+                                                           * follow the knobs through vis_tick) */
             ui.force = 1;
     }
 }
