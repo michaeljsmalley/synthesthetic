@@ -528,7 +528,8 @@ const log = (s) => { $("log").textContent += s + "\n"; $("logbox").hidden = fals
    mode / BPM). Sent as the video core's SysEx (web/EDITOR_PROTOCOL.md, v13): F0 7D 56 43 06 <text> F7 the title
    (ASCII, up to 19), 07 n the overlay (0 off, 1 info, 2 title, 3 both); both kept with the FM-1's settings.
    01 asks the video core's counters: only a build with USB video answers (02 ...), so it is asked first. */
-const VJ_OURS = (id) => /^FM-1_9[5-9]\d$/i.test(id.text);   /* Synthesthetic's identities (tools/build.py PRODUCT) */
+const MODEL_RE = "(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)";   /* the FM-1, and the SMK-37 under its three names (SMK37.md) */
+const VJ_OURS = (id) => new RegExp(`^${MODEL_RE}_9[5-9]\\d$`, "i").test(id.text);   /* Synthesthetic's identities (tools/build.py PRODUCT) */
 const vjClean = (s) => String(s || "").toUpperCase().replace(/[^\x20-\x7E]/g, "?").slice(0, 19);
 const vjSay = (k, arg = "", tone = "") => show("vj-status", () => fmt(k, arg), tone);
 function vjPreview() {
@@ -660,11 +661,11 @@ window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault
 
 /* step 1: what the FM-1 runs, from the identity its firmware answers with, and whether installing over it is safe */
 function describe(id) {
-  const x = String(id.text || ""), m = /^FM-1_9([5-9])(\d)$/i.exec(x);
+  const x = String(id.text || ""), m = new RegExp(`^${MODEL_RE}_9([5-9])(\\d)$`, "i").exec(x);
   if (/^ota-/i.test(id.model)) return { k: "idOta", tone: "warn" };
-  if (m) return { k: "idSyn", v: () => (/^FM-1_950$/i.test(x) ? t("idSynDev") : `${+m[1] - 5}.${m[2]}`), tone: "good" };
-  if (/^FM-1_000$/i.test(x)) return { k: "idRescue", tone: "good" };
-  if (/^FM-1_9\d\d$/i.test(x)) return { k: "idFelucca", tone: "warn" };
+  if (m) return { k: "idSyn", v: () => (/_950$/i.test(x) ? t("idSynDev") : `${+m[2] - 5}.${m[3]}`), tone: "good" };
+  if (new RegExp(`^${MODEL_RE}_000$`, "i").test(x)) return { k: "idRescue", tone: "good" };
+  if (new RegExp(`^${MODEL_RE}_[79]\\d\\d$`, "i").test(x)) return { k: "idFelucca", tone: "warn" };   /* (SMK ports: 7xx too) */
   return { k: "idOther", tone: "warn" };
 }
 const stepState = (id, s) => { $(id).classList.toggle("now", s === "now"); $(id).classList.toggle("ok", s === "ok"); };
