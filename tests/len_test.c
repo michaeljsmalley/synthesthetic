@@ -27,6 +27,8 @@ static uint16_t screen[240*240];
 static void lcd_sync(void) {}
 static void lcd_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint16_t *p)
 { uint32_t i,j; assert(x+w<=240 && y+h<=240); for(j=0;j<h;j++) for(i=0;i<w;i++) screen[(y+j)*240+x+i]=p[j*w+i]; }
+#define FM1_NBTN 14u                                    /* (the FM-1 panel, as hal/fm1_input.h: the SMK-37 layer counts with them) */
+#define FM1_NENC 7u
 static uint8_t *mir_px;                                 /* (Synthesthetic SCREEN: the display's copy, mirror.c) */
 #include "../firmware/src/gfx.c"
 #include "../firmware/src/rainbow.c"

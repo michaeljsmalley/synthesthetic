@@ -55,6 +55,8 @@ two crashes at startup. The handbook's [Recovery and safety](HANDBOOK.md#recover
 recovery steps, and [DEVELOPMENT.md](DEVELOPMENT.md#rules) lists the rules to follow before you change USB, flash or
 boot code.
 
+**M-Vave SMK-37:** see [SMK-37 instructions](SMK37.md).
+
 ## Building
 
 ```sh

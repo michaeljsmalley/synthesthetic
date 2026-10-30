@@ -6,13 +6,24 @@
 #include "fm1_sys.h"
 #include "fm1_irq.h"
 #include "fm1_guard.h"
+#if BOARD_SMK37
+#include "smk_input.h"           /* keys, buttons, encoders, LEDs, pads, faders, wheels, battery */
+#else
 #include "fm1_input.h"
+#endif
 #include "fm1_timer.h"
 #include "fm1_audio.h"
+#if !BOARD_SMK37
 #include "fm1_adc.h"
+#endif
 #include "fm1_lcd_hw.h"
 #include "fm1_cpu1.h"      /* the second core (X0X): started in main.c, used by the render later */
 #include "felucca_tables.h"
+/* (the SMK-37 layer's brand macros, genkigenki: Synthesthetic's names; ui_menu.c and recovery.c draw their own) */
+#define BRAND_NAME "SYNTHESTHETIC"
+#define BRAND_BASED "BASED ON SLOOP + FELUCCA"
+#define BRAND_CRASH "FELUCCA CRASH"
+#define BRAND_RESCUE "SYNTHESTHETIC USB RESCUE"
 
 #include "libc.c"
 #ifndef FELUCCA_CPU1
@@ -51,7 +62,11 @@ static void mir_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #define FELUCCA_OTA_DRYRUN 0     /* 1 = stage, ask "success", then undo: no record, no reset */
 #endif
 #ifndef FELUCCA_ID
+#if BOARD_SMK37
+#define FELUCCA_ID "SMK-37 Pro_950"   /* package identity: Synthesthetic on the SMK-37 (build.py: the .fwsc marker string) */
+#else
 #define FELUCCA_ID "FM-1_950"    /* package identity: Synthesthetic (build.py: the .fwsc marker string) */
+#endif
 #endif
 #ifndef FELUCCA_CDC
 #define FELUCCA_CDC 0            /* USB CDC-ACM serial console, a developer's tool (menu USB SERIAL). 2.7: out of the FM-1
@@ -71,12 +86,29 @@ static void mir_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #define vcore_park() 1
 #define vcore_resume() ((void)0)
 #endif
+#if BOARD_SMK37
+#include "smk_uart_tx.h"
+#include "smk_midi_out.h"     /* SMK-37: TRS MIDI OUT (UART1 TX, PC7), fed by usb.c midi_out_event */
+#endif
 #include "usb.c"
 #ifndef FELUCCA_UART
+#if BOARD_SMK37
+#define FELUCCA_UART 0           /* SMK-37 Pro: the jack is MIDI OUT (smk_midi_out.h), no MIDI IN; PH8 is a key-matrix
+                                  * row there and must never become UART RX */
+#else
 #define FELUCCA_UART 1           /* TRS MIDI IN on UART1 (3.5 mm jack) */
+#endif
+#endif
+#if BOARD_SMK37 && FELUCCA_UART
+#error "BOARD_SMK37: midi_uart.c is the FM-1 MIDI IN driver (RX on PH8, a key-matrix row on the SMK)"
 #endif
 #if FELUCCA_UART
 #include "midi_uart.c"
+#endif
+#if BOARD_SMK37
+#include "smk_vel.h"          /* SMK-37: menu KEY VELOCITY (DYNAMIC, curves, FIXED), read by seq.c */
+#include "smk_wheel.h"        /* SMK-37: the wheels, their calibration, menu BEND UP / DOWN (main.c smk_wheels) */
+#include "smk_daw.h"          /* SMK-37: DAW mode, the map and its messages (seq.c: keys, pads; ui_daw.c: the rest) */
 #endif
 #define FELUCCA_ARRANGER 1
 #include "arranger.c"
@@ -88,6 +120,9 @@ static void mir_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #include "ui_song.c"
 #include "ui_studio.c"
 #include "icons.c"           /* parameter icons (FELUCCA_ICONS), used by ui_draw.c */
+#if BOARD_SMK37
+#include "ui_pick.c"          /* SMK-37 Pro: the pad sound picker */
+#endif
 #include "ui_draw.c"
 #include "ui_vis.c"           /* the full-screen visualiser (HOME on HOME, 2.4) */
 #if FELUCCA_VCORE
@@ -95,7 +130,14 @@ static void mir_blit(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const uint1
 #endif
 #include "ui_layers.c"       /* hold a function button: what the keys and knobs do (TE style) */
 #include "ui_menu.c"
+#if BOARD_SMK37
+#include "ui_padgrid.c"       /* SMK-37 Pro: steps and tiles in reading order */
+#endif
 #include "ui_input.c"
+#if BOARD_SMK37
+#include "ui_fbank.c"         /* SMK-37 Pro: the FADER BANK screen */
+#include "ui_daw.c"           /* SMK-37: DAW mode: its input, screens, lights and map editor */
+#endif
 #ifndef FELUCCA_FLASH
 #define FELUCCA_FLASH 1          /* flash driver + storage.c */
 #endif
@@ -133,12 +175,18 @@ static void audio_silence(void)                 /* IRQs off: the DMA would loop 
 }
 /* a sector erase with the audio silenced inside the same interrupts-off window (silenced before it, the
  * audio interrupt could render a fresh half that the DMA then loops for the whole erase: a buzz) */
+#if BOARD_SMK37
+static void st_stock_touch(uint32_t off);        /* storage.c: the stock mapping's end marker, before USRFLASH */
+#endif
 static int fl_erase4k_quiet(uint32_t off, uint32_t *took)
 {
     uint32_t f;
     int rc;
     if (!vcore_park())
         return -9;
+#if BOARD_SMK37
+    st_stock_touch(off);                         /* (an erase in USRFLASH: the stock marker goes first) */
+#endif
     f = irq_save();
     audio_silence();
     rc = FL_FAR(fl_erase4k_ram)(off, took);
@@ -149,7 +197,11 @@ static int fl_erase4k_quiet(uint32_t off, uint32_t *took)
 static int st_erase(uint32_t off)
 {
     uint32_t took;
+#if BOARD_SMK37
+    if (!FL_STORE_OK(off, 0x1000u) && !FL_STOCKTAG_OK(off, 0x1000u))
+#else
     if (!FL_STORE_OK(off, 0x1000u))
+#endif
         return -8;
     return fl_erase4k_quiet(off, &took);
 }
@@ -171,7 +223,11 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
 #include "project.c"
 #if FELUCCA_OTA
 static uint8_t recovery_active;
+#if BOARD_SMK37
+#define OTA_IDENTITY (recovery_active ? SMK_MODEL "_000" : FELUCCA_ID)
+#else
 #define OTA_IDENTITY (recovery_active ? "FM-1_000" : FELUCCA_ID)
+#endif
 /* 2.7 beta: the update (ota.c) keeps its own buffers, as in 2.6: the update path never shares RAM */
 #include "ota.c"
 static void recovery_poll(void);
@@ -198,7 +254,11 @@ static int ota_prog(uint32_t off, const void *p, uint32_t n)
 static int ota_fread(uint32_t off, void *p, uint32_t n) { return st_read(off, p, n); }
 static void ota_show(uint32_t step, int32_t code)
 {
+#if BOARD_SMK37   /* step 5 stays on screen while the loader writes the flash: say so */
+    static const char *const STEP[] = {"", "PACKAGE", "CHECK HEAD", "LOADER", "CONFIRM", "UPDATING..."};
+#else
     static const char *const STEP[] = {"", "PACKAGE", "CHECK HEAD", "LOADER", "CONFIRM", "RESTART"};
+#endif
     char b[24];
     if (recovery_active) return;             /* keep polled USB alive during OTA */
     lcd_fill(0, 0, 240, 240, C_BLACK);

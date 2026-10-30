@@ -740,9 +740,9 @@ $("go").addEventListener("click", async () => {
     if (ota) {
       ota.link.close();
       phase("write");
-      if (await up.resume(image, step)) step("done"); else sayK("stopped", "", "bad");
+      if (await up.resume(image, step, { package: meta.product, anyModel: true })) step("done"); else sayK("stopped", "", "bad");   /* (the loader's model against the package: never an FM-1 package on an SMK-37, nor back) */
     } else {
-      await up.install(image, meta.product, step);
+      await up.install(image, meta.product, step, true);
     }
   } catch (e) { failed(e); }
   lockAll(false);
@@ -776,7 +776,7 @@ $("stock-go").addEventListener("click", async () => {
       if (OUR_LOADER(ota.id)) sayK("stockFinish", "", "warn");    /* Synthesthetic's loader: finish that first (Install) */
       else if (!(await up.resume(stock.image, step, { product: stock.product }))) sayK("stopped", "", "bad");   /* (it says done) */
     } else {
-      await up.install(stock.image, stock.product, step);
+      await up.install(stock.image, stock.product, step, false, { fm1Confirmed });
     }
   } catch (e) { failed(e); }
   lockAll(false);
