@@ -97,4 +97,6 @@ Local changes to SLOOP so far:
   visualizer's knobs, `ui_fbank.c`, `main.c smk_faders`), the LCD HAL split (2.8.3's backlight helper FM-1 only), the
   4 KiB pool margin on the SMK video build (`build.py`), the installer library keeping 2.8.3's port search with the
   layer's model rules, and the tests on Synthesthetic's names and sample sets. See `SMK37.md`.
+  Checked on the user's SMK-37 Elite the same day (installed from the local site build, identity SMK-37 Elite_950):
+  everything on the bring-up list; the one bug found, the fader flicker over the visualizer, fixed (main.c smk_faders).
 

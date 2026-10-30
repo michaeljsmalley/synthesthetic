@@ -4,7 +4,9 @@ The M-Vave SMK-37 has the FM-1's chip (JieLi AC791N), so Synthesthetic runs on i
 Everything SMK-37-specific sits behind `BOARD_SMK37`; the FM-1 build is unchanged, byte for byte. The board layer
 (keybed, pads, faders, wheels, knobs, display, LEDs, flash map, installer, DAW mode) is M. Geisler's (genkigenki), from
 the SMK-37 port of SLOOP (isod89/sloop-fm1 pull request 112); Synthesthetic adds the video core, the visualizer and a
-VISUAL fader bank on top. **Status: builds and passes the host tests; not yet tried on a unit.**
+VISUAL fader bank on top. **Status: tried on an SMK-37 Elite on 2026-10-30:** boot, keys with velocity, the outer keys, pads, knobs, every fader
+bank, the wheels, USB video with SCREEN mode, the settings and the project through a power cycle. Not yet tried: DAW
+mode, the TRS MIDI OUT jack, the pedal, the pad sound picker in anger.
 
 > Unofficial firmware for the SMK-37, not affiliated with or endorsed by M-Vave. No warranty: install at your own
 > risk and read [Safety](#safety) first.
