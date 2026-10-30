@@ -204,6 +204,44 @@ check(w2.web_vj_get(0) === 16 && w2.web_vj_get(3) === 2, 'and come back at the n
   check(e3.stopped === true, 'engine: stops when a new FM-1 takes its place (Start over)');
   const e4 = new FM1Engine(bytes, new ArrayBuffer(100), (m) => { seen2.ready4 = m; });
   check(seen2.ready4.fresh === true, 'engine: an image of the wrong size is not loaded: a new FM-1, with the demo');
+  {   // SYSTEM > RESET (Synthesthetic), through the menu as on the FM-1: it restarts on the flash image the reset left
+    const msgs = [], er = new FM1Engine(bytes, null, (m) => msgs.push(m));   // a first visit: the demo song
+    const ENC_SELECT = 0, ENC_K3 = 4, readies = () => msgs.filter((m) => m.t === 'ready').length;
+    const btn = (b, ms) => { er.message({ t: 'input', notes: 0, buttons: 1 << b }); go(er, ms); er.message({ t: 'input', notes: 0, buttons: 0 }); go(er, 150); };
+    const turn = (enc) => { er.message({ t: 'enc', e: enc, s: 1 }); go(er, 80); };
+    const reset = (kind) => {                             // HOME held: the menu; SELECT x 3: SYSTEM; KNOB 3: what; OCT+ x 2
+      btn(BTN.home, 1300);
+      for (let i = 0; i < 3; i++) turn(ENC_SELECT);
+      for (let i = 0; i < kind; i++) turn(ENC_K3);
+      btn(BTN.octp, 120); btn(BTN.octp, 120);
+      go(er, 4500);                                       // (the restart: its boot screen)
+    };
+    const plays = (e) => {                                // PLAY for 2 s: the energy of what sounds
+      let en = 0;
+      e.message({ t: 'input', notes: 0, buttons: 1 << BTN.play }); go(e, 100); e.message({ t: 'input', notes: 0, buttons: 0 });
+      go(e, 2000, () => { for (const v of L) en += v * v; });
+      e.message({ t: 'input', notes: 0, buttons: 1 << BTN.play }); go(e, 100); e.message({ t: 'input', notes: 0, buttons: 0 }); go(e, 300);
+      return en;
+    };
+    const vj = () => [0, 2, 3].map((k) => er.w.web_vj_get(k)).join();   // mode, autopilot, overlay
+    go(er, 4500);
+    for (const [k, v] of [[0, 24], [2, 0], [3, 2]]) er.message({ t: 'vj', k, v });   // FIRE, no autopilot, the title:
+    go(er, 6000);                                         // settings off their defaults (WARP, 8 bars, none), in the image
+    const before = plays(er);
+    reset(1);
+    const set1 = vj(), kept = plays(er);
+    check(readies() === 2 && set1 === '16,2,0' && before > 1 && kept > 1,
+          `engine: RESET SETTINGS restarts the FM-1 with its settings at their defaults (${set1}), the song kept (energy ${kept.toFixed(1)})`);
+    for (const [k, v] of [[0, 24], [2, 0]]) er.message({ t: 'vj', k, v });
+    go(er, 6000);
+    reset(2);
+    const set2 = vj(), gone = plays(er), last = msgs.filter((m) => m.t === 'flash').pop();
+    const ea = new FM1Engine(bytes, last.data, () => {});  // (the image the page keeps from the restart on)
+    go(ea, 4500);
+    const after = plays(ea);
+    check(readies() === 3 && set2 === '16,2,0' && gone < 0.001 && after < 0.001 && er.w.web_songmode(-1) === 0,
+          `engine: RESET EVERYTHING restarts it with no song (${set2}), and the page keeps that (energy ${gone.toFixed(4)}, ${after.toFixed(4)})`);
+  }
 }
 modeCost.sort((a, b) => b[0] - a[0]);
 console.log(`web: per call here: audio ${(t.render / t.nr).toFixed(3)} ms / 128 frames (2.902 ms of sound), UI frame ` +

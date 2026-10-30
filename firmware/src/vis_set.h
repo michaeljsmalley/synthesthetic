@@ -38,8 +38,8 @@ typedef struct {
     char title[VIS_TITLE_N];
     uint32_t crc;                                       /* (st_crc32 of everything before it) */
 } vis_set_t;
-static vis_set_t vis_set = {VIS_SET_MAGIC, VIS_FIRST_PROC, 0, 2, 2, 0, 16, {0, 0}, {128, 128, 160, 0},
-                            "SYNTHESTHETIC", 0};
+#define VIS_SET_INIT {VIS_SET_MAGIC, VIS_FIRST_PROC, 0, 2, 2, 0, 16, {0, 0}, {128, 128, 160, 0}, "SYNTHESTHETIC", 0}
+static vis_set_t vis_set = VIS_SET_INIT;              /* (the defaults: project.c settings_defaults too) */
 static uint8_t vis_dirty;                               /* vis_set changed since the settings were written */
 static volatile uint8_t vis_pal_live;                   /* the palette shown (the autopilot's, MIDI's or vis_set's) */
 static volatile uint32_t vis_var;                       /* the variation of the mode shown (the autopilot picks it) */

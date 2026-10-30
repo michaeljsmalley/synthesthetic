@@ -44,6 +44,10 @@ static void irq_restore(uint32_t f) { (void)f; }
 static void fm1_wdt_feed(void) {}
 static void fm1_reboot(void) {}
 static void fm1_enter_uboot(void) {}
+/* SYSTEM > RESET (project.c factory_reset) restarts the FM-1: here the page starts a new one on the flash image as the
+ * reset left it (worklet.js FM1Engine.restart), as switching it off and on */
+static uint32_t web_restart;
+static void reset_restart(void) { web_restart = 1; }
 
 /* ----------------------------------------------------------------------- input (hal/fm1_input.h) */
 /* the matrix scan and its debounce are the page's (a key is down or up); the rest as the HAL */
@@ -470,6 +474,7 @@ WEB(web_flash_ptr) uint32_t web_flash_ptr(void) { return (uint32_t)(uintptr_t)we
 WEB(web_flash_size) uint32_t web_flash_size(void) { return WEB_FLASH_SIZE; }
 WEB(web_flash_gen) uint32_t web_flash_gen_get(void) { return web_flash_gen; }
 WEB(web_flash_erase) void web_flash_erase(void) { memset(web_flash, 0xFF, sizeof web_flash); }   /* a new FM-1 */
+WEB(web_restarting) uint32_t web_restarting(void) { return web_restart; }   /* SYSTEM > RESET: a new FM-1 on the image */
 
 /* fm1_main up to its loop; the page has put its saved flash image in place (or erased it: demo != 0 writes the song,
  * its bits the tracks: 15 all of them) */

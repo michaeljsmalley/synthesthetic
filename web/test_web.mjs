@@ -1777,7 +1777,8 @@ async function editorVj() {
     && /#define VIS_SET_MAGIC 0x31534956u/.test(vh) && /#define VIS_TITLE_N 20u/.test(vh) && V.MAGIC === 0x31534956 && V.TITLE === 19 && V.SIZE === 40,
     "visuals: 31 modes (SCREEN last), palettes, magic, title length == vis_set.h");
   ok(/uint32_t magic;\s*uint8_t mode;[^]*uint8_t palette;[^]*uint8_t autopilot;[^]*uint8_t attract;[^]*uint8_t hud;[^]*uint8_t midi_ch;[^]*uint8_t rsv\[2\];[^]*uint8_t knob\[4\];[^]*char title\[VIS_TITLE_N\];[^]*uint32_t crc;/.test(vh)
-    && /static vis_set_t vis_set = \{VIS_SET_MAGIC, VIS_FIRST_PROC, 0, 2, 2, 0, 16, \{0, 0\}, \{128, 128, 160, 0\},\s*"SYNTHESTHETIC", 0\};/.test(vh)
+    && /#define VIS_SET_INIT \{VIS_SET_MAGIC, VIS_FIRST_PROC, 0, 2, 2, 0, 16, \{0, 0\}, \{128, 128, 160, 0\},\s*"SYNTHESTHETIC", 0\}/.test(vh)
+    && /static vis_set_t vis_set = VIS_SET_INIT;/.test(vh)
     && js(V.defaults()) === js({ mode: 16, palette: 0, autopilot: 2, attract: 2, hud: 0, midi: 16, knob: [128, 128, 160, 0], title: "SYNTHESTHETIC" }),
     "visuals: the record and its defaults == vis_set.h vis_set_t (40 bytes, WARP, 8 bars, 1 min, ch 16)");
   ok(/v\.mode >= VIS_N \|\| v\.palette >= VIS_NPAL \|\|\s*v\.autopilot > 4u \|\| v\.attract > 4u \|\| v\.hud > 3u \|\| v\.midi_ch > 16u/.test(ec) && /BK_PUT[^]*id <= 12u/.test(ec),

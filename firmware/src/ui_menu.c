@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-3.0-only
  * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
 /* The menu (HOME held), in sections as the pages are (2.4): SCREEN (COLOR, ZOOM, KNOB ACCEL (2.7)), LIGHTS (LIGHTS, KEYS, NOTES),
- * AUDIO (LOWCUT, USB AUDIO, USB SERIAL (FELUCCA_CDC builds only), USB RATE (2.7 beta)), SYSTEM (2ND CORE (dualcore), HARDWARE CALIBRATION, LEARN CLEAR (2.6), ABOUT),
+ * AUDIO (LOWCUT, USB AUDIO, USB SERIAL (FELUCCA_CDC builds only), USB RATE (2.7 beta)), SYSTEM (2ND CORE (dualcore), HARDWARE CALIBRATION,
+ * RESET (Synthesthetic: MIDI LEARN as 2.6's LEARN CLEAR, the settings, or everything), ABOUT),
  * VJ (Synthesthetic: AUTOPILOT, ATTRACT, OVERLAY, VISUALS MIDI CH).
  * SELECT goes to the section before / after (stopping at the ends), KNOB 1..4 set the section's settings in order (the knob's colour marks
  * its row), PRESETS moves the cursor; OCT+ steps the cursor's setting round or opens it (CALIBRATION, ABOUT),
@@ -12,17 +13,21 @@ enum { MI_COLOR, MI_ZOOM, MI_ACCEL, MI_LIGHTS, MI_KEYS, MI_NOTES, MI_LOWCUT, MI_
 #if FELUCCA_CDC
        MI_SERIAL,
 #endif
-       MI_RATE, MI_CPU1, MI_PANEL, MI_LCLEAR, MI_ABOUT, MI_AUTO, MI_ATTRACT, MI_HUD, MI_VISCH, MI_COUNT };
+       MI_RATE, MI_CPU1, MI_PANEL, MI_RESET, MI_ABOUT, MI_AUTO, MI_ATTRACT, MI_HUD, MI_VISCH, MI_COUNT };
 static const char *const MI_NAME[MI_COUNT] = {"COLOR", "ZOOM", "KNOB ACCEL", "LIGHTS", "KEYS", "NOTES", "SPEAKER LOWCUT", "USB AUDIO",
 #if FELUCCA_CDC
                                               "USB SERIAL",
 #endif
-                                              "USB RATE", "2ND CORE", "HARDWARE CALIBRATION", "MIDI LEARN CLEAR", "ABOUT",
+                                              "USB RATE", "2ND CORE", "HARDWARE CALIBRATION", "RESET", "ABOUT",
                                               "AUTOPILOT", "ATTRACT", "OVERLAY", "VISUALS MIDI CH"};
 enum { MS_SCREEN, MS_LIGHTS, MS_AUDIO, MS_SYSTEM, MS_VJ, MS_COUNT };
 static const char *const MS_NAME[MS_COUNT] = {"SCREEN", "LIGHTS", "AUDIO", "SYSTEM", "VJ"};   /* (AUDIO: and USB; VJ:
                                                                                  * Synthesthetic's visuals) */
 static const uint8_t MS_FIRST[MS_COUNT + 1] = {MI_COLOR, MI_LIGHTS, MI_LOWCUT, MI_CPU1, MI_AUTO, MI_COUNT};   /* rows of each */
+static const char *const RESET_NAME[3] = {"MIDI LEARN", "SETTINGS", "EVERYTHING"};
+static uint8_t mi_reset, mi_reset_armed;              /* SYSTEM > RESET: what KNOB 3 picked; the first OCT+ given */
+static uint32_t mi_reset_at;                          /* (when: the second counts for 3 s) */
+UI_SMALL static int mi_armed(void) { return mi_reset_armed && fm1_ms - mi_reset_at < 3000u; }
 
 UI_SMALL static int mi_cpu1_have(void)                      /* the second core is running (cpu1.c; the host tests have no cpu1.c) */
 {
@@ -80,17 +85,8 @@ UI_SMALL static const char *mi_value(uint32_t i, uint16_t *c)
     case MI_CPU1:                                     /* the render on both cores (fx.c); live, the sound is the same */
         *c = mi_cpu1_have() ? C_HI : C_DIM;
         return cpu1_off ? "OFF" : "ON";
-    case MI_LCLEAR: {                                 /* (2.6) the CCs MIDI LEARN holds; OCT+ clears them */
-        static char b[8];
-        uint32_t n = ml_count();
-        if (!n) {
-            *c = C_DIM;
-            return "NONE";
-        }
-        fmt_int(b, (int32_t)n);
-        str_cpy(b + str_len(b), " CC", 4);
-        return b;
-    }
+    case MI_RESET:                                    /* (Synthesthetic) what KNOB 3 picked (asked: draw_menu says so) */
+        return RESET_NAME[mi_reset % 3u];
     case MI_AUTO: {                                   /* the autopilot: a new picture every n bars */
         static const char *const A[5] = {"OFF", "4 BARS", "8 BARS", "16 BARS", "32 BARS"};
         return A[vis_set.autopilot % 5u];
@@ -134,7 +130,8 @@ UI_SMALL static void draw_menu(void)
                    settings.zoom * 104729u + lights_lvl * 1299709u + lights_keys * 15485863u + ml_count() * 2654435u +
                    lights_notes * 32452843u + usb_full * 49979687u + usb_serial * 86028121u + usb_rate * 15486719u + theme_shown() * 32452867u + theme.crc + cpu1_off * 122949829u +
                    knob_accel_off * 179424673u + (vis_set.autopilot | vis_set.attract << 3 | vis_set.hud << 6 |
-                                                  (uint32_t)vis_set.midi_ch << 8) * 2246822519u;
+                                                  (uint32_t)vis_set.midi_ch << 8) * 2246822519u +
+                   mi_reset * 2971215073u + (uint32_t)mi_armed() * 433494437u;
     if (!ui.force && sig == ui.menu_sig)
         return;
     ui.menu_sig = sig;
@@ -220,6 +217,24 @@ UI_SMALL static void draw_menu(void)
 #endif
                 if (i == MI_CPU1 && !mi_cpu1_have())
                     cv_text(xv + 8, y + 30, &FONT_S, "NOT RUNNING", C_AMB);   /* (cpu1.c: ABOUT says 1 CORE) */
+                if (i == MI_RESET) {                    /* on the label's line: MIDI LEARN's CCs, else what OCT+ takes */
+                    char b[12];
+                    const char *t = b;
+                    uint16_t tc = C_DIM;
+                    uint32_t n = ml_count();
+                    if (mi_armed()) {
+                        t = "OCT+ AGAIN";
+                        tc = TE_RED;                    /* (the studio's red: erasing) */
+                    } else if (mi_reset) {
+                        t = "OCT+ TWICE";
+                    } else if (n) {
+                        fmt_int(b, (int32_t)n);
+                        str_cpy(b + str_len(b), " CC", 4);
+                    } else {
+                        t = "NONE";
+                    }
+                    cv_text(236 - text_w(&FONT_S, t), y, &FONT_S, t, tc);
+                }
             }
             if (MS_FIRST[sec + 1u] - MS_FIRST[sec] <= 3u) {   /* (SYSTEM has four rows with 2ND CORE: its fourth
                                                                * row, ABOUT, takes the help's place) */
@@ -241,6 +256,8 @@ UI_SMALL static void enc_drop(void)                             /* knob turns no
 
 UI_SMALL static void menu_close(void)
 {
+    mi_reset = 0;                                      /* (RESET opens on MIDI LEARN again, nothing asked) */
+    mi_reset_armed = 0;
     if (song.playing || transport_req || !audio_quiet())
         settings_later = 1;                            /* (a flash write stops the audio: once stopped and quiet) */
     else
@@ -332,9 +349,25 @@ UI_SMALL static void mi_set(uint32_t i, int32_t s)
         vis_dirty = 1;
         break;
     }
-    case MI_LCLEAR:                                    /* (2.6) every learned CC: OCT+ */
-        if (!s)
+    case MI_RESET:                                     /* (Synthesthetic) KNOB 3: what (stops at the ends). OCT+: MIDI
+                                                        * LEARN at once (2.6's LEARN CLEAR); the settings or everything
+                                                        * the second time within 3 s (project.c factory_reset: a restart) */
+        if (s) {
+            if (s > 0 && mi_reset < 2u)
+                mi_reset++;
+            else if (s < 0 && mi_reset > 0u)
+                mi_reset--;
+            mi_reset_armed = 0;
+        } else if (!mi_reset) {
             ui_message(ml_clear_all() ? "LEARN CLEARED" : "NOTHING LEARNED");
+        } else if (mi_armed()) {
+            mi_reset_armed = 0;
+            factory_reset(mi_reset == 2u);
+        } else {
+            mi_reset_armed = 1;
+            mi_reset_at = fm1_ms;
+            ui_message(mi_reset == 2u ? "OCT+ AGAIN: ERASE ALL" : "OCT+ AGAIN: RESET");
+        }
         break;
     case MI_PANEL:                                     /* actions: OCT+ only */
         if (!s) {

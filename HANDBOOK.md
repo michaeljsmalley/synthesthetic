@@ -107,7 +107,7 @@ your last bar. The loop closes, sets the tempo and starts playing. SLOOP's guide
 
 Hold HOME for about a second to open the menu. It has SCREEN, LIGHTS, AUDIO, SYSTEM and Synthesthetic's VJ section.
 SYSTEM > ABOUT shows the version, and "2 CORES" when the second core is running. That's the core that draws the
-video.
+video. SYSTEM > RESET starts the FM-1 over, as [Recovery and safety](#recovery-and-safety) describes.
 
 To open the visualizer, tap HOME on the TRACKS screen. Tap it again to close it.
 
@@ -372,6 +372,20 @@ video. Switch the FM-1 off and on again.
 Set the overlay to TITLE or INFO + TITLE. SCREEN mode never shows an overlay.
 
 ## Recovery and safety
+
+### Starting over
+
+SYSTEM > RESET in the menu gives the FM-1 a fresh start without reinstalling anything. Turn KNOB 3 to choose what to
+reset, then press OCT+ twice within three seconds. The FM-1 restarts afterwards and keeps its hardware calibration
+either way.
+
+- SETTINGS puts every setting back the way a new FM-1 has it, including the menu, the MIDI channels, MIDI LEARN and
+  the video settings. Your projects, song, kits, presets, samples, theme and favorites stay.
+- EVERYTHING also erases your projects, song, kits, presets, samples, theme and favorites. Save a backup in the
+  editor first (Projects, then Backup) if you might want any of it back.
+- MIDI LEARN forgets the controls you've taught the FM-1, with a single press of OCT+.
+
+### Rescue
 
 Software problems on an FM-1 can almost always be fixed. Each of these steps still works when the one before it
 can't.

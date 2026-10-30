@@ -165,6 +165,18 @@ int main(void)
         bad += check("2.6 erase: saved again", st_save(OBJ_PROJECT0 + 2u, a2, sizeof a2) == 0 &&
                      st_load(OBJ_PROJECT0 + 2u, got3, sizeof got3) == (int)sizeof a2 && !memcmp(got3, a2, sizeof a2));
     }
+    {   /* Synthesthetic: SYSTEM > RESET wipes an object, both copies; the others stay */
+        char w1[300], w2[300], got4[300];
+        memset(w1, 'W', sizeof w1);
+        memset(w2, 'X', sizeof w2);
+        bad += check("wipe: a project in both copies", st_save(OBJ_PROJECT0 + 1u, w1, sizeof w1) == 0 &&
+                     st_save(OBJ_PROJECT0 + 1u, w1, sizeof w1) == 0 && st_save(OBJ_PROJECT0 + 3u, w2, sizeof w2) == 0);
+        bad += check("wipe: done", st_wipe(OBJ_PROJECT0 + 1u) == 0);
+        bad += check("wipe: the object loads nothing (not an older copy)", st_load(OBJ_PROJECT0 + 1u, got4, sizeof got4) < 0);
+        n = st_load(OBJ_PROJECT0 + 3u, got4, sizeof got4);
+        bad += check("wipe: the next project untouched", n == (int)sizeof w2 && !memcmp(got4, w2, sizeof w2));
+        bad += check("wipe: an object that is not there refused", st_wipe(OBJ_COUNT) < 0);
+    }
     bad += side_tests();
     printf("%s\n", bad ? "STORAGE TEST FAILED" : "storage test passed");
     return bad != 0;

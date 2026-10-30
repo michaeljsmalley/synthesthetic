@@ -168,6 +168,15 @@ UI_SMALL static void fm1_fault(const fm1_crash_t *c)
     fm1_reboot();
 }
 
+/* SYSTEM > RESET (project.c factory_reset): the FM-1 restarts, which the boot guard does not count as a failed boot */
+static void reset_restart(void)
+{
+    usb_detach();
+    fm1_delay_ms(30);
+    bootguard_clear(&bootguard);
+    fm1_reboot();
+}
+
 /* power-on: three parts with their default sounds (TRK_DEF), the drum track, empty patterns */
 UI_SMALL static void felucca_init(void)
 {

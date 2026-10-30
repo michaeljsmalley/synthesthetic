@@ -230,3 +230,14 @@ UI_SMALL static int st_save2(uint32_t obj, const void *src, uint32_t len, const 
     return st_save3(obj, src, len, src2, len2, 0, 0);
 }
 UI_SMALL static int st_save(uint32_t obj, const void *src, uint32_t len) { return st_save2(obj, src, len, 0, 0); }
+
+/* both copies erased: the object is gone, as on a new FM-1 (Synthesthetic: SYSTEM > RESET, project.c) */
+UI_SMALL static int st_wipe(uint32_t obj)
+{
+    int a, b;
+    if (obj >= OBJ_COUNT)
+        return -1;
+    a = st_erase(st_sector(obj, 0));
+    b = st_erase(st_sector(obj, 1));
+    return a || b ? -1 : 0;
+}

@@ -1142,6 +1142,89 @@ UI_SMALL static void persist_flush_now(void)
     }
 #endif
 }
+
+/* GLO > MIDI (CH1 CH2 CH3, the drums, OTHER, BEND, FX CH, DR MAP, REMOTE, CLK OUT): the globals midi_set keeps */
+static const uint8_t MIDI_SET_G[10] = {G_CH1, G_CH2, G_CH3, G_DRCH, G_CHOTH, G_BEND, G_FXCH, G_DRMAP, G_RMCH, G_CLKOUT};
+
+/* ---- SYSTEM > RESET (Synthesthetic, ui_menu.c) ----
+ * every setting as a new FM-1 has it: the menu's (COLOR, ZOOM, KNOB ACCEL, the lights, LOWCUT, the USB ones, 2ND
+ * CORE), the REC screen's and GLO > SYSTEM's (the settings word), GLO > MIDI, MIDI LEARN and the visual settings;
+ * everything: the work kept with them too (the song order, the SYN kits, your theme, the favourites). The panel's
+ * calibration stays either way: a unit that needed one keeps buttons that work. */
+UI_SMALL static void settings_defaults(uint32_t everything)
+{
+    static const uint8_t mdef[10] = MIDI_SET_DEF;
+    static const vis_set_t vdef = VIS_SET_INIT;
+    uint32_t k;
+    settings.magic = 0;
+    settings_init();                                    /* COLOR MONO, LOWCUT and ZOOM off */
+    lights_from_word(0);                                /* (every field of the word: 0 is its default) */
+    theme_on = 0;
+    for (k = 0; k < ML_N; k++)
+        ml_tab[k] = 0;
+    memcpy(midi_set, mdef, sizeof midi_set);
+    for (k = 0; k < 10u; k++)
+        song.g[MIDI_SET_G[k]] = (int16_t)midi_set[k];
+    song.g[G_SYNC] = (int16_t)lights_sync;
+    song.g[G_MIDI] = (int16_t)lights_mout;
+    song.g[G_ROUTE] = (int16_t)lights_min;
+    vis_set = vdef;
+    vis_style = (uint8_t)(vis_set.mode % VIS_N);
+    vis_pal_live = (uint8_t)(vis_set.palette % VIS_NPAL);
+    if (!everything)
+        return;
+#if FELUCCA_ARRANGER
+    arr_defaults(&arrangement);
+#endif
+    dsu_defaults();
+    memset(&theme, 0, sizeof theme);
+    theme_valid = 0;
+    for (k = 0; k < FAV_N; k++)
+        fav[k] = FAV_NONE;
+}
+
+/* SETTINGS: the work in RAM saved first (as before an update), every setting back to its default, written with the
+ * calibration. EVERYTHING: the settings so, and the projects, the working project, the user presets, the FM6 bank
+ * and the user sample slots erased. Then the FM-1 restarts (reset_restart: main.c; web.c in the browser), so each
+ * part starts from what flash holds now. */
+static void reset_restart(void);
+UI_SMALL static void factory_reset(uint32_t everything)
+{
+#if FELUCCA_FLASH
+    persist_t p;
+    uint32_t k;
+    if (!flash_ok) {
+        ui_message("NO FLASH: NOTHING TO RESET");
+        return;
+    }
+    fm1_audio_stop();                                   /* silent from here on: the restart follows */
+    lcd_fill(0, 0, 240, 240, C_BLACK);
+    draw_text_box(0, 100, 240, &FONT_S, everything ? "ERASING EVERYTHING" : "RESETTING THE SETTINGS", C_WHITE, 1);
+    draw_text_box(0, 124, 240, &FONT_S, "THE FM-1 RESTARTS", C_AMB, 1);
+    if (!everything)
+        persist_flush_now();                            /* the live sections, the song, the working project: kept */
+    settings_defaults(everything);
+    persist_fill(&p);
+    settings_write(&p);
+    if (everything) {
+        for (k = 0; k < 4u; k++)
+            st_wipe(OBJ_PROJECT0 + k);
+        st_wipe(OBJ_AUTOSAVE);
+        st_wipe(OBJ_UPRESET0);
+        st_wipe(OBJ_UPRESET0 + 1u);
+        st_wipe(OBJ_FM6BANK);
+        fm1_wdt_feed();
+        for (k = 0; k < SMP_USER_SLOTS; k++)
+            st_erase(SMP_USER_OFF(k));                  /* a slot's header sector: the slot reads empty */
+        fm1_wdt_feed();
+        memset(proj_slot, 0, sizeof proj_slot);         /* (RAM that outlives a restart: it would be written back) */
+    }
+    reset_restart();
+#else
+    (void)everything;
+    ui_message("NO FLASH: NOTHING TO RESET");
+#endif
+}
 UI_SMALL static void sections_flush(void)                        /* main loop */
 {
     static uint32_t tried;
@@ -1169,11 +1252,10 @@ UI_SMALL static void sections_flush(void)                        /* main loop */
         settings_later = 1;
     }
     {   /* 2.6: GLO > MIDI (CH1 CH2 CH3 OTHER) and GLO > DRUMS > CH: the same */
-        static const uint8_t gid[10] = {G_CH1, G_CH2, G_CH3, G_DRCH, G_CHOTH, G_BEND, G_FXCH, G_DRMAP, G_RMCH, G_CLKOUT};
         uint32_t k;
         for (k = 0; k < 10u; k++)
-            if ((uint32_t)song.g[gid[k]] != midi_set[k]) {
-                midi_set[k] = (uint8_t)song.g[gid[k]];
+            if ((uint32_t)song.g[MIDI_SET_G[k]] != midi_set[k]) {
+                midi_set[k] = (uint8_t)song.g[MIDI_SET_G[k]];
                 settings_later = 1;
             }
     }

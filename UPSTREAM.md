@@ -61,3 +61,10 @@ Local changes to SLOOP so far:
   flags, the test card), `tools/gen_testcard.py`, `tools/fm1_vcdiag.py`, `tools/fm1_capture.py`,
   `tests/vjpeg_test.c`, `tests/vjpeg_check.py`, `tests/uvc_test.c`, `tests/vrender_test.c`, `tests/vrender_sheet.py`,
   `tests/run_video_tests.sh`. The audio-only SLOOP build is unchanged by all of it (`FELUCCA_UVC=0`, the default).
+- **SYSTEM > RESET (2026-10-26):** the menu's MIDI LEARN CLEAR (2.6) row is now RESET (`ui_menu.c`): KNOB 3 picks
+  MIDI LEARN (the old clear, one OCT+), SETTINGS or EVERYTHING (OCT+ twice within 3 s). `project.c`
+  `settings_defaults` and `factory_reset` (the work saved first, or the projects, presets, FM6 bank and sample
+  slots erased; the panel's calibration kept; the RAM project slots cleared), `storage.c` `st_wipe`, `main.c`
+  `reset_restart` (USB detached, the boot guard cleared, a reboot), `web.c` and `web/play/worklet.js` (the
+  browser's FM-1 restarts on its flash image), `vis_set.h` `VIS_SET_INIT`; tests in `tests/ui_pages_test.c`,
+  `tests/storage_test.c`, `tests/web_test.mjs`.

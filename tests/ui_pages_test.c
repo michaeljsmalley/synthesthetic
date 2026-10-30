@@ -103,6 +103,8 @@ static void up_slot_label(char *b, uint32_t k) { fmt_int(b, (int32_t)k + 1); }
 static void up_ui(uint32_t op, uint32_t k) { (void)op; (void)k; }
 static void settings_save(void) {}
 static int audio_quiet(void) { return 1; }
+static uint32_t reset_calls, reset_last;             /* SYSTEM > RESET: project.c factory_reset's calls (it restarts) */
+static void factory_reset(uint32_t everything) { reset_calls++; reset_last = everything; }
 #include "../firmware/src/ui_song.c"
 #include "../firmware/src/ui_studio.c"
 #include "../firmware/src/icons.c"
@@ -1031,8 +1033,31 @@ int main(int argc, char **argv)
         check(cpu1_off == 1u && cpu1_units == 0 && lights_min == 2u, "menu SYSTEM: bit 21 is 2.6's MIDI IN = CH 1, bit 26 2ND CORE OFF");
         lights_from_word(1u << 26);                   /* (the rest as before: one core on the host) */
         encs[panel.enc[EN_K3]] = 1; frame();
-        check(ui.menu == 1 && ui.menu_sel == MI_LCLEAR, "menu SYSTEM: KNOB 3 is MIDI LEARN CLEAR (2.6; row 3 after 2ND CORE), nothing cleared by a turn");
+        check(ui.menu == 1 && ui.menu_sel == MI_RESET && mi_reset == 1u && !reset_calls,
+              "menu SYSTEM: KNOB 3 is RESET (row 3 after 2ND CORE): a turn right picks SETTINGS, resets nothing");
         ui.force = 1; frame(); ppm("menu-system");
+        {   /* SYSTEM > RESET (Synthesthetic): the first OCT+ asks, a second within 3 s resets (project.c factory_reset) */
+            tap(B_OCTUP);
+            check(mi_armed() && !reset_calls, "menu RESET SETTINGS: the first OCT+ only asks (OCT+ AGAIN)");
+            ui.force = 1; frame(); ppm("menu-reset-asked");
+            tap(B_OCTUP);
+            check(reset_calls == 1u && reset_last == 0u && !mi_armed(), "menu RESET SETTINGS: the second OCT+ resets the settings");
+            encs[panel.enc[EN_K3]] = 1; frame();
+            encs[panel.enc[EN_K3]] = 1; frame();
+            check(mi_reset == 2u, "menu RESET: KNOB 3 right again: EVERYTHING, and it stops there");
+            tap(B_OCTUP);
+            frames(200);                              /* (3.2 s) */
+            tap(B_OCTUP);
+            check(reset_calls == 1u && mi_armed(), "menu RESET EVERYTHING: OCT+ more than 3 s after the first only asks again");
+            tap(B_OCTUP);
+            check(reset_calls == 2u && reset_last == 1u, "menu RESET EVERYTHING: OCT+ twice within 3 s erases everything");
+            tap(B_OCTUP);
+            encs[panel.enc[EN_K3]] = -1; frame();
+            check(!mi_armed() && mi_reset == 1u && reset_calls == 2u, "menu RESET: a turn takes the question back");
+            tap(B_OCTDN);
+            check(!ui.menu && mi_reset == 0u, "menu RESET: closing the menu puts it back on MIDI LEARN");
+            ui.menu = 1; ui.force = 1; frame();
+        }
         encs[panel.enc[EN_K4]] = 1; frame();
         check(ui.menu == 1 && ui.menu_sel == MI_ABOUT, "menu SYSTEM: a knob does not open ABOUT, it moves the cursor (row 4)");
         tap(B_OCTUP);
@@ -1527,9 +1552,10 @@ int main(int argc, char **argv)
         ui.menu = 1; ui.menu_sel = 0; ui.force = 1; frame();
         for (j = 0; j < 3u; j++) { encs[panel.enc[EN_SELECT]] = 1; frame(); }   /* (SYSTEM: the fourth section; VJ is
                                                                                 * after it) */
-        encs[panel.enc[EN_K3]] = 1; frame();          /* (dualcore: row 3, after 2ND CORE) */
+        encs[panel.enc[EN_K3]] = -1; frame();         /* (dualcore: row 3, after 2ND CORE; left: RESET stays on MIDI LEARN) */
         tap(B_OCTUP);
-        check(ui.menu_sel == MI_LCLEAR && ml_count() == 0u, "menu SYSTEM > MIDI LEARN CLEAR, OCT+: nothing learned any more");
+        check(ui.menu_sel == MI_RESET && mi_reset == 0u && ml_count() == 0u && reset_calls == 2u,
+              "menu SYSTEM > RESET on MIDI LEARN, OCT+: nothing learned any more, nothing else reset");
         ui.menu = 0; ui.force = 1; go_home(); frames(16);
         {   /* GLO > MIDI: CH1 CH2 CH3 OTHER (2.6) */
             uint32_t hit = 0;

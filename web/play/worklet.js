@@ -10,6 +10,7 @@ const UI_FRAMES = 706, CAM_FRAMES = 1470, SAVE_FRAMES = 44100, FLUSH_FRAMES = 5 
 export class FM1Engine {
   constructor(wasm, flash, post, song) {
     const m = wasm instanceof WebAssembly.Module ? wasm : new WebAssembly.Module(wasm);
+    this.m = m;
     this.w = new WebAssembly.Instance(m, {}).exports;
     this.w._initialize?.();
     const buf = this.w.memory.buffer;                 // (fixed: the module's memory does not grow)
@@ -61,6 +62,7 @@ export class FM1Engine {
   frame() {                                           // a pass of the main loop; what changed goes to the page
     const w = this.w;
     w.web_frame();
+    if (w.web_restarting?.()) { this.restart(); return; }
     const d = w.web_lcd_dirty() >>> 0;
     if (d !== 0xFFFFFFFF) {
       const x0 = d & 255, y0 = (d >>> 8) & 255, cw = ((d >>> 16) & 255) + 1, ch = (d >>> 24) + 1, px = new Uint16Array(cw * ch);
@@ -85,6 +87,13 @@ export class FM1Engine {
     const px = this.camPx.slice(0, screen ? 240 * 240 : 160 * 90);
     const rgb = new Uint8Array(this.w.memory.buffer, this.w.web_cam_rgb_ptr(), 768).slice();
     this.post({ t: 'cam', screen, px, rgb }, [px.buffer, rgb.buffer]);
+  }
+
+  restart() {                                         // SYSTEM > RESET restarted the FM-1: a new one on the flash image
+    const flash = this.flash.slice().buffer, camOn = this.camOn;   // as the reset left it, as switching it off and on;
+    Object.assign(this, new FM1Engine(this.m, flash, this.post)); // the page keeps that image at once
+    this.camOn = camOn;
+    this.save(true);
   }
 
   save(force) {                                       // the flash image, when the firmware wrote to it
