@@ -51,6 +51,7 @@ FONTS = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100.
 
 
 OG_IMAGE = "og.png"                                          # tools/gen_og.py -> assets/site/og.png -> the site's root
+OG_STAMP = ""                                                # ?v=<version>: the platforms cache a card per URL (set in main)
 OG_ALT = ("The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1 and SMK-37, and a visualizer playing in a black "
           "window over rainbow stripes")
 
@@ -60,7 +61,7 @@ def og_tags(title, description):
     e = lambda t: t.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;")   # noqa: E731
     return (f'<meta property="og:type" content="website">\n<meta property="og:site_name" content="Synthesthetic">\n'
             f'<meta property="og:title" content="{e(title)}">\n<meta property="og:description" content="{e(description)}">\n'
-            f'<meta property="og:image" content="{ONLINE}{OG_IMAGE}">\n<meta property="og:image:width" content="1200">\n'
+            f'<meta property="og:image" content="{ONLINE}{OG_IMAGE}{OG_STAMP}">\n<meta property="og:image:width" content="1200">\n'
             f'<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="{e(OG_ALT)}">\n'
             f'<meta name="twitter:card" content="summary_large_image">')
 
@@ -522,7 +523,10 @@ def read_package(pkg):
 def main(pkg, version, out, more=()):
     """pkg: the FM-1's package; more: the SMK-37's (Pro, Elite, MKE-P37: one each at most), served next to it, the
     installer page picking the device's own"""
+    global OG_STAMP
     pkg, out = Path(pkg), Path(out)
+    OG_STAMP = "?v=" + re.sub(r"[^A-Za-z0-9.-]", "-", version)   # a new card per version: Discord, iMessage and Slack
+                                                                # keep the old picture for an unchanged image URL
     raw, product, board = read_package(pkg)
     if board != "FM-1":
         raise SystemExit(f"{pkg}: the first package is the FM-1's (this one is {product})")
