@@ -254,7 +254,13 @@ static void vis_screen_card(void)
 
 static void vis_draw(void)
 {
-    if (!vis_shown_last || ui.force) {
+    if (!vis_shown_last || ui.force) {                  /* the first frame, or a forced redraw: the whole screen is
+                                                         * cleared first. So a forced redraw costs one black frame: a
+                                                         * control that changes continuously (the SMK-37's faders,
+                                                         * main.c smk_faders) must change vis_knob and leave ui.force
+                                                         * alone, or the picture flashes black on every step (seen on
+                                                         * an SMK-37 Elite, 2026-10-30; the bars follow the knobs
+                                                         * through vis_tick's knob_seen) */
         vis_shown_last = 1;
         lcd_fill(0, 0, 240, 240, C_BLACK);
 #if FELUCCA_VCORE

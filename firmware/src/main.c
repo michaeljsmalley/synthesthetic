@@ -190,10 +190,20 @@ static void smk_faders(void)
             *pv = (int16_t)v;
             break;
         }
-        if (!fb_shown() && !vis_shown())                  /* (the FADER BANK screen follows the values by itself, half a
-                                                           * screen at a time; the visualizer clears the whole screen on a
-                                                           * forced redraw: a step at a time, it flickered black. Its bars
-                                                           * follow the knobs through vis_tick) */
+        /* A redraw for the screens whose dials follow the fader (TRACKS, the pages), and for those only.
+         *
+         * THE FLICKER (SMK-37 Elite, 2026-10-30, three attempts): with the visualizer on the screen, every fader
+         * step flashed the picture black. ui.force = 1 here on every step was the cause: vis_draw (ui_vis.c)
+         * answers a forced redraw by clearing the whole screen to black before it paints the next frame, which is
+         * right for a page change and wrong for a value that changes 20 times a second. The knobs never flickered
+         * because vis_knob_turn sets the knob and vis_changed() only; the bars then redraw by themselves (vis_tick
+         * sees the knob values change, as it does for the visuals' MIDI CCs). The faders go the same way now.
+         * The first two attempts drew the FADER BANK screen more carefully (ui_fbank.c: the faders' half only, every
+         * other frame; and no force while that screen is up): right, but not it, since that screen closes 4 s after
+         * the last bank change and the drags were landing on the visualizer under it. The emulator could not show
+         * it, so the rule is written here: a continuous control (a fader, a wheel, a CC) must never set ui.force on
+         * the visualizer; it sets its value and lets the owner of the screen notice. */
+        if (!fb_shown() && !vis_shown())
             ui.force = 1;
     }
 }

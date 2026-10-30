@@ -71,7 +71,10 @@ static void fb_draw(void)
     }
     if (!ui.force && sig == shown)
         return;
-    if (!ui.force && (ui.frame & 1u))              /* a fader moving: every other frame (a redraw a frame flickers) */
+    if (!ui.force && (ui.frame & 1u))              /* a fader moving: every other frame, and (below) the faders' half only.
+                                                    * Part of the 2026-10-30 fader flicker work (main.c smk_faders has the
+                                                    * story): this screen was never the flicker, but a full redraw of both
+                                                    * halves on every fader step was wasteful all the same */
         return;
     for (half = 0; half < 2u; half++) {
         if (!half && !ui.force && shown_bank == b)    /* the same bank: its boxes stay, only the faders' half is drawn */
