@@ -24,7 +24,7 @@
                               as content://, where Chrome refuses Web MIDI)
   src/                        not touched
 
-  web/make_site.py build/felucca-X.Y.fwsc X.Y OUT_DIR [--beta]
+  web/make_site.py build/felucca-X.Y.fwsc X.Y OUT_DIR [--beta] [build/felucca-smk37-X.Y.fwsc ...]
   (--beta: web/beta_banner.html at the top of the installer: the beta channel, docs/beta)
 
 The package identity (FM-1_9xx) is read from the package; the device reports it
@@ -51,7 +51,7 @@ FONTS = "https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100.
 
 
 OG_IMAGE = "og.png"                                          # tools/gen_og.py -> assets/site/og.png -> the site's root
-OG_ALT = ("The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1, and a visualizer playing in a black "
+OG_ALT = ("The Synthesthetic logo, the words audio/video synth for the M-VAVE FM-1 and SMK-37, and a visualizer playing in a black "
           "window over rainbow stripes")
 
 
@@ -65,10 +65,10 @@ def og_tags(title, description):
             f'<meta name="twitter:card" content="summary_large_image">')
 
 
-EDITOR_OG = ("Synthesthetic editor", "Edit the sounds, patterns, samples and visual settings on your M-VAVE FM-1 over USB, "
+EDITOR_OG = ("Synthesthetic editor", "Edit the sounds, patterns, samples and visual settings on your M-VAVE FM-1 or SMK-37 over USB, "
              "in Chrome or Edge. It works offline too.")
-INSTALLER_OG = ("Synthesthetic, an audio/video synth for the M-VAVE FM-1",
-                "The first FM-1 firmware that sends video over USB. Its 30 visualizers react to your music and show up "
+INSTALLER_OG = ("Synthesthetic, an audio/video synth for the M-VAVE FM-1 and SMK-37",
+                "The first firmware for the FM-1 and the SMK-37 that sends video over USB. Its 30 visualizers react to your music and show up "
                 "as a camera in OBS, Zoom, FaceTime and more.")
 
 
@@ -272,8 +272,8 @@ def handbook(out, version):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{md_esc(title)}</title>
-<meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into an audio/video synth with video over USB.">
-{og_tags("Synthesthetic handbook", "How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 into an audio/video synth with video over USB.")}
+<meta name="description" content="How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 and SMK-37 into an audio/video synth with video over USB.">
+{og_tags("Synthesthetic handbook", "How to install and use Synthesthetic, the firmware that turns the M-VAVE FM-1 and SMK-37 into an audio/video synth with video over USB.")}
 <meta name="theme-color" content="#e2e2de">
 <link rel="icon" href="../webapp/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -456,7 +456,7 @@ def monitor(channels, secs=2.5):
     return html, css
 
 
-def app_files(out, version, fw_name):
+def app_files(out, version, fw_names):
     """webapp/: the manifest, the icons and sw.js with the list of what it keeps (relative to webapp/) and a
     stamp of their contents, so any change makes a new sw.js and the browser takes the new site"""
     app = out / "webapp"
@@ -465,7 +465,7 @@ def app_files(out, version, fw_name):
     manifest = {
         "name": "Synthesthetic", "short_name": "Synthesthetic", "id": "editor/", "start_url": "editor/", "scope": "./",
         "display": "standalone", "background_color": "#fafaf8", "theme_color": "#fafaf8",
-        "description": "The Synthesthetic editor and installer for the M-VAVE FM-1, available offline",
+        "description": "The Synthesthetic editor and installer for the M-VAVE FM-1 and SMK-37, available offline",
         "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
                   {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
                   {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
@@ -473,7 +473,7 @@ def app_files(out, version, fw_name):
     (app / "synthesthetic.webmanifest").write_text(json.dumps(manifest, indent=1) + "\n", encoding="utf-8")
     keep = {"installer/": app / "installer" / "index.html", "editor/": app / "editor" / "index.html",
             **{"installer/" + f: app / "installer" / f for f in SITE_PICS},
-            "../firmware/" + fw_name: out / "firmware" / fw_name, "synthesthetic.webmanifest": app / "synthesthetic.webmanifest"}
+            **{"../firmware/" + f: out / "firmware" / f for f in fw_names}, "synthesthetic.webmanifest": app / "synthesthetic.webmanifest"}
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt"):
         if (app / "editor" / f).exists():
             keep["editor/" + f] = app / "editor" / f
@@ -505,20 +505,43 @@ def product_of(raw):
     return "".join(chr((m - i - 1) & 0xFF) for i in range(BLOCKS) if (m := raw[i * BLK + KEEP]) != 0x7D)
 
 
-def main(pkg, version, out):
-    pkg, out = Path(pkg), Path(out)
-    raw = pkg.read_bytes()
+BOARD_SUFFIX = {"FM-1": "", "SMK-37 Pro": "-smk37", "SMK-37 Elite": "-smk37-elite", "MKE-P37": "-smk37-mke"}   # the file names
+
+
+def read_package(pkg):
+    """a package's bytes, its identity and its board's name (checked: a Felucca-family package with the update loader)"""
+    raw = Path(pkg).read_bytes()
     product = product_of(raw)
     if not re.fullmatch(r"(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_9\d\d", product):
         raise SystemExit(f"{pkg}: identity {product!r} is not a Felucca package (FM-1_9xx, SMK-37 Pro_9xx, SMK-37 Elite_9xx, MKE-P37_9xx)")
     if b"FELUCCA-LOADER-1" not in raw:              # marker of firmware/loader
         raise SystemExit(f"{pkg}: no Felucca update loader in it")
+    return raw, product, product.split("_")[0]
+
+
+def main(pkg, version, out, more=()):
+    """pkg: the FM-1's package; more: the SMK-37's (Pro, Elite, MKE-P37: one each at most), served next to it, the
+    installer page picking the device's own"""
+    pkg, out = Path(pkg), Path(out)
+    raw, product, board = read_package(pkg)
+    if board != "FM-1":
+        raise SystemExit(f"{pkg}: the first package is the FM-1's (this one is {product})")
+    ver = re.sub(r'[^A-Za-z0-9.-]', '-', version)
+    boards = {"FM-1": (pkg, raw, product)}
+    for extra in more:
+        r2, p2, b2 = read_package(extra)
+        if b2 in boards:
+            raise SystemExit(f"{extra}: a second package for {b2}")
+        boards[b2] = (Path(extra), r2, p2)
+    names = {b: f"synthesthetic-{ver}{BOARD_SUFFIX[b]}.fwsc" for b in boards}
     html = (HERE / "index_pkg.html").read_text(encoding="utf-8")
     lib = strip_module((HERE / "fm1pkg.js").read_text(encoding="utf-8")) + "\n" + \
         strip_module((HERE / "fm1ota.js").read_text(encoding="utf-8"))
-    name = f"synthesthetic-{re.sub(r'[^A-Za-z0-9.-]', '-', version)}.fwsc"
+    name = names["FM-1"]
     meta = json.dumps({"version": version, "product": product, "pkg": "../../firmware/" + name,
-                       "sha256": hashlib.sha256(raw).hexdigest()})   # the page checks the download against it
+                       "sha256": hashlib.sha256(raw).hexdigest(),   # the page checks the download against it
+                       "boards": {b: {"product": boards[b][2], "pkg": "../../firmware/" + names[b],
+                                      "sha256": hashlib.sha256(boards[b][1]).hexdigest()} for b in boards}})
     for mark in ("/*LIB*/", "/*META*/", "/*SITE-CSS*/", "<!--MONITOR-->", "/*MONITOR-CSS*/", "<!--MODES-->", "<!--LOGO-->", "<!--VERSION-->",
                  "<!--OG-->"):
         if html.count(mark) != 1:
@@ -541,9 +564,10 @@ def main(pkg, version, out):
         notes = HERE / "beta_banner.html"
         banner = notes.read_text(encoding="utf-8") if notes.exists() else "<p><b>BETA</b></p>"
     html = brandify_html(html.replace("<!--BANNER-->", banner))
-    for old in list(fw.glob("felucca-*.fwsc")) + list(fw.glob("sloop-*.fwsc")) + list(fw.glob("chromatone-*.fwsc")) + list(fw.glob("synthesthetic-*.fwsc")):   # one package: the current one
+    for old in list(fw.glob("felucca-*.fwsc")) + list(fw.glob("sloop-*.fwsc")) + list(fw.glob("chromatone-*.fwsc")) + list(fw.glob("synthesthetic-*.fwsc")):   # the current packages only
         old.unlink()
-    shutil.copy(pkg, fw / name)
+    for b in boards:
+        shutil.copy(boards[b][0], fw / names[b])
     ed_html = editor_page((HERE / "editor.html").read_text(encoding="utf-8"), version)
     dl = f'download="synthesthetic-editor-{re.sub(r"[^A-Za-z0-9.-]", "-", version)}.html"'
     if ed_html.count('download="synthesthetic-editor.html"') != 1 or html.count('download="synthesthetic-editor.html"') != 1:
@@ -567,7 +591,7 @@ def main(pkg, version, out):
         shutil.copy(dsp, ed / dsp.name)
     elif (ed / dsp.name).exists():
         (ed / dsp.name).unlink()  # never serve an old audio build as the current one
-    app_files(out, version, name)
+    app_files(out, version, [names[b] for b in boards])
     hb = handbook(out, version)
     pl = play_page(out, version)
     og = SITE / OG_IMAGE
@@ -586,6 +610,6 @@ def main(pkg, version, out):
 
 if __name__ == "__main__":
     args = [a for a in sys.argv[1:] if a not in ("--studio-guide", "--beta")]
-    if len(args) != 3:
+    if len(args) < 3:
         sys.exit(__doc__)
-    main(*args)
+    main(args[0], args[1], args[2], args[3:])        # (then the SMK-37 packages, if any)

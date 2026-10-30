@@ -86,17 +86,19 @@ JieLi's download server can be slow or unreachable from some networks, so if a d
 ```sh
 # Firmware with USB video (a plain build.sh makes the audio-only build)
 AC79_SDK=$PWD/vendor/ac79-sdk-min JIELI_TOOLCHAIN=$HOME/.jieli/toolchain FELUCCA_UVC=1 sh build.sh
-# A release: identity FM-1_952, version SYNTHESTHETIC 0.2 BETA, output build/felucca-0.2.fwsc
-FELUCCA_UVC=1 sh build.sh --release 0.2
+# A release: identity FM-1_953, version SYNTHESTHETIC 0.3 BETA, output build/felucca-0.3.fwsc; the SMK-37's three
+# names next to it (SMK-37 Pro_953, SMK-37 Elite_953, MKE-P37_953; build/felucca-smk37[-elite|-mke]-0.3.fwsc)
+FELUCCA_UVC=1 sh build.sh --release 0.3
+for m in pro elite mke; do BOARD=smk37 MODEL=$m FELUCCA_UVC=1 sh build.sh --release 0.3; done
 # The browser version for the Play page (needs Emscripten, or clang with wasm-ld)
-python3 tools/build_web.py --release 0.2
+python3 tools/build_web.py --release 0.3
 # Tests for the instrument, the video code, the web pages and the browser version
 sh tests/run_tests.sh
 sh tests/run_video_tests.sh
 node web/test_web.mjs
 node tests/web_test.mjs
 # The website in docs/, built from a release package
-python3 web/make_site.py build/felucca-0.2.fwsc 0.2 docs
+python3 web/make_site.py build/felucca-0.3.fwsc 0.3 docs build/felucca-smk37-0.3.fwsc build/felucca-smk37-elite-0.3.fwsc build/felucca-smk37-mke-0.3.fwsc
 ```
 
 The host tests run the real firmware code on your computer. They check the UI on a framebuffer, the audio engines

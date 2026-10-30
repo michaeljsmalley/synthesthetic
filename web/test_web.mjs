@@ -2231,7 +2231,7 @@ async function installerVj() {
   }
   {   /* step 1 of the install: what the FM-1 answers with, and what that means for installing over it */
     const cases = [["FM-1_951", /reports FM-1_951\. It's running Synthesthetic 0\.1\. Installing updates it/], ["FM-1_950", /Synthesthetic \(a development build\)/],
-                   ["FM-1_927", /Dinghy, Felucca, SLOOP or a fork/], ["FM-1_000", /USB rescue mode/], ["FM-1_015", /different firmware\. If that's M-VAVE's official V15/]];
+                   ["FM-1_927", /Dinghy, Felucca, SLOOP or a fork/], ["FM-1_000", /USB rescue mode/], ["FM-1_015", /different firmware\. If that's M-VAVE's official firmware, V15 on the FM-1 or V016 on the SMK-37/]];
     const got = [];
     for (const [id, re] of cases) {
       const dev = new FakeSyn(id, true), { els } = run(dev);

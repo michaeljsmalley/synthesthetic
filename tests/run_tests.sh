@@ -272,8 +272,11 @@ command -v node >/dev/null 2>&1 &&
     run "the editor's simulated FM-1: SAMPLE and GRAIN as the firmware has them" node tests/engine_table_test.mjs "$OUT/engine_dump"
 # the firmware in the browser (the Play page; tools/build_web.py: Emscripten, or clang + wasm-ld), into build/host
 if command -v node >/dev/null 2>&1 && { command -v emcc >/dev/null 2>&1 || { command -v clang >/dev/null 2>&1 && command -v wasm-ld >/dev/null 2>&1; }; }; then
-    python3 tools/build_web.py --out "$OUT/web/synthesthetic.wasm" >/dev/null &&
+    if python3 tools/build_web.py --out "$OUT/web/synthesthetic.wasm" >/dev/null; then
         run "the firmware in the browser: boot, keys, sound, LEDs, every webcam mode, a project kept" node tests/web_test.mjs "$OUT/web/synthesthetic.wasm"
+    else
+        echo "== the firmware in the browser: tools/build_web.py FAILED"; fail=1      # (a failed build counted, not skipped)
+    fi
 else
     echo "== skip the firmware in the browser (no Emscripten, no clang + wasm-ld)"
 fi

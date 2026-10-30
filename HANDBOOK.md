@@ -1,10 +1,11 @@
 # Synthesthetic handbook
 
-Synthesthetic turns the M-VAVE FM-1 into an audio/video synth. It's the first FM-1 firmware that sends video to a
-computer over USB. Plug your FM-1 in, choose it from the camera list in OBS, Zoom, FaceTime or another video app, and
-you'll see 30 visualizers that react to your music. There's no camera in the FM-1. It's in that list because a USB
-camera is the standard way to get video onto a computer, so you don't need a driver or capture card. The FM-1 is still
-the same four-track groovebox.
+Synthesthetic turns the M-VAVE FM-1 and the M-Vave SMK-37 into an audio/video synth. It's the first firmware for them
+that sends video to a computer over USB. Plug the instrument in, choose it from the camera list in OBS, Zoom, FaceTime
+or another video app, and you'll see 30 visualizers that react to your music. There's no camera in either. It's in that
+list because a USB camera is the standard way to get video onto a computer, so you don't need a driver or capture card.
+The FM-1 is still the same four-track groovebox, and the SMK-37 becomes one, with its own keys, pads, faders and
+wheels ([On the SMK-37](#on-the-smk-37)).
 
 The name comes from synesthesia, aesthetic and synth.
 
@@ -13,7 +14,7 @@ Hügelton Instruments. This is a beta, so use it at your own risk.
 
 - Install it with [the web installer](https://michaeljsmalley.github.io/synthesthetic/webapp/installer/) in Chrome or Edge.
 - Edit sounds, patterns and visual settings in [the web editor](https://michaeljsmalley.github.io/synthesthetic/webapp/editor/).
-- Try it without an FM-1 on [the Play page](https://michaeljsmalley.github.io/synthesthetic/play/), which runs the firmware in your browser.
+- Try it without an instrument on [the Play page](https://michaeljsmalley.github.io/synthesthetic/play/), which runs the firmware in your browser.
 - Download releases and read the source code at [github.com/michaeljsmalley/synthesthetic](https://github.com/michaeljsmalley/synthesthetic).
 - Build it yourself, or see how it works inside, with [DEVELOPMENT.md](DEVELOPMENT.md).
 
@@ -28,12 +29,13 @@ Hügelton Instruments. This is a beta, so use it at your own risk.
 5. [SCREEN mode](#screen-mode)
 6. [Autopilot and attract mode](#autopilot-and-attract-mode)
 7. [USB video](#usb-video)
-8. [MIDI](#midi)
-9. [The web editor and installer](#the-web-editor-and-installer)
-10. [Play in the browser](#play-in-the-browser)
-11. [Troubleshooting](#troubleshooting)
-12. [Recovery and safety](#recovery-and-safety)
-13. [Credits and licenses](#credits-and-licenses)
+8. [On the SMK-37](#on-the-smk-37)
+9. [MIDI](#midi)
+10. [The web editor and installer](#the-web-editor-and-installer)
+11. [Play in the browser](#play-in-the-browser)
+12. [Troubleshooting](#troubleshooting)
+13. [Recovery and safety](#recovery-and-safety)
+14. [Credits and licenses](#credits-and-licenses)
 
 ## What it does
 
@@ -49,20 +51,26 @@ same cable carries USB-MIDI and a USB audio input with the FM-1's output (16-bit
 
 ## Install and update
 
-You need an FM-1, a USB data cable plugged directly into the computer (no hub), and Chrome or Edge on a computer or
-an Android phone. The installer uses Web MIDI, which those browsers support. Before you start, close any other app
+You need an FM-1 or an SMK-37, a USB data cable plugged directly into the computer (no hub), and Chrome or Edge on a
+computer or an Android phone. The installer carries a package for each, and picks the one for the instrument it finds. The installer uses Web MIDI, which those browsers support. Before you start, close any other app
 that uses MIDI, including browser tabs with the editor open.
 
 1. Open [the installer](https://michaeljsmalley.github.io/synthesthetic/webapp/installer/).
 2. Press INSTALL and allow MIDI access when the browser asks.
-3. Wait until it says Done, and don't unplug the cable while it's writing. The FM-1 then restarts into
+3. Wait until it says Done, and don't unplug the cable while it's writing. The instrument then restarts into
    Synthesthetic's boot screen.
 
 ### Which firmware you can install over
 
-You can install directly over M-VAVE's official V15, Dinghy or SLOOP. If your FM-1 runs anything else, such as Baud
-Girl's FM-1+VA, go back to official V15 first with M-VAVE's own updater, M-UPGRADE. Installing over a different
+On the FM-1 you can install directly over M-VAVE's official V15, Dinghy or SLOOP. If your FM-1 runs anything else, such
+as Baud Girl's FM-1+VA, go back to official V15 first with M-VAVE's own updater, M-UPGRADE. Installing over a different
 firmware family's flash layout is the most common way FM-1s get bricked.
+
+On the SMK-37 you can install directly over M-Vave's official V016 or any of genkigenki's ports (Snoop37, X0X, OberVave,
+FoMni, Makkuro37 and the others on [genkigenki.github.io/smk37](https://genkigenki.github.io/smk37/)). The firmwares
+that report the bare name SMK-37, such as Felucca SMK, Sloop SMK, Melodee SMK and Doom, have an updater of their own, so
+the installer leaves them alone: go back to the official firmware with M-UPGRADE first, or write the package with
+M-Flasher's download mode. An SMK-37 on official V013 needs M-UPGRADE to V016 before the browser installer can start.
 
 ### Installing from a terminal
 
@@ -70,7 +78,8 @@ Download the `.fwsc` file from the [releases page](https://github.com/michaeljsm
 build it yourself, then run:
 
 ```sh
-python3 tools/fm1_install.py synthesthetic-0.2.fwsc
+python3 tools/fm1_install.py synthesthetic-0.3.fwsc              # the FM-1
+python3 tools/fm1_install.py synthesthetic-0.3-smk37-elite.fwsc  # an SMK-37 Elite (-smk37 the Pro, -smk37-mke the MKE-P37)
 ```
 
 This needs Python with `mido` and `python-rtmidi` installed.
@@ -84,7 +93,8 @@ from scratch, make a NEW project or erase the sections with SAVE > PROJECT > ERA
 ### Back up first
 
 Before you install any custom firmware for the first time, make a full backup of the flash. It's the only way to put
-an FM-1 back exactly as it was.
+an instrument back exactly as it was. On the SMK-37 the backup matters even more: its flash holds the keyboard's
+factory key and pad calibration, which nothing can recreate.
 
 - On a Mac, put the FM-1 into download mode with the stock soft key (`tools/fm1_softkey.py` sends it), then read the
   whole 1 MiB with [M-Flasher](https://github.com/jvitkauskas/m-flasher). Start M-Flasher within about 30 seconds of
@@ -97,7 +107,8 @@ an FM-1 back exactly as it was.
 
 Use the last section of the installer page, with the unmodified FM-1.fwsc from M-VAVE's V15 download. Save a backup
 in the editor first (Projects, then Backup), because the official firmware can't open Synthesthetic projects.
-M-UPGRADE works too.
+M-UPGRADE works too. On the SMK-37, use M-UPGRADE with the official firmware for your model (Pro, Elite or MKE-P37):
+Synthesthetic reports the model's own name so that M-Vave's updater accepts it.
 
 ## First steps
 
@@ -260,6 +271,58 @@ python3 tools/fm1_vj.py              # show every visual setting
 python3 tools/fm1_vj.py --defaults   # go back to the defaults
 ```
 
+## On the SMK-37
+
+The M-Vave SMK-37 (sold as SMK-37 Pro, SMK-37 Elite and MKE-P37, one keyboard under three names) has the FM-1's chip
+inside, so Synthesthetic runs on it as a second board. The board layer, with the keybed, pads, faders, wheels, knobs,
+display and pad lights, is M. Geisler's (genkigenki), from the SMK-37 port of SLOOP. Everything in this handbook
+applies on the SMK-37 unless this section says otherwise, and [SMK37.md](SMK37.md) has every control in a table.
+
+### What's where
+
+- **Keys.** The middle 27 keys are the FM-1's keys, with velocity. The five lowest and five highest play more notes on a
+  synth track, and drum sounds on the drum track: kick, snare and hat at the low end, cowbell, open hat, crash and
+  ride at the top.
+- **Buttons.** The FM-1's names map onto the printed ones: PATCH is HOME, PARA is EDIT, CHORD is ENV, NOTE REPEAT is
+  LFO, SCALE is SEL, GLOBE is GLO, BT is SAVE. OCTAVE−, OCTAVE+, ARP, FX, SEQ, SEQ PLAY and SEQ REC are the same.
+- **Knobs.** K1 is the volume, K2 SELECT, K3 the track, K4 the sound, and K5 to K8 are the four dials. On the
+  visualizer that makes K2 the mode, K4 the palette, K3 the autopilot and K5 to K8 AMOUNT, RATE, TRAILS and COLOR.
+  The menu's SCREEN section has a KNOB LAYOUT setting that swaps the two groups.
+- **Pads.** The 16 pads stand in for the FM-1's key lights. Under SEQ they are the 16 steps of the page, lit in the
+  track's colour, with a white playhead while the sequencer runs. On the PLAY screen they play the drum kit, or the
+  steps after KNOB BANK and FADER BANK pressed together.
+- **Faders.** FADER BANK opens the bank screen and steps through the banks: A the levels of the four tracks, B their
+  filters, C their reverb sends, D their delay sends, and E, VISUAL, the visualizer's four knobs. A fader takes over
+  once it moves, so nothing jumps. The bank screen closes by itself after four seconds.
+- **Wheels.** The pitch wheel bends the selected synth track, by the range set under PLAY in the menu. The mod wheel
+  adds vibrato.
+- **The menu** has three more sections: PLAY (key velocity, bend range, knob acceleration), MIDI (the TRS MIDI OUT
+  jack, DAW mode's channel and local control) and DAW (the controller map). The tab row shows the sections that fit
+  around the current one.
+
+### USB video and SCREEN mode
+
+The SMK-37 shows up as the same camera, with the same 31 modes, and SCREEN mode sends the keyboard's own display. The
+visualizer opens with PATCH on the TRACKS screen, as HOME does on the FM-1.
+
+### DAW mode
+
+Press < and > together and the SMK-37 becomes a MIDI controller for your computer, with a map you can edit on the
+keyboard or in the web editor's DAW MAP tab. The synth goes quiet and the video keeps following the sound that comes
+in over MIDI. Press them together again to come back.
+
+### Rescue on the SMK-37
+
+The rescue steps are the FM-1's with the SMK-37's button names: OCTAVE− held while switching on opens the USB rescue,
+and OCTAVE− with OCTAVE+ held for five seconds while stopped enters the chip's update mode. The update loader's screen
+stays dark on the SMK-37, which is normal. Never let any tool write the flash between 0xC0000 and 0xC1FFF: that is the
+keyboard's factory calibration.
+
+### What hasn't been tried
+
+Synthesthetic has run on one SMK-37 Elite so far. DAW mode, the TRS MIDI OUT jack and the pedal input come from
+genkigenki's layer unchanged and haven't been exercised on it yet.
+
 ## MIDI
 
 The visuals listen on their own MIDI channel, which you set under VJ > VISUALS MIDI CH in the menu. It's channel 16
@@ -390,7 +453,7 @@ either way.
 Software problems on an FM-1 can almost always be fixed. Each of these steps still works when the one before it
 can't.
 
-1. USB rescue. Hold OCT− while switching on. Only the updater runs, with no audio, and you can install again from
+1. USB rescue. Hold OCT− (OCTAVE− on the SMK-37) while switching on. Only the updater runs, with no audio, and you can install again from
    the browser or with `tools/fm1_install.py`. It also opens by itself after two crashes in a row at startup.
 2. Update mode. While the FM-1 is stopped, hold OCT− and OCT+ together for 5 seconds (a countdown appears after 2
    seconds), or send the soft key SysEx `F0 22 24 35 7D F7`. The chip's own ROM takes over, and no flash write can
