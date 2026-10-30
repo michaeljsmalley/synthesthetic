@@ -52,7 +52,7 @@ static const param_desc_t *fb_param(uint32_t b, uint32_t i, int16_t **vp)
 
 static void fb_draw(void)
 {
-    static uint32_t shown;
+    static uint32_t shown, shown_bank = 99;
     uint32_t b = smk_fbank % FB_N, i, half, sig = b * 7919u;
     int16_t *vp;
     if (fb_frame + 1u != ui.frame) {               /* another screen was up: all of it */
@@ -70,8 +70,11 @@ static void fb_draw(void)
     }
     if (!ui.force && sig == shown)
         return;
-    shown = sig;
+    if (!ui.force && (ui.frame & 1u))              /* a fader moving: every other frame (a redraw a frame flickers) */
+        return;
     for (half = 0; half < 2u; half++) {
+        if (!half && !ui.force && shown_bank == b)    /* the same bank: its boxes stay, only the faders' half is drawn */
+            continue;
         cv_begin(240, 120, C_BLACK);
         if (!half) {
             cv_text(4, 2, &FONT_L, "FADER BANK", C_WHITE);
@@ -120,4 +123,6 @@ static void fb_draw(void)
         }
         cv_blit(0, half * 120u);
     }
+    shown = sig;
+    shown_bank = b;
 }
