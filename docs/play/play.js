@@ -86,7 +86,7 @@ addEventListener('blur', () => { for (const code of keysDown) { fm1.down(KEYS[co
 
 // ------------------------------------------------------------------ the audio thread
 let ctx = null, node = null, powered = false, starting = null;
-const wasmBytes = fetch(new URL('synthesthetic.wasm?v=af8c946966', import.meta.url)).then((r) => {
+const wasmBytes = fetch(new URL('synthesthetic.wasm?v=4664841469', import.meta.url)).then((r) => {
   if (!r.ok) throw new Error('the firmware did not load (' + r.status + ')');
   return r.arrayBuffer();
 });
