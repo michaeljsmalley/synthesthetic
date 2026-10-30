@@ -321,6 +321,8 @@ static volatile uint32_t so_w, so_r;
 #define MQ 64u
 static uint32_t midi_in_q[MQ], midi_out_q[MQ];
 static volatile uint32_t mi_w, mi_r, mo_w, mo_r;
+static volatile uint8_t midi_in_lost;               /* (2.8.3) a note message did not fit: seq.c ends the MIDI notes held
+                                                     * (a lost note-off must not leave a note stuck; after Melodee 1.5) */
 static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 {
     if (usb.config && mo_w - mo_r < MQ) {
@@ -332,8 +334,9 @@ static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 
 /* ------------------------------------------------------- descriptors --- */
 /* interfaces: 0 audio control, 1 MIDI streaming, 2 audio streaming (FELUCCA_UAC), then CDC's two.
- * bcdDevice: 3.00 MIDI, +0.01 CDC, +0.10 the audio input, +0.20 more with 48 kHz (2.5) (hosts cache descriptors
- * per version) */
+ * bcdDevice: 3.00 MIDI, +0.01 CDC, +0.10 the audio input, +0.20 more with 48 kHz (2.5), +0.08 the audio
+ * streaming interface first in the AC collection (2.7.2, UAC_BCD_AS) (hosts cache descriptors per version) */
+#define UAC_BCD_AS (0x08 * FELUCCA_UAC)
 #define UAC_AS_IF 2u
 #define UVC_VC_IF (2 + FELUCCA_UAC)          /* the video function after the audio one: VC, then VS */
 #define UVC_VS_IF (UVC_VC_IF + 1)
@@ -349,7 +352,8 @@ static void midi_out_event(uint32_t pkt)            /* from the audio ISR */
 #define FELUCCA_USB_ALT 0        /* 1: a product ID two higher, when a host's record of the usual one went bad */
 #endif
 #define USB_PID (FELUCCA_USB_PID + 2 * FELUCCA_UVC + 2 * FELUCCA_USB_ALT)   /* 0x0003: the video build, a device of its own */
-#define USB_BCD_LO (0x01 * FELUCCA_CDC + 0x10 * (FELUCCA_UAC + FELUCCA_UAC_48K) + 0x40 * FELUCCA_UVC + 0x80 * FELUCCA_VCORE)
+#define USB_BCD_LO (0x01 * FELUCCA_CDC + 0x10 * (FELUCCA_UAC + FELUCCA_UAC_48K) + UAC_BCD_AS + 0x40 * FELUCCA_UVC + \
+                    0x80 * FELUCCA_VCORE)   /* (2.7.2: + UAC_BCD_AS, the AC collection's order) */
 #define USB_BCD_HI (0x03 + 2 * FELUCCA_UVC)      /* the video build: 5.x since its picture is 320 x 240 (4.x: 320 x 180,
                                                   * the camera's controls; hosts cache the descriptors of a version) */
 #if FELUCCA_UVC && FELUCCA_CDC
@@ -369,7 +373,13 @@ static const uint8_t CFG_DESC[] = {
 #endif
     9, 4, 0, 0, 0, 1, 1, 0, 0,
 #if FELUCCA_UAC
-    10, 0x24, 1, 0x00, 0x01, 31, 0, 2, 1, UAC_AS_IF,    /* AC header 1.00: MIDI + audio streaming */
+    /* AC header 1.00, its collection: the audio streaming interface first, then the MIDI one (2.7.2, after
+     * Felucca 1.5.1, #67). macOS up to 15 (the kernel's AppleUSBAudio, parseConfigurationDescriptor) drops the
+     * MIDI streaming interface from the collection while it walks it with bInCollection's count: MIDI listed
+     * first, the walk runs past the shortened list and gives up before the audio streaming interface, and no
+     * audio input appears (MIDI still works). Listed last, MIDI is dropped at the end. The class spec gives the
+     * order no meaning (Windows, Linux, macOS 26 take each listed interface on its own) */
+    10, 0x24, 1, 0x00, 0x01, 31, 0, 2, UAC_AS_IF, 1,
     12, 0x24, 2, 1, 0x03, 0x06, 0, 2, 0x03, 0x00, 0, 0, /* input terminal 1: line, 2 ch (L R) */
     9, 0x24, 3, 2, 0x01, 0x01, 0, 1, 0,                 /* output terminal 2: USB streaming, from 1 */
 #else
@@ -424,7 +434,7 @@ typedef char cfg_len_ok[sizeof CFG_DESC == CFG_LEN ? 1 : -1];
  * are loaded first), so the host sees one device from the start */
 static uint8_t usb_cdc_on;
 static const uint8_t DEV_DESC_PLAIN[18] = {18, 1, 0x10, 0x01, 0, 0, 0, 64, 0x09, 0x12, 0x01, 0x00,
-                                           0x00 + 0x10 * (FELUCCA_UAC + FELUCCA_UAC_48K), 0x03, 1, 2, 0, 1};
+                                           0x00 + 0x10 * (FELUCCA_UAC + FELUCCA_UAC_48K) + UAC_BCD_AS, 0x03, 1, 2, 0, 1};
 #define CFG_PLAIN_LEN (CFG_LEN - 74)                    /* without the audio IAD (8) and the CDC block (66) */
 static uint8_t cfg_plain[CFG_PLAIN_LEN];
 static const uint8_t *cfg_plain_get(void)
@@ -460,8 +470,9 @@ static const uint8_t STR2[] = {28, 3, 'S', 0, 'y', 0, 'n', 0, 't', 0, 'h', 0, 'e
 /* SLOOP 2.7 beta: menu AUDIO > USB RATE, for the hosts that record the stream badly (reports: Android phones,
  * distorted, while a computer records clean). main.c sets usb_rate_mode before usb_start; a change takes effect
  * at the next start, as USB SERIAL does (the host reads the descriptors when the FM-1 appears).
- *   0 AUTO  44.1 and 48 kHz, the host picks: the descriptors of 2.5 / 2.6, byte for byte;
- *   1 44.1  44.1 kHz only: the descriptors of SLOOP 2.4 (a FELUCCA_UAC_48K=0 build) byte for byte: the format
+ *   0 AUTO  44.1 and 48 kHz, the host picks: the descriptors of 2.5 / 2.6 (2.7.2: with the AC collection's new
+ *           order, bcdDevice x.28);
+ *   1 44.1  44.1 kHz only: the descriptors of a FELUCCA_UAC_48K=0 build (SLOOP 2.4's) byte for byte: the format
  *           of one rate, packets of 46 frames at most, bcdDevice x.1x; the resampler never runs, the samples
  *           go out as rendered;
  *   2 48    48 kHz only (bcdDevice x.3x, a version of its own: hosts cache descriptors per version).
@@ -1180,6 +1191,8 @@ static void midi_in_event(uint32_t pkt)
             midi_in_q[mi_w % MQ] = pkt;
             RING_PUBLISH();
             mi_w++;
+        } else if (cin == 8u || cin == 9u) {
+            midi_in_lost = 1;
         }
         return;
     }

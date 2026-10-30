@@ -8,7 +8,7 @@ the same four-track groovebox.
 
 The name comes from synesthesia, aesthetic and synth.
 
-Synthesthetic is free software under the GPL-3.0, built on SLOOP 2.7.1 by isod89 and Felucca by Leo Kuroshita of
+Synthesthetic is free software under the GPL-3.0, built on SLOOP 2.8.3 by isod89 and Felucca by Leo Kuroshita of
 Hügelton Instruments. This is a beta, so use it at your own risk.
 
 - Install it with [the web installer](https://michaeljsmalley.github.io/synthesthetic/webapp/installer/) in Chrome or Edge.
@@ -105,7 +105,7 @@ There's no factory song, so PLAY does nothing until you've recorded something. F
 track 4 (orange, the drums), press REC, play a beat on the white keys, and press REC again on the first beat after
 your last bar. The loop closes, sets the tempo and starts playing. SLOOP's guide walks through this in more detail.
 
-Hold HOME for about a second to open the menu. It has SCREEN, LIGHTS, AUDIO, SYSTEM and Synthesthetic's VJ section.
+Hold HOME for about a second to open the menu. It has SCREEN, LIGHTS, AUDIO, SEQ, SYSTEM and Synthesthetic's VJ section.
 SYSTEM > ABOUT shows the version, and "2 CORES" when the second core is running. That's the core that draws the
 video. SYSTEM > RESET starts the FM-1 over, as [Recovery and safety](#recovery-and-safety) describes.
 

@@ -2,9 +2,11 @@
 
 The firmware is **Synthesthetic** (since 2026-10-20; the project started as fm1drome).
 
-Since 2026-10-19 (evening) this tree is **SLOOP 2.7.1** by isod89, copied verbatim:
+Since 2026-10-29 this tree carries **SLOOP 2.8.3** by isod89 (merged, see the last entry below); from 2026-10-19 (evening)
+it was **SLOOP 2.7.1**, copied verbatim:
 
-- https://github.com/isod89/sloop-fm1 — commit `4ec1ac829fd2bdf2c571ea215fb3d62477d01220` (2026-10-16), GPL-3.0-only
+- https://github.com/isod89/sloop-fm1 — 2.7.1 is commit `4ec1ac829fd2bdf2c571ea215fb3d62477d01220` (2026-10-16), 2.8.3 is
+  `5eb24c1` (tag v2.8.3), GPL-3.0-only
 - SLOOP's own README is kept as `docs/SLOOP-README.md`; its GUIDE.md, SLOOP.md, DUALCORE.md, RAM.md, BUILDING.md,
   LICENSES/ and LICENSING.md are unchanged at the top level.
 - SLOOP's platform is Felucca's (Copyright (C) 2026 Leo Kuroshita, Hügelton Instruments) with SLOOP's changes.
@@ -68,3 +70,21 @@ Local changes to SLOOP so far:
   `reset_restart` (USB detached, the boot guard cleared, a reboot), `web.c` and `web/play/worklet.js` (the
   browser's FM-1 restarts on its flash image), `vis_set.h` `VIS_SET_INIT`; tests in `tests/ui_pages_test.c`,
   `tests/storage_test.c`, `tests/web_test.mjs`.
+- **SLOOP 2.8.3 merged (2026-10-29):** a three-way merge of upstream 2.7.1 → v2.8.3 over this tree (git, base 4ec1ac8;
+  answering issue #1). Upstream brings SEQ > NOTES (the piano-roll editor and the per-step sheet), the SEQ menu section
+  (STEP ADVANCE, DRUM PREVIEW), FILTER RESO, the punch-in fade (FX + SELECT), MIDI EXPRESSION (CC 11), Bank Select,
+  steadier external clock, the held-note and drum-voice fixes, the second core's hardening from X0X (a check word on
+  every job, one core until power-off after a give-up or a crash beside it, `app.ld` `.noinit.c1bar`), the USB RESCUE
+  fix (`recovery.c` turns the backlight pin on before the key scan; our `main.c` `fm1_lcd_hw_init()` line stays too),
+  and the audio-streaming interface first in the USB audio collection (macOS 15 audio input; bcdDevice +0.08, so hosts
+  re-read the descriptors). Resolved by hand: `ui.c` (the version string), `ui_input.c` (NOTES zoom on PRESETS, kept
+  off while the visualizer shows), `usb.c` (`UAC_BCD_AS` added to `USB_BCD_LO`; the UVC interface numbering unchanged),
+  `ui_menu.c` (six sections: SCREEN, LIGHTS, AUDIO, SEQ, SYSTEM, VJ; `MS_GAP`), `tests/ui_pages_test.c`,
+  `tests/web_test.mjs` (SYSTEM is now the fifth section), `web/test_web.mjs` (50 globals), `tests/len_test.c` (ours:
+  `rainbow.c`, `mirror.c`, `SCOPE_N` 1024), `project.c settings_defaults` resets the new settings too, `tests/golden.txt`
+  (VIBES, SCRATCH and the GM kit changed upstream: the sample retrigger fade and `gen_samples.py`). `web/index_pkg.html`
+  and `docs/webapp/` are Synthesthetic's own and were kept whole: upstream removed its in-browser return to V15 as
+  unreliable on some systems; ours stays, see the handbook. Upstream's documents refreshed in `docs/upstream-sloop/`.
+  Not checked on hardware yet: the video job on core 1 under the new stack guard (`fm1_c1_main` limits core 1's stack
+  to its 2816 bytes less 256), and the bar (a crash while the video core runs leaves the FM-1 on one core, so no USB
+  video, until a power-off).

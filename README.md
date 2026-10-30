@@ -19,7 +19,7 @@ play on its own screen too. MIDI, audio and video share the one USB cable, and f
   compiled to WebAssembly, on a 3D FM-1 in your browser.
 - Documentation: [HANDBOOK.md](HANDBOOK.md), which is also on the website.
 
-Synthesthetic is based on [SLOOP](https://github.com/isod89/sloop-fm1) 2.7.1 by isod89, which is based on
+Synthesthetic is based on [SLOOP](https://github.com/isod89/sloop-fm1) 2.8.3 by isod89, which is based on
 [Felucca](https://github.com/kurogedelic/felucca) by Leo Kuroshita of Hügelton Instruments. It's licensed under the
 GPL-3.0-only (see [LICENSING.md](LICENSING.md)). The instrument itself, meaning the engines, sequencer, drums and
 web editor, comes from SLOOP. The visualizers, USB video and the video core are new in Synthesthetic.

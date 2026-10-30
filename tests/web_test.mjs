@@ -209,9 +209,9 @@ check(w2.web_vj_get(0) === 16 && w2.web_vj_get(3) === 2, 'and come back at the n
     const ENC_SELECT = 0, ENC_K3 = 4, readies = () => msgs.filter((m) => m.t === 'ready').length;
     const btn = (b, ms) => { er.message({ t: 'input', notes: 0, buttons: 1 << b }); go(er, ms); er.message({ t: 'input', notes: 0, buttons: 0 }); go(er, 150); };
     const turn = (enc) => { er.message({ t: 'enc', e: enc, s: 1 }); go(er, 80); };
-    const reset = (kind) => {                             // HOME held: the menu; SELECT x 3: SYSTEM; KNOB 3: what; OCT+ x 2
+    const reset = (kind) => {                             // HOME held: the menu; SELECT x 4: SYSTEM (2.7.1: SEQ before it); KNOB 3: what; OCT+ x 2
       btn(BTN.home, 1300);
-      for (let i = 0; i < 3; i++) turn(ENC_SELECT);
+      for (let i = 0; i < 4; i++) turn(ENC_SELECT);
       for (let i = 0; i < kind; i++) turn(ENC_K3);
       btn(BTN.octp, 120); btn(BTN.octp, 120);
       go(er, 4500);                                       // (the restart: its boot screen)
